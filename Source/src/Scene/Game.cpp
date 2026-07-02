@@ -111,6 +111,7 @@ void Game::Init()
 
 	Log::Print("Post Load essential assets");
 	loader->AssignGameDLLs(files);
+	loader->AssignFogOfWar();
 	loader->AssignGameItems(level);
 	loader->AssignGameResources(level);
 	loader->AssignProjectiles(level);
@@ -129,6 +130,8 @@ void Game::Init()
 		loader->AssignEconomy(level);
 		gameEconomies = std::move(loader->GetEconomies());
 	}
+
+	fogOfWarModule = std::move(loader->GetFogOfWar());
 
 	font.loadFromFile("Resources/courier.ttf");
 	this->fpsText = sf::Text("", font, 16);
@@ -188,6 +191,11 @@ void Game::Update()
 		gameInterface->Update();
 	}
 
+	if (fogOfWarModule)
+	{
+		fogOfWarModule->Update();
+	}
+
 	HandleSingleSelection();
 
 	world.SetLeftClicked(false);
@@ -215,6 +223,11 @@ void Game::Draw()
 	for (const auto &gameProjectile : gameProjectiles)
 	{
 		gameProjectile->Draw();
+	}
+
+	if (fogOfWarModule)
+	{
+		fogOfWarModule->Draw();
 	}
 
 	for (const auto &gameInterface : gameInterfaces)
@@ -614,6 +627,8 @@ void Game::Close()
 		trigger.reset();
 	}
 	gameTriggers.clear();
+
+	fogOfWarModule.reset();
 
 	ImageLoader::Delete();
 

@@ -4,6 +4,7 @@
 #include "Asset.h"
 #include "Background/Background.h"
 #include "Economy.h"
+#include "FogOfWar.h"
 #include "Grid/Grid.h"
 #include "Interface.h"
 #include "Item.h"
@@ -41,6 +42,7 @@ protected:
 	Vector<Unique<Interface>> gameInterfaces;
 	Vector<Unique<Triggers>> gameTriggers;
 	Vector<Unique<Economy>> gameEconomies;
+	Unique<FogOfWar> fogOfWarModule;
 
 	int currentLevel = 0;
 

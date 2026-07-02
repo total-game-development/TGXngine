@@ -5,6 +5,7 @@
 #include "Asset.h"
 #include "Core.h"
 #include "Economy.h"
+#include "FogOfWar.h"
 #include "Interface.h"
 #include "Item.h"
 #include "Projectile.h"
@@ -43,6 +44,7 @@ private:
 	Vector<Unique<Triggers>> gameTriggers;
 	Vector<Unique<Economy>> gameEconomies;
 	Vector<Unique<AI>> gameAis;
+	Unique<FogOfWar> fogOfWarModule = nullptr;
 #ifdef PLATFORM_WINDOWS
 	Map<String, HINSTANCE> dlls;
 #endif
@@ -63,6 +65,7 @@ public:
 	void AssignTriggers(json &level);
 	void AssignEconomy(json &level);
 	void AssignAI(json &level);
+	void AssignFogOfWar();
 	void AddGameItem(int uid, json &item);
 	void ReleaseGameDLLs(json &level, json &requirements);
 	void ResetUIDCounter();
@@ -73,5 +76,6 @@ public:
 	Vector<Unique<Interface>> &GetGameInterfaces();
 	Vector<Unique<Economy>> &GetEconomies();
 	Vector<Unique<Triggers>> &GetGameTriggers();
+	Unique<FogOfWar> &GetFogOfWar();
 };
 } // namespace TGX

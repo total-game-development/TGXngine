@@ -554,6 +554,26 @@ void Loader::ReleaseGameDLLs(json &level, json &requirements)
 	}
 }
 
+void Loader::AssignFogOfWar()
+{
+	Log::Info("Assign FogOfWar");
+
+	if (!dlls.contains("fogofwar"))
+	{
+		Log::Error("Missing DLL for fogofwar");
+		return;
+	}
+
+	auto *dllHandle = dlls["fogofwar"];
+
+	auto fnUpdate = (FNPTR_FOGOFWAR_UPDATE)GET_PROC(dllHandle, "Update");
+	auto fnDraw = (FNPTR_FOGOFWAR_DRAW)GET_PROC(dllHandle, "Draw");
+
+	fogOfWarModule = std::make_unique<FogOfWar>(fnUpdate, fnDraw);
+
+	Log::Success("FogOfWar assigned");
+}
+
 void Loader::ResetUIDCounter()
 {
 	uid = 0;
@@ -587,6 +607,11 @@ Vector<Unique<Interface>> &Loader::GetGameInterfaces()
 Vector<Unique<Triggers>> &Loader::GetGameTriggers()
 {
 	return gameTriggers;
+}
+
+Unique<FogOfWar> &Loader::GetFogOfWar()
+{
+	return fogOfWarModule;
 }
 
 Vector<Unique<Economy>> &Loader::GetEconomies()
