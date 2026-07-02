@@ -53,6 +53,7 @@ private:
 	bool selected = false;
 	bool training = false;
 	bool isHidden = false;
+	bool visible = true;
 	ItemStates state = ItemStates::Stand;
 	Map<ItemProperty, PropertyValue> extras;
 
@@ -310,6 +311,7 @@ public:
 		return logistics.loadable;
 	}
 
+	// hidden for everyone, will not update
 	bool GetHidden() const
 	{
 		return isHidden;
@@ -318,6 +320,17 @@ public:
 	void SetHidden(bool hidden)
 	{
 		isHidden = hidden;
+	}
+
+	// visible by other team, will update
+	bool isVisible() const
+	{
+		return visible;
+	}
+
+	void setVisible(bool v)
+	{
+		visible = v;
 	}
 
 	CombatCapabilities &GetCombatCapabilities()

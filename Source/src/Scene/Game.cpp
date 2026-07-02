@@ -217,6 +217,11 @@ void Game::Draw()
 
 	for (const auto &gameItem : gameItems)
 	{
+		ItemInstance *instance = gameItem->GetItemInstance();
+		if (instance && instance->GetTeam() != WorldState::GetInstance().GetTeam() && !instance->isVisible())
+		{
+			continue;
+		}
 		gameItem->Draw();
 	}
 

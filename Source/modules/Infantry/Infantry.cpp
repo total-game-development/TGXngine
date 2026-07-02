@@ -213,7 +213,9 @@ extern "C"
 	{
 		WorldState &world = WorldState::GetInstance();
 
-		if (HoverFromCenter(itemInstance, itemInstance->GetRadius()))
+		const bool isVisible = itemInstance->GetTeam() == WorldState::GetInstance().GetTeam() || itemInstance->isVisible();
+
+		if (HoverFromCenter(itemInstance, itemInstance->GetRadius()) && isVisible)
 		{
 			if (itemInstance->GetHidden())
 			{
