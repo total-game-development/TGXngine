@@ -77,8 +77,7 @@ extern "C"
 		buildings[globalItem->GetUid()] = new Buildings(globalItem);
 
 		auto *buildingState = static_cast<BuildingState *>(globalItem);
-
-		auto &grid = static_cast<BuildingState *>(globalItem)->passableGrid;
+		auto &grid = buildingState->passableGrid;
 		size_t height = grid.size();
 		size_t width = height > 0 ? grid[0].size() : 0;
 

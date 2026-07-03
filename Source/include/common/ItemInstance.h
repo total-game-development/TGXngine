@@ -389,6 +389,21 @@ public:
 		return nullptr;
 	}
 
+	virtual int GetSight() const
+	{
+		return 4;
+	}
+
+	virtual float GetCenterX() const
+	{
+		return GetX();
+	}
+
+	virtual float GetCenterY() const
+	{
+		return GetY();
+	}
+
 	virtual void AddToGrid(Vector<Vector<int>> &grid, GridTracker &gridTracker) const = 0;
 	virtual void RemoveFromGrid(Vector<Vector<int>> &grid, GridTracker &gridTracker) const = 0;
 
