@@ -1,0 +1,41 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Build & Run",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/build.py",
+			"args": ["-b", "-r"]
+		},
+		{
+			"name": "Regenerate Project",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/build.py",
+			"args": ["-g"]
+		},
+		{
+			"name": "Unit Tests",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/build.py",
+			"args": ["-t"]
+		},
+
+		{
+			"name": "Regenerate Project (Xcode)",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/build.py",
+			"args": ["-g", "Xcode"]
+		},
+		{
+			"name": "Build & Run (Xcode)",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/build.py",
+			"args": ["-b", "-r", "Xcode"]
+		}
+	]
+}
