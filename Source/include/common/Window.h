@@ -36,6 +36,8 @@ public:
 	COMMON_API bool ShouldClose();
 	COMMON_API void SetEventCallbacks(std::function<void(sf::Event)> &key, std::function<void(sf::Event)> &mouse);
 
+	COMMON_API sf::Vector2f GetViewSize() const;
+
 	COMMON_API void MoveView(float x, float y);
 
 private:

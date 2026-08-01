@@ -29,7 +29,8 @@ class FogOfWarState
 	Vector<std::uint8_t> pixelBuffer;
 	sf::Texture fogTexture;
 	sf::Sprite fogSprite;
-	bool textureDirty = true;
+	int texWidth = 0;
+	int texHeight = 0;
 	int updateCounter = 0;
 
 public:
@@ -42,7 +43,6 @@ public:
 		if (mapWidth <= 0 || mapHeight <= 0) { return; }
 
 		fogGrid.assign(mapHeight, Vector<FogState>(mapWidth, Shroud));
-		pixelBuffer.resize(static_cast<size_t>(mapWidth) * mapHeight * 4, 0);
 
 		Log::Info(StringConcat("FogOfWar module initialized: ", mapWidth, "x", mapHeight));
 	}
@@ -78,12 +78,56 @@ public:
 	{
 		if (mapWidth <= 0 || mapHeight <= 0) { return; }
 
-		// did update change the visibility grid
-		if (textureDirty) { RebuildTexture(); }
-
 		WorldState &world = WorldState::GetInstance();
 
-		fogSprite.setPosition(world.GetMapXOffset(), world.GetMapYOffset());
+		// actual visible window size
+		const sf::Vector2f viewSize = Window::GetInstance().GetViewSize();
+		const float visibleWidth = viewSize.x;
+		const float visibleHeight = viewSize.y;
+
+		// cells currently visible on screen (with a one cell margin so theres no seam at the edges)
+		const int startX = std::clamp(static_cast<int>(std::floor(-world.GetMapXOffset() / Globals::grid_size)) - 1, 0, mapWidth - 1);
+		const int endX = std::clamp(static_cast<int>(std::floor((visibleWidth - world.GetMapXOffset()) / Globals::grid_size)) + 1, 0, mapWidth - 1);
+		const int startY = std::clamp(static_cast<int>(std::floor(-world.GetMapYOffset() / Globals::grid_size)) - 1, 0, mapHeight - 1);
+		const int endY = std::clamp(static_cast<int>(std::floor((visibleHeight - world.GetMapYOffset()) / Globals::grid_size)) + 1, 0, mapHeight - 1);
+
+		const int regionWidth = endX - startX + 1;
+		const int regionHeight = endY - startY + 1;
+		if (regionWidth <= 0 || regionHeight <= 0) { return; }
+
+		// only recreate the texture when the on-screen region changes size
+		if (regionWidth != texWidth || regionHeight != texHeight)
+		{
+			pixelBuffer.assign(static_cast<size_t>(regionWidth) * regionHeight * 4, 0);
+			fogTexture.create(static_cast<unsigned int>(regionWidth), static_cast<unsigned int>(regionHeight));
+			fogTexture.setSmooth(false);
+
+			texWidth = regionWidth;
+			texHeight = regionHeight;
+		}
+
+		// fill pixel data for visible cells only
+		for (int y = 0; y < regionHeight; y++)
+		{
+			for (int x = 0; x < regionWidth; x++)
+			{
+				// update pixel alpha based on state
+				const size_t idx = (static_cast<size_t>(y) * regionWidth + x) * 4;
+				const auto state = fogGrid[startY + y][startX + x];
+
+				if (state == Shroud) { pixelBuffer[idx + 3] = 220; }
+				else if (state == Fog) { pixelBuffer[idx + 3] = 140; }
+				else if (state == Visible) { pixelBuffer[idx + 3] = 0; }
+			}
+		}
+
+		fogTexture.update(pixelBuffer.data());
+
+		fogSprite.setTexture(fogTexture);
+		fogSprite.setTextureRect(sf::IntRect(0, 0, regionWidth, regionHeight));
+		fogSprite.setScale(static_cast<float>(Globals::grid_size), static_cast<float>(Globals::grid_size));
+		fogSprite.setPosition(world.GetMapXOffset() + static_cast<float>(startX * Globals::grid_size), world.GetMapYOffset() + static_cast<float>(startY * Globals::grid_size));
+
 		Window::GetInstance().Draw(fogSprite);
 	}
 
@@ -113,9 +157,6 @@ private:
 
 			MarkVisible(cx, cy, sight);
 		}
-
-		// texture will be rebuilt next frame
-		textureDirty = true;
 	}
 
 	void MarkVisible(int cx, int cy, int sight)
@@ -141,33 +182,6 @@ private:
 				}
 			}
 		}
-	}
-
-	void RebuildTexture()
-	{
-		for (int y = 0; y < mapHeight; y++)
-		{
-			for (int x = 0; x < mapWidth; x++)
-			{
-				// update pixel alpha based on state
-				const size_t idx = (static_cast<size_t>(y) * mapWidth + x) * 4;
-				const auto state = fogGrid[y][x];
-
-				if (state == Shroud) { pixelBuffer[idx + 3] = 220; }
-				else if (state == Fog) { pixelBuffer[idx + 3] = 140; }
-				else if (state == Visible) { pixelBuffer[idx + 3] = 0; }
-			}
-		}
-
-		// recreate the texture with the pixel data
-		fogTexture.create(static_cast<unsigned int>(mapWidth), static_cast<unsigned int>(mapHeight));
-		fogTexture.update(pixelBuffer.data());
-		fogTexture.setSmooth(false);
-
-		fogSprite.setTexture(fogTexture);
-		fogSprite.setScale(static_cast<float>(Globals::grid_size), static_cast<float>(Globals::grid_size));
-
-		textureDirty = false;
 	}
 
 	bool IsVisible(float worldX, float worldY) const

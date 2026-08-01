@@ -95,6 +95,11 @@ sf::Vector2f Window::GetMousePosition()
 	return _window.mapPixelToCoords(sf::Mouse::getPosition(_window), _fixed);
 }
 
+sf::Vector2f Window::GetViewSize() const
+{
+	return _fixed.getSize();
+}
+
 void Window::UpdateViewport(unsigned int width, unsigned int height)
 {
 	_fixed.setViewport(sf::FloatRect(0.0f, 0.0f, 1.0f, 1.0f));
