@@ -54,24 +54,6 @@ Ship unit items move exclusively within the naval grid.
 
 ---
 
-### Implement Fog of War Module (`modules/FogOfWar/`)
-
-Provide strategic battlefield visibility management.
-
-Planned functionality:
-
-* Separate tracking of:
-
-  * Shroud (never explored)
-  * Fog (previously explored but currently unseen)
-* Cached unit vision ranges.
-* Visibility calculations per faction.
-* Hidden enemy entity management.
-* Rendering suppression for unseen units and structures.
-* Performance-focused visibility updates.
-
----
-
 ### UI Improvements
 
 Improve the UI system to support additional layout functionality.
