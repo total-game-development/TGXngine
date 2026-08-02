@@ -252,11 +252,12 @@ public:
 			lastStartY = startY;
 			lastEndX = endX;
 			lastEndY = endY;
+
+			fogSprite.setTexture(fogTexture);
+			fogSprite.setTextureRect(sf::IntRect(0, 0, bufWidth, bufHeight));
+			fogSprite.setScale(1.0f, 1.0f);
 		}
 
-		fogSprite.setTexture(fogTexture);
-		fogSprite.setTextureRect(sf::IntRect(0, 0, bufWidth, bufHeight));
-		fogSprite.setScale(1.0f, 1.0f);
 		fogSprite.setPosition(world.GetMapXOffset() + static_cast<float>(startX * TILE_SIZE), world.GetMapYOffset() + static_cast<float>(startY * TILE_SIZE));
 
 		Window::GetInstance().Draw(fogSprite);
