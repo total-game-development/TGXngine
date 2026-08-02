@@ -182,7 +182,13 @@ public:
 		const bool sizeChanged = (bufWidth != texWidth || bufHeight != texHeight);
 		if (sizeChanged)
 		{
-			pixelBuffer.assign(static_cast<size_t>(bufWidth) * bufHeight * 4, 0);
+			// grow the buffer to match new size
+			const size_t needed = static_cast<size_t>(bufWidth) * bufHeight * 4;
+			if (needed > pixelBuffer.size())
+			{
+				pixelBuffer.resize(needed);
+			}
+
 			fogTexture.create(static_cast<unsigned int>(bufWidth), static_cast<unsigned int>(bufHeight));
 			fogTexture.setSmooth(false);
 
