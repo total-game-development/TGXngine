@@ -71,7 +71,7 @@ class FogOfWarState
 
 	int mapWidth = 0;
 	int mapHeight = 0;
-	Vector<Vector<FogState>> fogGrid;
+	Vector<FogState> fogGrid;
 	Vector<std::uint8_t> pixelBuffer;
 	sf::Texture fogTexture;
 	sf::Sprite fogSprite;
@@ -93,7 +93,7 @@ public:
 		mapHeight = world.GetMapGridHeight();
 		if (mapWidth <= 0 || mapHeight <= 0) { return; }
 
-		fogGrid.assign(mapHeight, Vector<FogState>(mapWidth, Shroud));
+		fogGrid.assign(static_cast<size_t>(mapWidth) * mapHeight, Shroud);
 
 		// load fog edge tiles
 		const std::array<const char *, EdgeCount> edgeNames = {"top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"};
@@ -201,7 +201,7 @@ public:
 				{
 					const int cellY = startY + y;
 					const int cellX = startX + x;
-					const auto state = fogGrid[cellY][cellX];
+					const auto state = At(cellX, cellY);
 
 					if (state == Visible)
 					{
@@ -252,6 +252,16 @@ public:
 	}
 
 private:
+	FogState &At(int x, int y)
+	{
+		return fogGrid[(static_cast<size_t>(y) * mapWidth) + x];
+	}
+
+	const FogState &At(int x, int y) const
+	{
+		return fogGrid[(static_cast<size_t>(y) * mapWidth) + x];
+	}
+
 	// get visibility state of a map cell
 	FogState StateAt(int gx, int gy)
 	{
@@ -261,7 +271,7 @@ private:
 			return Shroud;
 		}
 
-		return fogGrid[gy][gx];
+		return At(gx, gy);
 	};
 
 	// copy a half tile quadrant into the pixel buffer
@@ -387,12 +397,9 @@ private:
 		auto &world = WorldState::GetInstance();
 
 		// obscure visible cells
-		for (auto &vec : fogGrid)
+		for (auto &cell : fogGrid)
 		{
-			for (auto &cell : vec)
-			{
-				if (cell == Visible) { cell = Fog; }
-			}
+			if (cell == Visible) { cell = Fog; }
 		}
 
 		// mark visible cells around items
@@ -430,7 +437,7 @@ private:
 				int dx = x - cx;
 				if (((dx * dx) + dySq) <= sightSq)
 				{
-					fogGrid[y][x] = Visible;
+					At(x, y) = Visible;
 				}
 			}
 		}
@@ -446,7 +453,7 @@ private:
 			return false;
 		}
 
-		return fogGrid[y][x] == Visible;
+		return At(x, y) == Visible;
 	}
 
 	bool IsExplored(float worldX, float worldY) const
@@ -459,7 +466,7 @@ private:
 			return false;
 		}
 
-		return fogGrid[y][x] != Shroud;
+		return At(x, y) != Shroud;
 	}
 };
 
