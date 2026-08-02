@@ -81,6 +81,8 @@ class FogOfWarState
 	std::array<sf::Image, EdgeCount> shroudTiles;
 	std::array<sf::Image, EdgeCount> fogTiles;
 	bool tilesLoaded = false;
+	bool fogDirty = true;
+	int lastStartX = -1, lastStartY = -1, lastEndX = -1, lastEndY = -1;
 
 public:
 	void Init()
@@ -171,11 +173,14 @@ public:
 		const int regionHeight = endY - startY + 1;
 		if (regionWidth <= 0 || regionHeight <= 0) { return; }
 
+		const bool regionChanged = (startX != lastStartX || startY != lastStartY || endX != lastEndX || endY != lastEndY);
+
 		const int bufWidth = regionWidth * TILE_SIZE;
 		const int bufHeight = regionHeight * TILE_SIZE;
 
 		// only recreate the texture when the on screen region changes size
-		if (bufWidth != texWidth || bufHeight != texHeight)
+		const bool sizeChanged = (bufWidth != texWidth || bufHeight != texHeight);
+		if (sizeChanged)
 		{
 			pixelBuffer.assign(static_cast<size_t>(bufWidth) * bufHeight * 4, 0);
 			fogTexture.create(static_cast<unsigned int>(bufWidth), static_cast<unsigned int>(bufHeight));
@@ -185,49 +190,58 @@ public:
 			texHeight = bufHeight;
 		}
 
-		// clear the previous frame so cells that became visible go fully transparent
-		std::memset(pixelBuffer.data(), 0, pixelBuffer.size());
-
-		for (int y = 0; y < regionHeight; y++)
+		if (fogDirty || regionChanged || sizeChanged)
 		{
-			for (int x = 0; x < regionWidth; x++)
+			// clear the previous frame so cells that became visible go fully transparent
+			std::memset(pixelBuffer.data(), 0, pixelBuffer.size());
+
+			for (int y = 0; y < regionHeight; y++)
 			{
-				const int cellY = startY + y;
-				const int cellX = startX + x;
-				const auto state = fogGrid[cellY][cellX];
-
-				if (state == Visible)
+				for (int x = 0; x < regionWidth; x++)
 				{
-					if (!tilesLoaded) { continue; }
+					const int cellY = startY + y;
+					const int cellX = startX + x;
+					const auto state = fogGrid[cellY][cellX];
 
-					// fog pass first, shroud pass second
-					TileCell(fogTiles, Fog, cellX, cellY, x, y, false);
-					TileCell(shroudTiles, Shroud, cellX, cellY, x, y, false);
-				}
-				else
-				{
-					// fogged cells are solid matching the textures
-					const std::uint8_t alpha = state == Shroud ? 255 : 51;
-
-					for (int ty = 0; ty < TILE_SIZE; ty++)
+					if (state == Visible)
 					{
-						std::uint8_t *row = &pixelBuffer[(static_cast<size_t>((y * TILE_SIZE) + ty) * bufWidth + static_cast<long>(x) * TILE_SIZE) * 4];
-						for (int tx = 0; tx < TILE_SIZE; tx++)
-						{
-							row[(tx * 4) + 3] = alpha;
-						}
+						if (!tilesLoaded) { continue; }
+
+						// fog pass first, shroud pass second
+						TileCell(fogTiles, Fog, cellX, cellY, x, y, false);
+						TileCell(shroudTiles, Shroud, cellX, cellY, x, y, false);
 					}
-
-					// where fog and shroud touch
-					if (state == Fog && tilesLoaded)
+					else
 					{
-						TileCell(shroudTiles, Shroud, cellX, cellY, x, y, true);
+						// fogged cells are solid matching the textures
+						const std::uint8_t alpha = state == Shroud ? 255 : 51;
+
+						for (int ty = 0; ty < TILE_SIZE; ty++)
+						{
+							std::uint8_t *row = &pixelBuffer[(static_cast<size_t>((y * TILE_SIZE) + ty) * bufWidth + static_cast<long>(x) * TILE_SIZE) * 4];
+							for (int tx = 0; tx < TILE_SIZE; tx++)
+							{
+								row[(tx * 4) + 3] = alpha;
+							}
+						}
+
+						// where fog and shroud touch
+						if (state == Fog && tilesLoaded)
+						{
+							TileCell(shroudTiles, Shroud, cellX, cellY, x, y, true);
+						}
 					}
 				}
 			}
-		}
 
-		fogTexture.update(pixelBuffer.data());
+			fogTexture.update(pixelBuffer.data());
+
+			fogDirty = false;
+			lastStartX = startX;
+			lastStartY = startY;
+			lastEndX = endX;
+			lastEndY = endY;
+		}
 
 		fogSprite.setTexture(fogTexture);
 		fogSprite.setTextureRect(sf::IntRect(0, 0, bufWidth, bufHeight));
@@ -393,6 +407,8 @@ private:
 
 			MarkVisible(cx, cy, sight);
 		}
+
+		fogDirty = true;
 	}
 
 	void MarkVisible(int cx, int cy, int sight)
