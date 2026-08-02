@@ -192,9 +192,6 @@ public:
 
 		if (fogDirty || regionChanged || sizeChanged)
 		{
-			// clear the previous frame so cells that became visible go fully transparent
-			std::memset(pixelBuffer.data(), 0, pixelBuffer.size());
-
 			for (int y = 0; y < regionHeight; y++)
 			{
 				for (int x = 0; x < regionWidth; x++)
@@ -205,11 +202,24 @@ public:
 
 					if (state == Visible)
 					{
-						if (!tilesLoaded) { continue; }
+						if (!tilesLoaded)
+						{
+							// no tiles to draw, keep the cell transparent
+							ClearTile(x, y);
+							continue;
+						}
 
 						// fog pass first, shroud pass second
-						TileCell(fogTiles, Fog, cellX, cellY, x, y, false);
-						TileCell(shroudTiles, Shroud, cellX, cellY, x, y, false);
+						const int painted = TileCell(fogTiles, Fog, cellX, cellY, x, y, false) | TileCell(shroudTiles, Shroud, cellX, cellY, x, y, false);
+
+						// clear quadrants no tile touches to avoid show last frame
+						for (int quadrant = 0; quadrant < 4; quadrant++)
+						{
+							if ((painted & (1 << quadrant)) == 0)
+							{
+								ClearQuadrant(x, y, quadrant);
+							}
+						}
 					}
 					else
 					{
@@ -219,6 +229,7 @@ public:
 						for (int ty = 0; ty < TILE_SIZE; ty++)
 						{
 							std::uint8_t *row = &pixelBuffer[(static_cast<size_t>((y * TILE_SIZE) + ty) * bufWidth + static_cast<long>(x) * TILE_SIZE) * 4];
+							std::memset(row, 0, static_cast<size_t>(TILE_SIZE) * 4);
 							for (int tx = 0; tx < TILE_SIZE; tx++)
 							{
 								row[(tx * 4) + 3] = alpha;
@@ -273,6 +284,29 @@ private:
 
 		return At(gx, gy);
 	};
+
+	// zero out a whole cell so it is fully transparent
+	void ClearTile(int x, int y)
+	{
+		for (int ty = 0; ty < TILE_SIZE; ty++)
+		{
+			const size_t idx = (static_cast<size_t>((y * TILE_SIZE) + ty) * texWidth) + (static_cast<long>(x) * TILE_SIZE);
+			std::memset(&pixelBuffer[idx * 4], 0, static_cast<size_t>(TILE_SIZE) * 4);
+		}
+	}
+
+	// zero out one quadrant of a cell
+	void ClearQuadrant(int x, int y, int quadrant)
+	{
+		const int qx = QUAD_ORIGIN[quadrant][1];
+		const int qy = QUAD_ORIGIN[quadrant][0];
+
+		for (int ty = 0; ty < HALF_TILE; ty++)
+		{
+			const size_t idx = (static_cast<size_t>((y * TILE_SIZE) + qy + ty) * texWidth) + (static_cast<long>(x) * TILE_SIZE) + qx;
+			std::memset(&pixelBuffer[idx * 4], 0, static_cast<size_t>(HALF_TILE) * 4);
+		}
+	}
 
 	// copy a half tile quadrant into the pixel buffer
 	void BlitQuad(const sf::Image &tile, int x, int y, int qx, int qy)
@@ -330,9 +364,12 @@ private:
 		}
 	};
 
-	// lay out the edge tiles for a cell treating `target` cells as blocked neighbours
-	void TileCell(const std::array<sf::Image, EdgeCount> &tiles, FogState target, int cellX, int cellY, int x, int y, bool compositeOverFill)
+	// lay out the edge tiles for a cell treating `target` cells as blocked neighbours.
+	// returns a bitmask of the quadrants it painted into
+	int TileCell(const std::array<sf::Image, EdgeCount> &tiles, FogState target, int cellX, int cellY, int x, int y, bool compositeOverFill)
 	{
+		int painted = 0;
+
 		for (int quadrant = 0; quadrant < 4; quadrant++)
 		{
 			const bool primary = StateAt(cellX + QUAD_DIRS[quadrant][0][0], cellY + QUAD_DIRS[quadrant][0][1]) == target;
@@ -342,6 +379,8 @@ private:
 			{
 				continue;
 			}
+
+			painted |= 1 << quadrant;
 
 			const int tileIndex = (primary && secondary) ? QUAD_TILES[quadrant][0] : (primary ? QUAD_TILES[quadrant][1] : QUAD_TILES[quadrant][2]);
 
@@ -357,6 +396,8 @@ private:
 				BlitQuad(tiles[tileIndex], x, y, originX, originY);
 			}
 		}
+
+		return painted;
 	};
 
 	static sf::Image ShrinkHalf(const sf::Image &src)
