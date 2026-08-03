@@ -49,7 +49,6 @@ public:
 
 	virtual int GetTurnSpeed() const = 0;
 	virtual float GetSpeed() const = 0;
-	virtual int GetSight() const = 0;
 	virtual int GetReloadTime() const = 0;
 
 	void AddToGrid(Vector<Vector<int>> &grid, GridTracker &gridTracker) const override

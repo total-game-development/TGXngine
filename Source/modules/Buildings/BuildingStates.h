@@ -24,6 +24,33 @@ public:
 		return cellCollisionMode;
 	}
 
+	float GetCenterX() const override
+	{
+		if (passableGrid.empty() || passableGrid[0].empty()) { return GetX(); }
+
+		// actual center of building
+		return GetX() + (static_cast<float>(passableGrid[0].size()) / 2.0f);
+	}
+
+	float GetCenterY() const override
+	{
+		if (passableGrid.empty()) { return GetY(); }
+
+		// actual center of building
+		return GetY() + (static_cast<float>(passableGrid.size()) / 2.0f);
+	}
+
+	int GetSight() const override
+	{
+		if (passableGrid.empty() || passableGrid[0].empty()) { return 4; }
+
+		// size of building
+		int w = static_cast<int>(passableGrid[0].size());
+		int h = static_cast<int>(passableGrid.size());
+
+		return static_cast<int>(std::ceil(std::sqrt(((w / 2.0) * (w / 2.0)) + ((h / 2.0) * (h / 2.0)))));
+	}
+
 	float GetRadius() const override = 0;
 	int GetFrames() const override = 0;
 
