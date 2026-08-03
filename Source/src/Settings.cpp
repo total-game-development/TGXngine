@@ -60,6 +60,9 @@ Settings::Settings()
 
 	const bool debugOnScreen = json_settings["settings"]["debugOnScreen"];
 	world.SetDebugOnScreen(debugOnScreen);
+
+	const bool fogOfWar = json_settings["settings"].value("fogOfWar", true);
+	world.SetFogOfWarEnabled(fogOfWar);
 }
 
 Settings &Settings::GetInstance()

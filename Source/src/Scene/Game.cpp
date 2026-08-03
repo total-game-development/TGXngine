@@ -111,7 +111,10 @@ void Game::Init()
 
 	Log::Print("Post Load essential assets");
 	loader->AssignGameDLLs(files);
-	loader->AssignFogOfWar();
+	if (WorldState::GetInstance().IsFogOfWarEnabled())
+	{
+		loader->AssignFogOfWar();
+	}
 	loader->AssignGameItems(level);
 	loader->AssignGameResources(level);
 	loader->AssignProjectiles(level);

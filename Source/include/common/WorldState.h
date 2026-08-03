@@ -57,6 +57,7 @@ private:
 	bool triggered = false;
 	bool production = true;
 	bool debugOnScreen = false;
+	bool fogOfWarEnabled = true;
 	bool closed = false;
 	int itemThatIsUnderCursor = 0;
 	int cash = 0;
@@ -369,6 +370,16 @@ public:
 	bool IsDebugOnScreen() const
 	{
 		return debugOnScreen;
+	}
+
+	void SetFogOfWarEnabled(bool inFogOfWarEnabled)
+	{
+		fogOfWarEnabled = inFogOfWarEnabled;
+	}
+
+	bool IsFogOfWarEnabled() const
+	{
+		return fogOfWarEnabled;
 	}
 
 	bool IsClosed() const
