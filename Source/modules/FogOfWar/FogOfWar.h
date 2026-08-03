@@ -362,11 +362,11 @@ private:
 					const int source = src[((ty * tileWidth + tx) * 4) + channel];
 					const int dest = destRow[(tx * 4) + channel];
 
-					const std::uint8_t out = (source * sourceAlpha + dest * destAlpha * (255 - sourceAlpha) / 255) / outAlpha;
+					const std::uint8_t out = static_cast<std::uint8_t>((source * sourceAlpha + dest * destAlpha * (255 - sourceAlpha) / 255) / outAlpha);
 					destRow[(tx * 4) + channel] = out;
 				}
 
-				destRow[(tx * 4) + 3] = outAlpha;
+				destRow[(tx * 4) + 3] = static_cast<std::uint8_t>(outAlpha);
 			}
 		}
 	};
