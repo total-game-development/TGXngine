@@ -38,7 +38,12 @@ def build(project_dir: str, release: bool) -> None:
 
 
 def generate(
-    generator: str, project_dir: str, release: bool, optim: bool, docs: bool, sanitizers: bool
+    generator: str,
+    project_dir: str,
+    release: bool,
+    optim: bool,
+    docs: bool,
+    sanitizers: bool,
 ) -> None:
     print(
         "GENERATING PROJECT WITH GENERATOR: ",
@@ -108,48 +113,49 @@ def run(project_dir: str, release: bool) -> None:
         f"ERROR: {binary_name} not found in {project_dir} or {os.path.join(project_dir, target)}"
     )
 
+
 def get_windows_debugger() -> str:
     """
     Locates the Visual Studio IDE executable (devenv.exe) using PATH or vswhere.
     Supports VS 2022 and VS 2026 (64-bit) as well as older 32-bit versions.
     """
-    # 1. Check if it's already in the PATH (e.g., running from Dev Cmd Prompt)
+    # Check if already in the PATH
     path_check = shutil.which("devenv")
     if path_check:
         return path_check
-    
-    # 2. Define possible locations for the Visual Studio Installer (vswhere.exe)
-    # vswhere is the official way to find VS regardless of 32/64 bit install paths
+
+    # possible locations for vswhere.exe
     potential_vswhere_dirs = [
         os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"),
         os.environ.get("ProgramFiles", "C:\\Program Files"),
     ]
-    
+
     vswhere_exe = None
     for base_dir in potential_vswhere_dirs:
-        test_path = os.path.join(base_dir, "Microsoft Visual Studio", "Installer", "vswhere.exe")
+        test_path = os.path.join(
+            base_dir, "Microsoft Visual Studio", "Installer", "vswhere.exe"
+        )
         if os.path.exists(test_path):
             vswhere_exe = test_path
             break
 
-    # 3. Use vswhere.exe to find the latest installed Visual Studio product path
+    # find the latest install
     if vswhere_exe:
         try:
-            # -latest: Use the most recent version (e.g., 2026 over 2022)
-            # -property productPath: Returns the direct path to devenv.exe
             result = subprocess.run(
                 [vswhere_exe, "-latest", "-property", "productPath"],
-                capture_output=True, 
-                text=True, 
-                check=True
+                capture_output=True,
+                text=True,
+                check=True,
             )
             devenv_path = result.stdout.strip()
             if devenv_path and os.path.exists(devenv_path):
                 return devenv_path
         except (subprocess.CalledProcessError, OSError):
             pass
-            
+
     return ""
+
 
 def examine(project_dir: str, release: bool) -> None:
     """
@@ -157,11 +163,13 @@ def examine(project_dir: str, release: bool) -> None:
     """
     system = platform.system()
     if system not in ["Linux", "Darwin", "Windows"]:
-        print(f"ERROR: Examining crashes is only configured for Linux/macOS/Windows (Current: {system})")
+        print(
+            f"ERROR: Examining crashes is only configured for Linux/macOS/Windows (Current: {system})"
+        )
         return
 
     target = "Release" if release else "Debug"
-    
+
     binary_name = PROJECT_NAME
     if system == "Windows":
         binary_name += ".exe"
@@ -178,7 +186,7 @@ def examine(project_dir: str, release: bool) -> None:
     working_dir = os.path.abspath(os.path.dirname(binary_path))
     env = os.environ.copy()
     module_path = os.path.join(working_dir, "modules")
-    
+
     # Platform-specific configuration
     if system == "Darwin":
         debugger_name = "LLDB"
@@ -189,25 +197,26 @@ def examine(project_dir: str, release: bool) -> None:
         debugger_name = "GDB"
         lib_key = "LD_LIBRARY_PATH"
         path_sep = ":"
+        # fmt: off
         debugger_cmd = [
             "gdb", "-q",
             "-iex", "set debuginfod enabled on",
-            "-ex", "set pagination off", 
-            "-ex", "run", 
-            "--args", f"./{binary_name}"
+            "-ex", "set pagination off",
+            "-ex", "run", "--args",
+            f"./{binary_name}",
         ]
+        # fmt: on
     elif system == "Windows":
         devenv_exe = get_windows_debugger()
         if not devenv_exe:
             print("ERROR: 'devenv' not found. Ensure Visual Studio is installed.")
             return
-            
+
         debugger_name = "Visual Studio"
         lib_key = "PATH"
         path_sep = ";"
-        
-        # /debugexe: Loads the executable
-        # /command "Debug.Start": Automatically hits 'Run' once the IDE is loaded
+
+        # automatically run once loaded
         debugger_cmd = [devenv_exe, "/debugexe", binary_name, "/command", "Debug.Start"]
 
     print(f"EXAMINING PROJECT IN {debugger_name}")
@@ -215,14 +224,16 @@ def examine(project_dir: str, release: bool) -> None:
     # Inject library paths (so debugger finds modules/DLLs)
     current_lib_path = env.get(lib_key, "")
     new_path = f"{working_dir}{path_sep}{module_path}"
-    env[lib_key] = f"{new_path}{path_sep}{current_lib_path}" if current_lib_path else new_path
+    env[lib_key] = (
+        f"{new_path}{path_sep}{current_lib_path}" if current_lib_path else new_path
+    )
 
     try:
         print(f"Starting {debugger_name} in: {working_dir}")
         subprocess.call(debugger_cmd, cwd=working_dir, env=env)
     except KeyboardInterrupt:
         print(f"\nExiting {debugger_name}...")
-    except FileNotFoundError as e:
+    except FileNotFoundError as _:
         print(f"ERROR: Failed to launch debugger command: {debugger_cmd[0]}")
 
 
@@ -313,9 +324,10 @@ def publish(project_dir: str) -> None:
     # copy Resources
     shutil.copytree("Resources", f"{project_name}/Resources")
 
+
 def copy_windows_dependencies(project_dir: str, release: bool) -> None:
     """
-    Ensures vendor fallback binaries (OpenAL and Zlib) are in the executable 
+    Ensures vendor fallback binaries (OpenAL and Zlib) are in the executable
     directory on Windows, supporting both single-config and multi-config layouts.
     """
     if os.name == "posix":
@@ -324,24 +336,21 @@ def copy_windows_dependencies(project_dir: str, release: bool) -> None:
     print("Checking Windows runtime dependencies...")
     target = "Release" if release else "Debug"
 
-    # 1. Determine where the binaries actually live based on layout
+    # find binaries
     possible_bin_dirs = [
-        project_dir,                        # Single-config (e.g., Ninja)
-        os.path.join(project_dir, target)    # Multi-config (e.g., MSVC Visual Studio)
+        project_dir,
+        os.path.join(project_dir, target),
     ]
 
-    # 2. Define source -> relative destination mapping
-    # Relative paths use your script's invocation root (where Vendor/ resides)
     deps_map = {
         "Vendor/SFML/extlibs/bin/x64/openal32.dll": "OpenAL32.dll",
-        "Vendor/zlib/build/Release/z.dll": "z.dll"
+        "Vendor/zlib/build/Release/z.dll": "z.dll",
     }
 
     for bin_dir in possible_bin_dirs:
-        # We look for where the engine output exists to determine the active bin directory
         engine_exe = os.path.join(bin_dir, f"{PROJECT_NAME}.exe")
         unit_test_exe = os.path.join(bin_dir, "UnitTests.exe")
-        
+
         if os.path.exists(engine_exe) or os.path.exists(unit_test_exe):
             for src_rel, dest_name in deps_map.items():
                 src_path = os.path.abspath(src_rel)
@@ -349,7 +358,9 @@ def copy_windows_dependencies(project_dir: str, release: bool) -> None:
 
                 if os.path.exists(src_path):
                     # Check if it needs copying (missing or outdated)
-                    if not os.path.exists(dest_path) or os.path.getmtime(src_path) > os.path.getmtime(dest_path):
+                    if not os.path.exists(dest_path) or os.path.getmtime(
+                        src_path
+                    ) > os.path.getmtime(dest_path):
                         print(f"-> Copying {dest_name} to {bin_dir}")
                         shutil.copy2(src_path, dest_path)
                 else:
@@ -408,9 +419,6 @@ def main() -> None:
 
     os.makedirs(project_dir, exist_ok=True)
 
-    # -----------------------------
-    # Sanitizer Debug Mode (-S)
-    # -----------------------------
     if args.sanitizers:
         print("SANITIZER MODE ENABLED")
 

@@ -239,20 +239,20 @@ add_executable(TGXngine Source/src/Main.cpp ${MAIN_SOURCES})
 
 # default Visual Studio startup project
 set_property(
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    PROPERTY VS_STARTUP_PROJECT TGXngine
+	DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	PROPERTY VS_STARTUP_PROJECT TGXngine
 )
 
 target_include_directories(
-    TGXngine
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/src ${GLOBAL_INCLUDES}
+	TGXngine
+	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/src ${GLOBAL_INCLUDES}
 )
 
 set_outputs(TGXngine "${OUT_BIN_ROOT}")
 
 set(TGX_LIBS Common Library ${VENDOR_LIBRARIES})
 if(UNIX)
-    list(APPEND TGX_LIBS dl)
+	list(APPEND TGX_LIBS dl)
 endif()
 target_link_libraries(TGXngine PRIVATE ${TGX_LIBS})
 
@@ -263,26 +263,34 @@ target_link_libraries(TGXngine PRIVATE ${TGX_LIBS})
 # ------------------------------------------------------------------------------
 
 if(WIN32)
-    find_package(ZLIB)
-    find_package(OpenAL)
+	find_package(ZLIB)
+	find_package(OpenAL)
 
-    # --- ZLIB DLL Handling ---
-    if(NOT ZLIB_FOUND)
-        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-            # If it built as zlibd.dll, use that name here, but we still output it as z.dll if that's what TGXngine expects
-            set(ZLIB_DLL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/Vendor/zlib/build/Debug/zlibd.dll") 
-        else()
-            set(ZLIB_DLL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/Vendor/zlib/build/Release/zlib.dll")
-        endif()
+	# ZLIB DLL Handling
+	if(NOT ZLIB_FOUND)
+		if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+			# If it built as zlibd.dll, use that name here, but we still output
+			# it as z.dll if that's what TGXngine expects
+			set(
+				ZLIB_DLL_SRC
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vendor/zlib/build/Debug/zlibd.dll"
+			)
+		else()
+			set(
+				ZLIB_DLL_SRC
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vendor/zlib/build/Release/zlib.dll"
+			)
+		endif()
 
-        add_custom_command(
-            TARGET TGXngine POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${ZLIB_DLL_SRC}"
-                "${OUT_BIN_ROOT}/z.dll"
-            COMMENT "Copying z.dll to build directory..."
-        )
-    endif()
+		add_custom_command(
+			TARGET TGXngine
+			POST_BUILD
+			COMMAND
+				${CMAKE_COMMAND} -E copy_if_different "${ZLIB_DLL_SRC}"
+				"${OUT_BIN_ROOT}/z.dll"
+			COMMENT "Copying z.dll to build directory..."
+		)
+	endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -367,146 +375,114 @@ endif()
 option(USE_SANITIZERS "Enable Address/UB Sanitizers" OFF)
 
 if(USE_SANITIZERS)
-    message(STATUS "Enabling Sanitizers")
+	message(STATUS "Enabling Sanitizers")
 
-    set(SAN_COMPILE_FLAGS)
-    set(SAN_LINK_FLAGS)
+	set(SAN_COMPILE_FLAGS)
+	set(SAN_LINK_FLAGS)
 
-    # --------------------------------------------------------------------------
-    # GCC
-    # --------------------------------------------------------------------------
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	# --------------------------------------------------------------------------
+	# GCC
+	# --------------------------------------------------------------------------
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		list(
+			APPEND
+			SAN_COMPILE_FLAGS
+			-g3
+			-O1
+			-fno-omit-frame-pointer
+			-fno-optimize-sibling-calls
+			# Sanitizers
+			-fsanitize=address
+			-fsanitize=undefined
+			-fsanitize-address-use-after-scope
+			# Better diagnostics
+			-fstack-protector-strong
+			-D_GLIBCXX_ASSERTIONS
+			# GCC STL false positives
+			-Wno-maybe-uninitialized
+			-Wno-error=maybe-uninitialized
+		)
 
-        list(APPEND SAN_COMPILE_FLAGS
-            -g3
-            -O1
-            -fno-omit-frame-pointer
-            -fno-optimize-sibling-calls
+		list(APPEND SAN_LINK_FLAGS -fsanitize=address -fsanitize=undefined)
 
-            # Sanitizers
-            -fsanitize=address
-            -fsanitize=undefined
-            -fsanitize-address-use-after-scope
+		# --------------------------------------------------------------------------
+		# Clang / AppleClang (macOS)
+		# --------------------------------------------------------------------------
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		list(
+			APPEND
+			SAN_COMPILE_FLAGS
+			-g3
+			-O1
+			-fno-omit-frame-pointer
+			-fno-optimize-sibling-calls
+			# Sanitizers
+			-fsanitize=address
+			-fsanitize=undefined
+			-fsanitize-address-use-after-scope
+			# Better stack traces
+			-fno-inline
+			# libc++ runtime debugging
+			-D_LIBCPP_ENABLE_ASSERTIONS=1
+		)
 
-            # Better diagnostics
-            -fstack-protector-strong
-            -D_GLIBCXX_ASSERTIONS
+		list(APPEND SAN_LINK_FLAGS -fsanitize=address -fsanitize=undefined)
 
-            # GCC STL false positives
-            -Wno-maybe-uninitialized
-            -Wno-error=maybe-uninitialized
-        )
+		# ----------------------------------------------------------------------
+		# Apple Silicon specific improvements
+		# ----------------------------------------------------------------------
+		if(APPLE)
+			message(STATUS "Configuring Apple/macOS sanitizer options")
 
-        list(APPEND SAN_LINK_FLAGS
-            -fsanitize=address
-            -fsanitize=undefined
-        )
+			# Better symbolication in LLDB
+			list(APPEND SAN_COMPILE_FLAGS -glldb)
 
-    # --------------------------------------------------------------------------
-    # Clang / AppleClang (macOS)
-    # --------------------------------------------------------------------------
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+			# Prevent aggressive dead stripping
+			list(APPEND SAN_LINK_FLAGS -Wl,-no_deduplicate)
 
-        list(APPEND SAN_COMPILE_FLAGS
-            -g3
-            -O1
-            -fno-omit-frame-pointer
-            -fno-optimize-sibling-calls
+			# Optional:
+			# Detect container overflows in libc++
+			list(
+				APPEND
+				SAN_COMPILE_FLAGS
+				-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG
+			)
+		endif()
 
-            # Sanitizers
-            -fsanitize=address
-            -fsanitize=undefined
-            -fsanitize-address-use-after-scope
+		# --------------------------------------------------------------------------
+		# MSVC
+		# --------------------------------------------------------------------------
+	elseif(MSVC)
+		list(APPEND SAN_COMPILE_FLAGS /Zi /fsanitize=address)
 
-            # Better stack traces
-            -fno-inline
+		list(APPEND SAN_LINK_FLAGS /INCREMENTAL:NO)
+	endif()
 
-            # libc++ runtime debugging
-            -D_LIBCPP_ENABLE_ASSERTIONS=1
-        )
+	# --------------------------------------------------------------------------
+	# MAIN TARGET
+	# --------------------------------------------------------------------------
+	target_compile_options(${PROJECT_NAME} PRIVATE ${SAN_COMPILE_FLAGS})
 
-        list(APPEND SAN_LINK_FLAGS
-            -fsanitize=address
-            -fsanitize=undefined
-        )
+	target_link_options(${PROJECT_NAME} PRIVATE ${SAN_LINK_FLAGS})
 
-        # ----------------------------------------------------------------------
-        # Apple Silicon specific improvements
-        # ----------------------------------------------------------------------
-        if(APPLE)
+	# --------------------------------------------------------------------------
+	# UNIT TESTS
+	# --------------------------------------------------------------------------
+	if(TARGET UnitTests)
+		target_compile_options(UnitTests PRIVATE ${SAN_COMPILE_FLAGS})
 
-            message(STATUS "Configuring Apple/macOS sanitizer options")
+		target_link_options(UnitTests PRIVATE ${SAN_LINK_FLAGS})
+	endif()
 
-            # Better symbolication in LLDB
-            list(APPEND SAN_COMPILE_FLAGS
-                -glldb
-            )
-
-            # Prevent aggressive dead stripping
-            list(APPEND SAN_LINK_FLAGS
-                -Wl,-no_deduplicate
-            )
-
-            # Optional:
-            # Detect container overflows in libc++
-            list(APPEND SAN_COMPILE_FLAGS
-                -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG
-            )
-        endif()
-
-    # --------------------------------------------------------------------------
-    # MSVC
-    # --------------------------------------------------------------------------
-    elseif(MSVC)
-
-        list(APPEND SAN_COMPILE_FLAGS
-            /Zi
-            /fsanitize=address
-        )
-
-        list(APPEND SAN_LINK_FLAGS
-            /INCREMENTAL:NO
-        )
-    endif()
-
-    # --------------------------------------------------------------------------
-    # MAIN TARGET
-    # --------------------------------------------------------------------------
-    target_compile_options(${PROJECT_NAME}
-        PRIVATE
-        ${SAN_COMPILE_FLAGS}
-    )
-
-    target_link_options(${PROJECT_NAME}
-        PRIVATE
-        ${SAN_LINK_FLAGS}
-    )
-
-    # --------------------------------------------------------------------------
-    # UNIT TESTS
-    # --------------------------------------------------------------------------
-    if(TARGET UnitTests)
-
-        target_compile_options(UnitTests
-            PRIVATE
-            ${SAN_COMPILE_FLAGS}
-        )
-
-        target_link_options(UnitTests
-            PRIVATE
-            ${SAN_LINK_FLAGS}
-        )
-    endif()
-
-    # --------------------------------------------------------------------------
-    # Runtime sanitizer environment hints
-    # --------------------------------------------------------------------------
-    message(STATUS "")
-    message(STATUS "Sanitizers enabled")
-    message(STATUS "Recommended runtime:")
-    message(STATUS "ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1")
-    message(STATUS "UBSAN_OPTIONS=print_stacktrace=1")
-    message(STATUS "")
+	# --------------------------------------------------------------------------
+	# Runtime sanitizer environment hints
+	# --------------------------------------------------------------------------
+	message(STATUS "")
+	message(STATUS "Sanitizers enabled")
+	message(STATUS "Recommended runtime:")
+	message(STATUS "ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1")
+	message(STATUS "UBSAN_OPTIONS=print_stacktrace=1")
+	message(STATUS "")
 endif()
 
 # ------------------------------------------------------------------------------
@@ -514,10 +490,10 @@ endif()
 # ------------------------------------------------------------------------------
 option(OPTIMISE "Enable compiler optimizations" OFF)
 if(OPTIMISE)
-    message(STATUS "Compiler optimizations enabled (OPTIMISE=ON)")
-    if(MSVC)
-        add_compile_options(/O2)
-    else()
-        add_compile_options(-O3)
-    endif()
+	message(STATUS "Compiler optimizations enabled (OPTIMISE=ON)")
+	if(MSVC)
+		add_compile_options(/O2)
+	else()
+		add_compile_options(-O3)
+	endif()
 endif()
