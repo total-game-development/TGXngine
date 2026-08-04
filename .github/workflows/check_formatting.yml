@@ -19,4 +19,4 @@ jobs:
 
       - name: Run clang-format check
         run: |
-          ./Tools/CI/check-formatting.sh
+          ./Scripts/check-formatting.sh

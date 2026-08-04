@@ -16,24 +16,23 @@ struct LookUp
 	{
 		WorldState &world = WorldState::GetInstance();
 
-		int index = world.GetLookup()[uid];
+		auto &lookup = world.GetLookup();
 
-		if (index >= static_cast<int>(world.items.size()))
+		auto it = lookup.find(uid);
+		if (it != lookup.end())
 		{
-			index = 0;
-		}
-
-		if (uid == world.items[index]->GetUid())
-		{
-			return index;
+			int index = it->second;
+			if (index < static_cast<int>(world.items.size()) && uid == world.items[index]->GetUid())
+			{
+				return index;
+			}
 		}
 
 		for (size_t i = 0; i < world.items.size(); i++)
 		{
 			if (world.items[i]->GetUid() == uid)
 			{
-				world.GetLookup()[uid] = static_cast<int>(i);
-
+				lookup[uid] = static_cast<int>(i);
 				return static_cast<int>(i);
 			}
 		}
@@ -44,7 +43,7 @@ struct LookUp
 	void static Set(int uid, int index)
 	{
 		WorldState &world = WorldState::GetInstance();
-		world.GetLookup()[uid] = index;
+		world.SetLookup(uid, index);
 	}
 };
 } // namespace TGX

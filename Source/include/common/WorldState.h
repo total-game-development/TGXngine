@@ -605,7 +605,12 @@ public:
 		this->primaryItems[name] = index;
 	}
 
-	Map<int, int> GetLookup() const
+	Map<int, int> &GetLookup()
+	{
+		return lookupMap;
+	}
+
+	const Map<int, int> &GetLookup() const
 	{
 		return lookupMap;
 	}
