@@ -13,7 +13,7 @@
 
 TEST(Tree, InsertRemoveContainsSize)
 {
-	WoS::Tree<int> tree;
+	TGX::Tree<int> tree;
 
 	// remove root
 	tree.Insert(1);
@@ -80,7 +80,7 @@ TEST(Tree, InsertRemoveContainsSize)
 
 TEST(Tree, Shape)
 {
-	WoS::Tree<int> tree;
+	TGX::Tree<int> tree;
 
 	EXPECT_TreeShape(
 		ToString,
@@ -116,7 +116,7 @@ TEST(Tree, Shape)
 
 TEST(Tree, Inorder)
 {
-	WoS::Tree<int> tree;
+	TGX::Tree<int> tree;
 
 	EXPECT_TreeShape(
 		ToStringInorder,
@@ -136,7 +136,7 @@ TEST(Tree, Inorder)
 
 TEST(Tree, Preorder)
 {
-	WoS::Tree<int> tree;
+	TGX::Tree<int> tree;
 
 	EXPECT_TreeShape(
 		ToStringPreorder,
@@ -156,7 +156,7 @@ TEST(Tree, Preorder)
 
 TEST(Tree, Postorder)
 {
-	WoS::Tree<int> tree;
+	TGX::Tree<int> tree;
 
 	EXPECT_TreeShape(
 		ToStringPostorder,
