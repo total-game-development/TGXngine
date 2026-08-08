@@ -10,6 +10,7 @@
 #include "PathFinding/AStar.h"
 #include "PathFinding/ConfigurePath.h"
 #include "PathFinding/IPathfinding.h"
+#include "PathFinding/NavalAStar.h"
 #include "PathFinding/WavePropagation.h"
 #include "Point.h"
 #include "Traversal/Traversal.h"
@@ -49,6 +50,7 @@ public:
 
 		auto &instance = GetInstance();
 		instance.pathfindingAlgorithms[PathfindingAlgorithm::AStar] = std::make_unique<AStar>();
+		instance.pathfindingAlgorithms[PathfindingAlgorithm::Naval] = std::make_unique<NavalAStar>();
 		instance.pathfindingAlgorithms[PathfindingAlgorithm::Wave] = std::make_unique<WavePropagation>();
 
 		isInitialized = true;
@@ -457,7 +459,16 @@ public:
 		}
 
 		auto &instance = GetInstance();
-		instance.pathfindingAlgorithms[pathfinding]->Search(
+
+		auto algorithm = instance.pathfindingAlgorithms.find(pathfinding);
+
+		if (algorithm == instance.pathfindingAlgorithms.end() || !algorithm->second)
+		{
+			Log::Error("Path finding algorithm requested but not registered in Navigation::Init");
+			return {};
+		}
+
+		algorithm->second->Search(
 			start,
 			end,
 			static_cast<int>(grid[0].size()),
@@ -465,7 +476,7 @@ public:
 			grid,
 			config);
 
-		return instance.pathfindingAlgorithms[pathfinding]->GetPath();
+		return algorithm->second->GetPath();
 	}
 
 	static void Clear()

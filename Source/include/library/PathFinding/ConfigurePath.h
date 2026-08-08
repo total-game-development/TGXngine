@@ -79,11 +79,32 @@ class NavalRoutesConfigurePath : public ConfigurePath
 public:
 	HeuristicType heuristicType = HeuristicType::Euclidean;
 
-	NavalRoutesConfigurePath() : ConfigurePath(PathDirections::Four) {}
+	// Extra g cost charged when the heading changes between two consecutive
+	// steps. Tuned so one turn costs about two straight diagonal steps: enough
+	// to flatten cosmetic zig-zags without making a hull refuse a turn it
+	// genuinely needs. Zero reduces the search to ordinary A*.
+	float turnPenalty = 2.0f;
+
+	// Eight-way, matching the neighbour model the search actually walks:
+	// four orthogonals plus four diagonals, with no corner cutting.
+	NavalRoutesConfigurePath() : ConfigurePath(PathDirections::Eight) {}
 
 	HeuristicType GetHeuristicType() const override
 	{
 		return heuristicType;
+	}
+
+	// Naval traversal: only open water is sailable. On the isle grid land is
+	// stamped as CELL_COLLISION_MODE_MEDIUM, so the inherited "not 1" rule
+	// would wrongly read land as passable.
+	bool IsTraversable(int cellValue) const override
+	{
+		if (codeMode == static_cast<int>(CellCollisionMode::Soft))
+		{
+			return cellValue <= static_cast<int>(CellCollisionMode::Soft);
+		}
+
+		return cellValue == static_cast<int>(CellCollisionMode::Off);
 	}
 };
 
