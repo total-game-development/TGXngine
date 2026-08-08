@@ -132,7 +132,12 @@ void NavalAStar::Search(
 			// Walk the parent chain back to the start. The path is left in
 			// end-to-start order to match the other searches: callers consume
 			// it from the back, so back() is the step nearest the hull.
-			while (current != nullptr)
+			//
+			// The start node itself is not part of the route. A unit is already
+			// standing on that cell, and almost never exactly on its centre, so
+			// handing it back as the first step makes the unit turn around and
+			// travel to its own centre before setting off.
+			while (current != nullptr && current->parent != nullptr)
 			{
 				path.emplace_back(current->x, current->y);
 				current = current->parent;

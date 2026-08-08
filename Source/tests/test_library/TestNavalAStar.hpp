@@ -78,8 +78,36 @@ TEST(NavalAStar, StraightRunAcrossOpenWaterHasNoTurns)
 
 	ASSERT_FALSE(path.empty());
 	EXPECT_EQ(path.front(), TGX::Point(30, 10));
-	EXPECT_EQ(path.back(), TGX::Point(2, 10));
 	EXPECT_EQ(CountTurns(path), 0);
+}
+
+// The cell the unit is standing on is not a step of the route. Handing it back
+// makes the unit turn around and travel to its own cell centre before setting
+// off, since it is almost never sitting exactly on that centre.
+TEST(NavalAStar, RouteExcludesTheCellTheUnitStandsOn)
+{
+	auto grid = OpenWater(40, 20);
+
+	auto path = RunNaval(grid, {2, 10}, {30, 10});
+
+	ASSERT_FALSE(path.empty());
+	EXPECT_EQ(path.back(), TGX::Point(3, 10));
+
+	for (const auto &step : path)
+	{
+		EXPECT_FALSE(step.x == 2 && step.y == 10) << "route still contains the starting cell";
+	}
+}
+
+// A unit ordered to the cell it already occupies has nowhere to go, and must
+// not come back with a route consisting of that cell.
+TEST(NavalAStar, RouteToTheCurrentCellIsEmpty)
+{
+	auto grid = OpenWater(40, 20);
+
+	auto path = RunNaval(grid, {2, 10}, {2, 10});
+
+	EXPECT_TRUE(path.empty());
 }
 
 TEST(NavalAStar, PerfectDiagonalHasNoTurns)

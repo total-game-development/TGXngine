@@ -184,7 +184,11 @@ void AStar::Search(
 		}
 		else
 		{
-			while (current != nullptr)
+			// The start node is not part of the route. A unit is already
+			// standing on that cell, and almost never exactly on its centre, so
+			// handing it back as the first step makes the unit turn around and
+			// travel to its own centre before setting off.
+			while (current != nullptr && current->parent != nullptr)
 			{
 				path.emplace_back(current->x, current->y);
 				current = current->parent;

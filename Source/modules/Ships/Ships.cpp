@@ -660,23 +660,6 @@ void SetPath(ShipState *itemInstance, float toX, float toY)
 		{toX, toY},
 		itemInstance->GetCellCollisionMode(),
 		PathfindingAlgorithm::Naval);
-
-	// The search walks the parent chain to the start node, so the route it
-	// returns ends with the cell the hull already occupies. A hull is almost
-	// never sitting exactly on that cell centre, and the arrival test only
-	// forgives a tenth of a cell, so leaving the step in place makes the hull
-	// turn around, sail back to its own centre, and only then set off. That
-	// reads as a flick followed by a correction. Drop the step it is already on.
-	if (!itemInstance->path.empty())
-	{
-		const Point &currentCell = itemInstance->path.back();
-
-		if (currentCell.x == static_cast<int>(std::round(itemInstance->GetX())) &&
-			currentCell.y == static_cast<int>(std::round(itemInstance->GetY())))
-		{
-			itemInstance->path.pop_back();
-		}
-	}
 }
 
 void OnPath(const Vector<Point> &path)
