@@ -434,6 +434,69 @@ public:
 };
 
 // -------------------------------------------------------------------------
+// Shipyard
+//
+// Builds hulls. A sea structure rather than a shore one: the web version
+// declares it role "sea_generator" placed on the isle grid, so the yard itself
+// stands in open water. Its deploy slots are offsets from the yard's own
+// position and have to land on water too, since a hull dropped onto rock has
+// no route anywhere.
+// -------------------------------------------------------------------------
+class ShipyardState : public BuildingState
+{
+public:
+	static constexpr float radius = 9.0f;
+	static constexpr int frames = 1;
+	static constexpr int powerUsage = 250;
+
+	Vector<Tuple<float, float, int>> deployPositions =
+		{
+			{6.0f, 25.0f, INT_MIN},
+			{10.0f, 25.0f, INT_MIN},
+			{14.0f, 25.0f, INT_MIN},
+			{6.0f, 27.0f, INT_MIN},
+			{10.0f, 27.0f, INT_MIN},
+			{14.0f, 27.0f, INT_MIN},
+		};
+
+	ShipyardState()
+	{
+		// The sprite is 500x480 against a 20 pixel grid cell.
+		passableGrid = Vector<Vector<int>>(24, Vector<int>(25, 1));
+		baseWidth = 200;
+		baseHeight = 190;
+		canBePrimary = true;
+
+		hitPoints = 30.0f;
+	}
+
+	float GetRadius() const override
+	{
+		return radius;
+	}
+
+	int GetFrames() const override
+	{
+		return frames;
+	}
+
+	const Vector<Tuple<float, float, int>> &GetDeployPositions() const override
+	{
+		return deployPositions;
+	}
+
+	int GetDeployDirection() const override
+	{
+		return 6;
+	}
+
+	int GetPowerUsage() const override
+	{
+		return powerUsage;
+	}
+};
+
+// -------------------------------------------------------------------------
 // Radar
 // -------------------------------------------------------------------------
 class RadarState : public BuildingState

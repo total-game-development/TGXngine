@@ -89,6 +89,14 @@ extern "C"
 		{
 			return globalItem = new BattleshipState();
 		}
+		if (name == "cruiser")
+		{
+			return globalItem = new CruiserState();
+		}
+		if (name == "carrier")
+		{
+			return globalItem = new CarrierState();
+		}
 
 		return nullptr;
 	}
@@ -137,7 +145,10 @@ extern "C"
 					{
 						globalItem->SetX(world.items[index]->GetX() + std::get<0>(deploys[i]));
 						globalItem->SetY(world.items[index]->GetY() + std::get<1>(deploys[i]));
-						globalItem->SetDirection(12);
+						// Facing on leaving the yard. The vehicle modules use 12,
+						// which suits their sixteen facings; a hull has eight, so
+						// the equivalent is six.
+						globalItem->SetDirection(6);
 					}
 				}
 			}

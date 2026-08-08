@@ -45,6 +45,10 @@ extern "C"
 		{
 			return globalItem = new VehicleAssemblyTunnelState();
 		}
+		if (name == "shipyard")
+		{
+			return globalItem = new ShipyardState();
+		}
 		if (name == "oil_extractor")
 		{
 			return globalItem = new OilExtractor();

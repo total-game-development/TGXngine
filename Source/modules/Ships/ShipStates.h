@@ -362,4 +362,131 @@ public:
 		return reloadTime;
 	}
 };
+
+// -------------------------------------------------------------------------
+// Cruiser
+//
+// Surface hull, lighter and nimbler than the battleship. Unarmed: the web
+// version gives it neither a weapon nor a canAttack flag, so nothing has been
+// invented for it here. It can be fired upon but does not fire back.
+// -------------------------------------------------------------------------
+class CruiserState : public ShipState
+{
+public:
+	static constexpr float radius = 27.0f; // Medium Collision
+	static constexpr int frames = 8;
+	static constexpr int directions = 8;
+	static constexpr int turnSpeed = 120;
+	static constexpr float speed = 180;
+	static constexpr int sight = 3;
+	static constexpr int reloadTime = 0;
+
+	CruiserState()
+	{
+		SetDirections(directions);
+		SetNavy(true);
+
+		AddGroup("army");
+		AddGroup("ships");
+		AddGroup("surface");
+
+		combat.attackable = true;
+
+		hitPoints = 30.0f;
+	}
+
+	Layer GetLayer() const override
+	{
+		return Layer::Surface;
+	}
+
+	float GetRadius() const override
+	{
+		return radius;
+	}
+	int GetFrames() const override
+	{
+		return frames;
+	}
+	int GetTurnSpeed() const override
+	{
+		return turnSpeed;
+	}
+	float GetSpeed() const override
+	{
+		return speed;
+	}
+	int GetSight() const override
+	{
+		return sight;
+	}
+	int GetReloadTime() const override
+	{
+		return reloadTime;
+	}
+};
+
+// -------------------------------------------------------------------------
+// Carrier
+//
+// The heaviest surface hull and the slowest. The web version marks it as able
+// to attack but never gives it a weapon, its role being to launch aircraft,
+// which this engine has no module for. Left unarmed rather than inventing an
+// armament for it.
+// -------------------------------------------------------------------------
+class CarrierState : public ShipState
+{
+public:
+	static constexpr float radius = 40.0f; // Medium Collision
+	static constexpr int frames = 8;
+	static constexpr int directions = 8;
+	static constexpr int turnSpeed = 120;
+	static constexpr float speed = 120;
+	static constexpr int sight = 3;
+	static constexpr int reloadTime = 0;
+
+	CarrierState()
+	{
+		SetDirections(directions);
+		SetNavy(true);
+
+		AddGroup("army");
+		AddGroup("ships");
+		AddGroup("surface");
+
+		combat.attackable = true;
+
+		hitPoints = 30.0f;
+	}
+
+	Layer GetLayer() const override
+	{
+		return Layer::Surface;
+	}
+
+	float GetRadius() const override
+	{
+		return radius;
+	}
+	int GetFrames() const override
+	{
+		return frames;
+	}
+	int GetTurnSpeed() const override
+	{
+		return turnSpeed;
+	}
+	float GetSpeed() const override
+	{
+		return speed;
+	}
+	int GetSight() const override
+	{
+		return sight;
+	}
+	int GetReloadTime() const override
+	{
+		return reloadTime;
+	}
+};
 } // namespace TGX
