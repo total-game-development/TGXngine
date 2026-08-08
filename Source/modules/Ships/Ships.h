@@ -78,6 +78,15 @@ public:
 		polygonShape.setFillColor(sf::Color::Transparent);
 		polygonShape.setOutlineColor(sf::Color::Red);
 		polygonShape.setOutlineThickness(1.f);
+
+		// The outline was built and then dropped on the floor, so it has never
+		// appeared for any unit. Draw it over the sprite, and only while the
+		// hull is selected, so it reads as selection feedback rather than
+		// permanent clutter.
+		if (itemState->IsSelected())
+		{
+			window.Draw(polygonShape);
+		}
 	}
 
 	void Update(ItemInstance *itemState, std::vector<sf::Sprite *> *spritesRef)
