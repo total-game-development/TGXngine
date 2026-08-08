@@ -569,9 +569,6 @@ void Moving(VehicleState *itemInstance)
 	}
 	else
 	{
-		// Close enough to be under way. Absorb the small residual now instead of
-		// holding the heading until the error grows past turnAmount and has to be
-		// taken out in one visible correction.
 		itemInstance->SetDirection(
 			WrapDirection(itemInstance->GetDirection() + difference, itemInstance->GetDirections()));
 
@@ -580,14 +577,6 @@ void Moving(VehicleState *itemInstance)
 			VehicleState::accelerationFactor[itemInstance->accelerationIndex] *
 			(1.0f / 96.0f) * world.GetDeltaTime();
 
-		// Steer on the true heading rather than the sprite's rounded one.
-		// Rounding here pins travel to the exact headings the sprite bank holds,
-		// so a unit running along an axis but sitting slightly off the line can
-		// never close that offset by moving. The error accumulates until it is
-		// worth a whole frame of heading, which shows up as a flick and a
-		// readjust. Steering on the unrounded heading lets the offset be taken
-		// out as a gradual drift instead, while the sprite still shows the
-		// rounded heading and so stays put.
 		float angleRadians =
 			-(itemInstance->GetDirection() / static_cast<float>(itemInstance->GetDirections()) * 2.0f * PI);
 
@@ -605,10 +594,6 @@ void Moving(VehicleState *itemInstance)
 
 void Animate(VehicleState *itemState)
 {
-	// The offset selects a second bank of sprites sitting eight frames above
-	// the first, so it only means anything for a unit that actually ships two
-	// banks. Applying it to a single-bank unit indexes past the end of the
-	// sprite vector, which draws garbage for the frames it is switched on.
 	if (itemState->GetFrames() < itemState->GetDirections() * 2)
 	{
 		vehicles[itemState->GetUid()]->animationOffset = 0;

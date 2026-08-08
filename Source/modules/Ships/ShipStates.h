@@ -209,10 +209,6 @@ public:
 		gridTracker.uids_grid[inUid] = {x1, y1, x2, y2};
 	}
 
-	// Naval layer. Surface hulls steer around each other; submerged hulls run
-	// beneath them and only conflict with other submerged hulls. Steering
-	// queries the quad tree by layer group, so the separation falls out of
-	// group membership rather than a per-pair test.
 	enum class Layer
 	{
 		Surface,
@@ -221,12 +217,6 @@ public:
 
 	virtual Layer GetLayer() const = 0;
 
-	// Extent of the hull itself, in pixels, measured from the opaque part of
-	// the sprite rather than the sprite's own bounds. A rotating sprite sheet
-	// is square so the hull clears the corners at any heading, which leaves a
-	// lot of empty margin: a battleship is 51 across in a 285 frame. Selection
-	// tests against these so a click has to land on the ship and not on the
-	// water it is sitting in.
 	virtual float GetHullWidth() const = 0;
 	virtual float GetHullLength() const = 0;
 
@@ -239,25 +229,14 @@ public:
 	}
 };
 
-
-// -------------------------------------------------------------------------
-// Submarine
-//
-// Submerged hull: runs beneath surface traffic and is obstructed only by
-// other submerged hulls. Fires rockets. 16 sprite frames.
-// -------------------------------------------------------------------------
 class SubmarineState : public ShipState
 {
 public:
-	// 16 sprites is eight headings with two animation banks, the same layout
-	// the infantry use: the animation offset selects the second bank.
 	static constexpr float radius = 120.0f; // Medium Collision
 	static constexpr int frames = 16;
 	static constexpr int directions = 8;
 	static constexpr int turnSpeed = 120;
 	static constexpr float speed = 180;
-	// Fog radius. The web version carries this as a visionGrid box of 80, and
-	// the fog here wants a radius, so half of it. See the note on the cruiser.
 	static constexpr int sight = 40;
 	static constexpr int reloadTime = 400;
 
@@ -316,24 +295,14 @@ public:
 	}
 };
 
-// -------------------------------------------------------------------------
-// Battleship
-//
-// Surface hull: heavier and slower than the submarine, and steers around
-// other surface traffic. Fires shells. 8 sprite frames.
-// -------------------------------------------------------------------------
 class BattleshipState : public ShipState
 {
 public:
-	// 8 sprites is one bank of eight headings with no second animation bank,
-	// so the animation offset stays at zero for this hull.
 	static constexpr float radius = 120.0f; // Medium Collision
 	static constexpr int frames = 8;
 	static constexpr int directions = 8;
 	static constexpr int turnSpeed = 120;
 	static constexpr float speed = 240;
-	// Fog radius from a visionGrid box of 52, halved. Much the longest sight in
-	// the fleet, which suits the hull carrying the spotting gear.
 	static constexpr int sight = 26;
 	static constexpr int reloadTime = 100;
 
@@ -392,20 +361,6 @@ public:
 	}
 };
 
-// -------------------------------------------------------------------------
-// Cruiser
-//
-// Surface hull, lighter and nimbler than the battleship. Unarmed: the web
-// version gives it neither a weapon nor a canAttack flag, so nothing has been
-// invented for it here. It can be fired upon but does not fire back.
-//
-// On sight, which serves as the fog radius here. The web version keeps two
-// separate figures: a sight used for closing on a target, and a visionGrid box
-// used for the fog. This engine has only the one field and the fog reads it
-// directly, so the value comes from the visionGrid box, halved to a radius.
-// Taking the web's own sight field instead would give this hull a 3, the same
-// as a prospector, and leave it near blind.
-// -------------------------------------------------------------------------
 class CruiserState : public ShipState
 {
 public:
@@ -414,7 +369,6 @@ public:
 	static constexpr int directions = 8;
 	static constexpr int turnSpeed = 120;
 	static constexpr float speed = 180;
-	// Fog radius from a visionGrid box of 40, halved.
 	static constexpr int sight = 20;
 	static constexpr int reloadTime = 0;
 
@@ -471,14 +425,6 @@ public:
 	}
 };
 
-// -------------------------------------------------------------------------
-// Carrier
-//
-// The heaviest surface hull and the slowest. The web version marks it as able
-// to attack but never gives it a weapon, its role being to launch aircraft,
-// which this engine has no module for. Left unarmed rather than inventing an
-// armament for it.
-// -------------------------------------------------------------------------
 class CarrierState : public ShipState
 {
 public:
@@ -487,7 +433,6 @@ public:
 	static constexpr int directions = 8;
 	static constexpr int turnSpeed = 120;
 	static constexpr float speed = 120;
-	// Fog radius from a visionGrid box of 30, halved.
 	static constexpr int sight = 15;
 	static constexpr int reloadTime = 0;
 

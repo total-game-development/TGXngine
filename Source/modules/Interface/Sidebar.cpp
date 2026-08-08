@@ -177,10 +177,6 @@ void Sidebar::Click()
 						}
 					}
 
-					// Check the berth here, beside the power and cash checks,
-					// rather than when the build finishes. Deciding at the end
-					// costs the player the whole build time and the cash before
-					// telling them the yard was never free to begin with.
 					if (!button.HasFreeDeployBerth())
 					{
 						Log::Warning("Yard berth occupied, move the last hull clear before building another");

@@ -12,17 +12,11 @@ namespace TGX
 {
 namespace
 {
-// Map a heading, each component in {-1, 0, 1}, onto 0..8.
 int DirectionCode(int dx, int dy)
 {
 	return ((dx + 1) * 3) + (dy + 1);
 }
 
-// Relaxation key. What it costs to reach a cell depends on the heading it was
-// entered with, because turning is charged extra, so the key has to carry that
-// heading. Keying on the cell alone would throw away a slightly longer but
-// straight arrival in favour of a shorter one that turns, which is precisely
-// what the turn penalty exists to prevent.
 long long StateKey(int cellIndex, int dx, int dy)
 {
 	return (static_cast<long long>(cellIndex) * 9) + DirectionCode(dx, dy);
@@ -62,9 +56,6 @@ void NavalAStar::Search(
 	HeuristicType heuristicType = configure->GetHeuristicType();
 	auto &heuristicFunction = heuristicFunctions[heuristicType];
 
-	// A hull must always be able to leave its own cell and reach its goal, even
-	// when either is marked occupied: by its own footprint, or by the target
-	// sitting on the destination. Every interior cell uses the normal rule.
 	auto passableAt = [&](int x, int y) {
 		if ((x == start.x && y == start.y) || (x == end.x && y == end.y))
 		{
@@ -74,18 +65,12 @@ void NavalAStar::Search(
 		return configure->IsTraversable(grid[y][x]);
 	};
 
-	// The search is keyed by cell *and* heading, so the state space is nine
-	// times the cell count, not the cell count. Reserving only cols * rows —
-	// which is what a cell-keyed search needs — leaves the heap far too small
-	// and it starts rejecting entries partway through a long route.
 	auto limit = static_cast<size_t>(static_cast<long long>(cols) * rows * 9);
 
 	ankerl::unordered_dense::set<long long> closed;
 	ankerl::unordered_dense::map<long long, float> gScore;
 	Heap<Node *> openHeap = Heap<Node *>(limit);
 
-	// Owns every node handed to the heap. The heap and the parent chain only
-	// ever hold raw pointers into this.
 	Vector<std::unique_ptr<Node>> nodes;
 
 	auto pushNode = [&](std::unique_ptr<Node> node) {
@@ -118,8 +103,6 @@ void NavalAStar::Search(
 		int currentIndex = current->x + (current->y * cols);
 		long long currentState = StateKey(currentIndex, current->dx, current->dy);
 
-		// The heap can hold stale duplicates that were later reached more
-		// cheaply, so skip any state already finalised.
 		if (closed.contains(currentState))
 		{
 			continue;
@@ -129,14 +112,6 @@ void NavalAStar::Search(
 
 		if (current->x == end.x && current->y == end.y)
 		{
-			// Walk the parent chain back to the start. The path is left in
-			// end-to-start order to match the other searches: callers consume
-			// it from the back, so back() is the step nearest the hull.
-			//
-			// The start node itself is not part of the route. A unit is already
-			// standing on that cell, and almost never exactly on its centre, so
-			// handing it back as the first step makes the unit turn around and
-			// travel to its own centre before setting off.
 			while (current != nullptr && current->parent != nullptr)
 			{
 				path.emplace_back(current->x, current->y);
@@ -175,8 +150,6 @@ void NavalAStar::Search(
 			neighbours.emplace_back(w, current->y);
 		}
 
-		// A diagonal needs both of its adjacent orthogonals open, so a hull
-		// never slips through the corner between two pieces of land.
 		if (N)
 		{
 			if (E && passableAt(e, n))
@@ -206,8 +179,6 @@ void NavalAStar::Search(
 			int stepX = neighbour.x - current->x;
 			int stepY = neighbour.y - current->y;
 
-			// Holding the current heading is free; changing it is charged. The
-			// start node has no heading, so the opening step is never charged.
 			bool turned = (current->dx != 0 || current->dy != 0) &&
 						  (stepX != current->dx || stepY != current->dy);
 

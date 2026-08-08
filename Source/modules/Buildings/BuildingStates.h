@@ -434,14 +434,6 @@ public:
 };
 
 // -------------------------------------------------------------------------
-// Shipyard
-//
-// Builds hulls. A sea structure rather than a shore one: the web version
-// declares it role "sea_generator" placed on the isle grid, so the yard itself
-// stands in open water. Its deploy slots are offsets from the yard's own
-// position and have to land on water too, since a hull dropped onto rock has
-// no route anywhere.
-// -------------------------------------------------------------------------
 class ShipyardState : public BuildingState
 {
 public:
@@ -449,10 +441,6 @@ public:
 	static constexpr int frames = 1;
 	static constexpr int powerUsage = 250;
 
-	// One berth, as the web version has it. A yard fits one hull at a time, and
-	// holds the berth until the player moves that hull clear, which is what
-	// stops the next one being laid down on top of it. The land producers work
-	// the other way, cycling through many slots without ever reserving one.
 	Vector<Tuple<float, float, int>> deployPositions =
 		{
 			{10.0f, 25.0f, INT_MIN},
@@ -460,7 +448,6 @@ public:
 
 	ShipyardState()
 	{
-		// The sprite is 500x480 against a 20 pixel grid cell.
 		passableGrid = Vector<Vector<int>>(24, Vector<int>(25, 1));
 		baseWidth = 200;
 		baseHeight = 190;
@@ -495,7 +482,6 @@ public:
 	}
 };
 
-// -------------------------------------------------------------------------
 // Radar
 // -------------------------------------------------------------------------
 class RadarState : public BuildingState

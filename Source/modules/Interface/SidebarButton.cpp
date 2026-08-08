@@ -300,13 +300,6 @@ int SidebarButton::GetPowerUsage()
 
 bool SidebarButton::HasFreeDeployBerth() const
 {
-	// A yard fits one hull at a time. While its berth still holds the last hull
-	// built, another cannot be laid down without stacking one on top of the
-	// other. The player clears the berth by moving that hull out of it.
-	//
-	// Only ships work this way. The land producers cycle through many slots and
-	// never reserve one, so gating them on a free slot would stop their
-	// production outright once every slot had been used.
 	if (type != "ships")
 	{
 		return true;

@@ -19,12 +19,6 @@ ItemInstance *globalItem;
 
 static Map<Orders::Order, Function<void(ItemInstance *)>> orderMap;
 
-// Index into the sixteen step direction tables for a hull's current facing.
-//
-// The tables hold sixteen entries, 22.5 degrees apart. A hull has eight
-// facings, 45 degrees apart, so it has to stride two entries per facing.
-// Indexing them directly by facing gives every heading half its true angle,
-// which happens to come out right at facing zero and wrong everywhere else.
 inline size_t DirectionTableIndex(const ItemInstance *itemInstance)
 {
 	const int directions = itemInstance->GetDirections();
@@ -103,10 +97,6 @@ public:
 		polygonShape.setOutlineColor(sf::Color::Red);
 		polygonShape.setOutlineThickness(1.f);
 
-		// The outline was built and then dropped on the floor, so it has never
-		// appeared for any unit. Draw it over the sprite, and only while the
-		// hull is selected, so it reads as selection feedback rather than
-		// permanent clutter.
 		if (itemState->IsSelected())
 		{
 			window.Draw(polygonShape);
@@ -208,15 +198,6 @@ void InitTruck();
 
 void Action(ItemInstance *itemInstance);
 
-// True when the cursor is over the hull itself.
-//
-// The generic hover test builds an axis aligned box of the sprite's bounds
-// plus twice the radius on every side. For a hull that is long and narrow
-// inside a square rotating frame that is mostly open water: a battleship is
-// 51 across and 283 along, but the box came out 525 square, so clicks well
-// clear of the ship still picked it up. This rotates the cursor into the
-// hull's own frame and tests the hull's real extent, so the target follows
-// the ship round as it turns.
 inline bool HoverOverHull(ItemInstance *itemInstance)
 {
 	WorldState &world = WorldState::GetInstance();
@@ -234,8 +215,6 @@ inline bool HoverOverHull(ItemInstance *itemInstance)
 	const float cosAngle = ShipState::cosDirectionAngles[index];
 	const float sinAngle = ShipState::sinDirectionAngles[index];
 
-	// Undo the hull's rotation, so the test below is against an upright
-	// rectangle the size of the hull rather than a square around it.
 	const float alongBeam = (offsetX * cosAngle) + (offsetY * sinAngle);
 	const float alongKeel = (offsetY * cosAngle) - (offsetX * sinAngle);
 

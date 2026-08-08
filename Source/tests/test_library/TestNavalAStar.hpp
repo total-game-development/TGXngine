@@ -7,12 +7,6 @@
 #include "PathFinding/NavalAStar.h"
 #include "Point.h"
 
-// Naval search tests.
-//
-// Grid convention matches the isle grid the ships path on: open water is
-// CELL_COLLISION_MODE_OFF (0) and land is CELL_COLLISION_MODE_MEDIUM (100).
-// The search returns the route end-to-start.
-
 namespace
 {
 TGX::Vector<TGX::Vector<int>> OpenWater(int cols, int rows)
@@ -42,8 +36,6 @@ TGX::Vector<TGX::Point> RunNaval(
 	return naval.GetPath();
 }
 
-// Number of heading changes along the route. This is the property the turn
-// penalty exists to minimise.
 int CountTurns(const TGX::Vector<TGX::Point> &path)
 {
 	if (path.size() < 3)
@@ -81,9 +73,6 @@ TEST(NavalAStar, StraightRunAcrossOpenWaterHasNoTurns)
 	EXPECT_EQ(CountTurns(path), 0);
 }
 
-// The cell the unit is standing on is not a step of the route. Handing it back
-// makes the unit turn around and travel to its own cell centre before setting
-// off, since it is almost never sitting exactly on that centre.
 TEST(NavalAStar, RouteExcludesTheCellTheUnitStandsOn)
 {
 	auto grid = OpenWater(40, 20);
@@ -99,8 +88,6 @@ TEST(NavalAStar, RouteExcludesTheCellTheUnitStandsOn)
 	}
 }
 
-// A unit ordered to the cell it already occupies has nowhere to go, and must
-// not come back with a route consisting of that cell.
 TEST(NavalAStar, RouteToTheCurrentCellIsEmpty)
 {
 	auto grid = OpenWater(40, 20);
@@ -120,10 +107,6 @@ TEST(NavalAStar, PerfectDiagonalHasNoTurns)
 	EXPECT_EQ(CountTurns(path), 0);
 }
 
-// A route that is neither axis aligned nor a perfect diagonal has to mix two
-// headings. Ordinary A* is free to interleave them step by step, since the
-// distance is identical either way. The turn penalty should gather them into
-// as few legs as it can rather than producing a staircase.
 TEST(NavalAStar, ObliqueRunIsNotAStaircase)
 {
 	auto grid = OpenWater(60, 40);
@@ -138,7 +121,6 @@ TEST(NavalAStar, LandIsNotSailable)
 {
 	auto grid = OpenWater(20, 20);
 
-	// Wall across the middle with a gap at the top.
 	for (int x = 0; x < 15; x++)
 	{
 		grid[10][x] = TGX::Flags::CELL_COLLISION_MODE_MEDIUM;
@@ -159,7 +141,6 @@ TEST(NavalAStar, NoPathReturnsEmptyRatherThanCrashing)
 {
 	auto grid = OpenWater(20, 20);
 
-	// Seal the destination behind land on every side.
 	for (int x = 14; x < 18; x++)
 	{
 		grid[14][x] = TGX::Flags::CELL_COLLISION_MODE_MEDIUM;

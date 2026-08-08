@@ -22,9 +22,6 @@ struct Node
 	int heapIndex = 0;
 	NodeType type;
 
-	// Heading of the step that reached this node. Only the naval search reads
-	// these; the other algorithms leave them at zero. The start node carries
-	// (0, 0), meaning "no heading yet", so its first step is never penalised.
 	int dx = 0;
 	int dy = 0;
 

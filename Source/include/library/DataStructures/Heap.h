@@ -30,10 +30,6 @@ public:
 
 	void Add(T item)
 	{
-		// Refuse rather than run off the end of the array. A search that pushes
-		// more entries than it reserved would otherwise corrupt neighbouring
-		// memory and scramble the ordering, which surfaces as erratic paths
-		// long before it surfaces as a crash.
 		if (static_cast<size_t>(currentItemCount) >= capacity)
 		{
 			Log::Error("Heap is full, item rejected. Increase the reserved size.");
@@ -135,14 +131,6 @@ public:
 		}
 	}
 
-	// Reordering moves entries between slots, never contents between the
-	// objects those entries point at.
-	//
-	// Copying contents instead corrupts anything holding a pointer to a node:
-	// a parent pointer still aims at the same object, but that object now
-	// carries some other node's coordinates, so reconstructing a route walks a
-	// scrambled chain. It also silently drops any field the copy does not
-	// enumerate. Swapping the pointers keeps every node whole.
 	void Swap(int itemA, int itemB)
 	{
 		T temporary = items[itemA];

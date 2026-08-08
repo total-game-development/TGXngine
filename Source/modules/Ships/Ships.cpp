@@ -145,9 +145,6 @@ extern "C"
 					{
 						globalItem->SetX(world.items[index]->GetX() + std::get<0>(deploys[i]));
 						globalItem->SetY(world.items[index]->GetY() + std::get<1>(deploys[i]));
-						// Facing on leaving the yard. The vehicle modules use 12,
-						// which suits their sixteen facings; a hull has eight, so
-						// the equivalent is six.
 						globalItem->SetDirection(6);
 					}
 				}
@@ -185,10 +182,6 @@ extern "C"
 
 	MODULE_API void SendOrders(ItemInstance *itemInstance)
 	{
-		/*
-		 * Send order for the specific instance of the item.
-		 */
-
 		auto orderFunction = orderMap.find(itemInstance->GetOrders()->order);
 
 		if (orderFunction != orderMap.end())
@@ -199,10 +192,6 @@ extern "C"
 
 	MODULE_API void ProcessOrders(ItemInstance *itemInstance)
 	{
-		/*
-		 * Process order for the specific instance of the item.
-		 */
-
 		if (itemInstance->GetOrders()->order == Orders::Order::None)
 		{
 			return;
@@ -361,12 +350,6 @@ void Action(ItemInstance *itemInstance)
 	itemInstance->SetOrders(order);
 }
 
-// Free whichever yard berth this hull was launched into.
-//
-// The berth is held from the moment the hull is laid down until the player
-// orders it away, and the yard will not start another hull while it is held.
-// That is what stops a second hull being built on top of the first: the way to
-// clear the berth is to move the ship out of it.
 void ReleaseDeployBerth(int uid)
 {
 	WorldState &world = WorldState::GetInstance();
@@ -594,9 +577,6 @@ void Moving(ShipState *itemInstance)
 	}
 	else
 	{
-		// Close enough to be under way. Absorb the small residual now instead of
-		// holding the heading until the error grows past turnAmount and has to be
-		// taken out in one visible correction.
 		itemInstance->SetDirection(
 			WrapDirection(itemInstance->GetDirection() + difference, itemInstance->GetDirections()));
 
@@ -605,14 +585,6 @@ void Moving(ShipState *itemInstance)
 			ShipState::accelerationFactor[itemInstance->accelerationIndex] *
 			(1.0f / 96.0f) * world.GetDeltaTime();
 
-		// Steer on the true heading rather than the sprite's rounded one.
-		// Rounding here pins travel to the eight exact headings the sprite bank
-		// holds, so a hull running along an axis but sitting slightly off the
-		// line can never close that offset by moving. The error accumulates
-		// until it is worth a whole frame of heading, which is what shows up as
-		// a flick and a readjust. Steering on the unrounded heading lets the
-		// offset be taken out as a gradual drift instead, while the sprite still
-		// shows the rounded heading and so stays put.
 		float angleRadians =
 			-(itemInstance->GetDirection() / static_cast<float>(itemInstance->GetDirections()) * 2.0f * PI);
 
@@ -630,10 +602,6 @@ void Moving(ShipState *itemInstance)
 
 void Animate(ShipState *itemState)
 {
-	// The offset selects a second bank of sprites sitting eight frames above
-	// the first, so it only means anything for a hull that actually ships two
-	// banks. Applying it to a single-bank hull indexes past the end of the
-	// sprite vector, which draws garbage for the frames it is switched on.
 	if (itemState->GetFrames() < itemState->GetDirections() * 2)
 	{
 		ships[itemState->GetUid()]->animationOffset = 0;
@@ -687,10 +655,6 @@ void SetPath(ShipState *itemInstance, float toX, float toY)
 {
 	WorldState &world = WorldState::GetInstance();
 
-	// Ships path on the isle grid, which stamps land as CELL_COLLISION_MODE_MEDIUM
-	// and leaves open water at zero. The naval search admits a cell only when it
-	// is open water, so hulls stay off land, and it charges a turn penalty so
-	// routes come out as long straight legs rather than unsailable zig-zags.
 	itemInstance->path = Navigation::GetInstance().GetPath(
 		world.currentIsleMapPassableGrid,
 		{itemInstance->GetX(), itemInstance->GetY()},
@@ -708,7 +672,6 @@ void SetTacticalCoordinates(ItemInstance *itemInstance, Vector<Point> path, floa
 {
 	size_t pathIndex = 0;
 
-	// TODO: Outersight needs to be a property of Buildings
 	int outerSight = 0;
 
 	while (pow(toX - static_cast<float>(path[pathIndex].x), 2) + pow(toY - static_cast<float>(path[pathIndex].y), 2) < pow(sight + outerSight, 2))
@@ -740,9 +703,6 @@ void Steering(ItemInstance *itemInstance)
 
 	Physics &physics = Physics::GetInstance();
 
-	// Query only this hull's own layer. A submarine running beneath a
-	// battleship is not an obstruction to it, and vice versa, so surface and
-	// submerged traffic steer independently.
 	Set<String> layerGroup{static_cast<ShipState *>(itemInstance)->GetLayerGroup()};
 
 	Vector<PointUID> foundUnits = physics.Find(layerGroup, nearbyRange);
