@@ -14,9 +14,10 @@ class Heap
 private:
 	T *items;
 	int currentItemCount = 0;
+	size_t capacity = 0;
 
 public:
-	Heap(size_t size)
+	Heap(size_t size) : capacity(size)
 	{
 		items = new T[size];
 	}
@@ -29,6 +30,16 @@ public:
 
 	void Add(T item)
 	{
+		// Refuse rather than run off the end of the array. A search that pushes
+		// more entries than it reserved would otherwise corrupt neighbouring
+		// memory and scramble the ordering, which surfaces as erratic paths
+		// long before it surfaces as a crash.
+		if (static_cast<size_t>(currentItemCount) >= capacity)
+		{
+			Log::Error("Heap is full, item rejected. Increase the reserved size.");
+			return;
+		}
+
 		items[currentItemCount] = item;
 		items[currentItemCount]->heapIndex = currentItemCount;
 

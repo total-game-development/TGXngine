@@ -74,7 +74,11 @@ void NavalAStar::Search(
 		return configure->IsTraversable(grid[y][x]);
 	};
 
-	auto limit = static_cast<size_t>(static_cast<long>(cols) * rows);
+	// The search is keyed by cell *and* heading, so the state space is nine
+	// times the cell count, not the cell count. Reserving only cols * rows —
+	// which is what a cell-keyed search needs — leaves the heap far too small
+	// and it starts rejecting entries partway through a long route.
+	auto limit = static_cast<size_t>(static_cast<long long>(cols) * rows * 9);
 
 	ankerl::unordered_dense::set<long long> closed;
 	ankerl::unordered_dense::map<long long, float> gScore;
