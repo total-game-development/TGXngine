@@ -240,10 +240,12 @@ public:
 class SubmarineState : public ShipState
 {
 public:
+	// 16 sprites is eight headings with two animation banks, the same layout
+	// the infantry use: the animation offset selects the second bank.
 	static constexpr float radius = 30.0f; // Medium Collision
 	static constexpr int frames = 16;
-	static constexpr int directions = 16;
-	static constexpr int turnSpeed = 480;
+	static constexpr int directions = 8;
+	static constexpr int turnSpeed = 120;
 	static constexpr float speed = 180;
 	static constexpr int sight = 30;
 	static constexpr int reloadTime = 400;
@@ -304,10 +306,12 @@ public:
 class BattleshipState : public ShipState
 {
 public:
+	// 8 sprites is one bank of eight headings with no second animation bank,
+	// so the animation offset stays at zero for this hull.
 	static constexpr float radius = 40.0f; // Medium Collision
 	static constexpr int frames = 8;
 	static constexpr int directions = 8;
-	static constexpr int turnSpeed = 480;
+	static constexpr int turnSpeed = 120;
 	static constexpr float speed = 240;
 	static constexpr int sight = 30;
 	static constexpr int reloadTime = 100;

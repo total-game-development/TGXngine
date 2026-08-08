@@ -557,13 +557,27 @@ void Moving(ShipState *itemInstance)
 	}
 	else
 	{
+		// Close enough to be under way. Absorb the small residual now instead of
+		// holding the heading until the error grows past turnAmount and has to be
+		// taken out in one visible correction.
+		itemInstance->SetDirection(
+			WrapDirection(itemInstance->GetDirection() + difference, itemInstance->GetDirections()));
+
 		movement =
 			itemInstance->GetSpeed() *
 			ShipState::accelerationFactor[itemInstance->accelerationIndex] *
 			(1.0f / 96.0f) * world.GetDeltaTime();
 
+		// Steer on the true heading rather than the sprite's rounded one.
+		// Rounding here pins travel to the eight exact headings the sprite bank
+		// holds, so a hull running along an axis but sitting slightly off the
+		// line can never close that offset by moving. The error accumulates
+		// until it is worth a whole frame of heading, which is what shows up as
+		// a flick and a readjust. Steering on the unrounded heading lets the
+		// offset be taken out as a gradual drift instead, while the sprite still
+		// shows the rounded heading and so stays put.
 		float angleRadians =
-			-(std::round(itemInstance->GetDirection()) / static_cast<float>(itemInstance->GetDirections()) * 2.0f * PI);
+			-(itemInstance->GetDirection() / static_cast<float>(itemInstance->GetDirections()) * 2.0f * PI);
 
 		float moveX = -(movement * std::sin(angleRadians));
 		float moveY = -(movement * std::cos(angleRadians));
@@ -579,6 +593,16 @@ void Moving(ShipState *itemInstance)
 
 void Animate(ShipState *itemState)
 {
+	// The offset selects a second bank of sprites sitting eight frames above
+	// the first, so it only means anything for a hull that actually ships two
+	// banks. Applying it to a single-bank hull indexes past the end of the
+	// sprite vector, which draws garbage for the frames it is switched on.
+	if (itemState->GetFrames() < itemState->GetDirections() * 2)
+	{
+		ships[itemState->GetUid()]->animationOffset = 0;
+		return;
+	}
+
 	if ((ships[itemState->GetUid()]->animationSpeed % itemState->animationSpeedLimit) == 0)
 	{
 		if (ships[itemState->GetUid()]->animationCount < itemState->animationLimit)
@@ -636,6 +660,23 @@ void SetPath(ShipState *itemInstance, float toX, float toY)
 		{toX, toY},
 		itemInstance->GetCellCollisionMode(),
 		PathfindingAlgorithm::Naval);
+
+	// The search walks the parent chain to the start node, so the route it
+	// returns ends with the cell the hull already occupies. A hull is almost
+	// never sitting exactly on that cell centre, and the arrival test only
+	// forgives a tenth of a cell, so leaving the step in place makes the hull
+	// turn around, sail back to its own centre, and only then set off. That
+	// reads as a flick followed by a correction. Drop the step it is already on.
+	if (!itemInstance->path.empty())
+	{
+		const Point &currentCell = itemInstance->path.back();
+
+		if (currentCell.x == static_cast<int>(std::round(itemInstance->GetX())) &&
+			currentCell.y == static_cast<int>(std::round(itemInstance->GetY())))
+		{
+			itemInstance->path.pop_back();
+		}
+	}
 }
 
 void OnPath(const Vector<Point> &path)

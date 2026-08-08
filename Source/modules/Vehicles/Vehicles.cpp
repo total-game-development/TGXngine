@@ -591,6 +591,16 @@ void Moving(VehicleState *itemInstance)
 
 void Animate(VehicleState *itemState)
 {
+	// The offset selects a second bank of sprites sitting eight frames above
+	// the first, so it only means anything for a unit that actually ships two
+	// banks. Applying it to a single-bank unit indexes past the end of the
+	// sprite vector, which draws garbage for the frames it is switched on.
+	if (itemState->GetFrames() < itemState->GetDirections() * 2)
+	{
+		vehicles[itemState->GetUid()]->animationOffset = 0;
+		return;
+	}
+
 	if ((vehicles[itemState->GetUid()]->animationSpeed % itemState->animationSpeedLimit) == 0)
 	{
 		if (vehicles[itemState->GetUid()]->animationCount < itemState->animationLimit)
