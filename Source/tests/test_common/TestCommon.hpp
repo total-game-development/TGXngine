@@ -137,11 +137,11 @@ TEST(Common, Intersect)
 	// exactly on top edge
 	EXPECT_TRUE(TGX::Intersect(50, 100, 0, 0, 100, 100));
 	// just inside
-	EXPECT_TRUE(TGX::Intersect(0.01, 0.01, 0, 0, 100, 100));
+	EXPECT_TRUE(TGX::Intersect(0.01f, 0.01f, 0, 0, 100, 100));
 	// outside left
-	EXPECT_FALSE(TGX::Intersect(-0.01, -0.01, 0, 0, 100, 100));
+	EXPECT_FALSE(TGX::Intersect(-0.01f, -0.01f, 0, 0, 100, 100));
 	// outside top
-	EXPECT_FALSE(TGX::Intersect(50, 100.01, 0, 0, 100, 100));
+	EXPECT_FALSE(TGX::Intersect(50, 100.01f, 0, 0, 100, 100));
 	// large bounds
 	EXPECT_TRUE(TGX::Intersect(0, 0, -100000, -100000, 100000, 100000));
 

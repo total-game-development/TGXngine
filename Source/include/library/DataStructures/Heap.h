@@ -135,52 +135,33 @@ public:
 		}
 	}
 
+	// Reordering moves entries between slots, never contents between the
+	// objects those entries point at.
+	//
+	// Copying contents instead corrupts anything holding a pointer to a node:
+	// a parent pointer still aims at the same object, but that object now
+	// carries some other node's coordinates, so reconstructing a route walks a
+	// scrambled chain. It also silently drops any field the copy does not
+	// enumerate. Swapping the pointers keeps every node whole.
+	void Swap(int itemA, int itemB)
+	{
+		T temporary = items[itemA];
+
+		items[itemA] = items[itemB];
+		items[itemB] = temporary;
+
+		items[itemA]->heapIndex = itemA;
+		items[itemB]->heapIndex = itemB;
+	}
+
 	void SwapUp(int itemA, int itemB)
 	{
-		float tempF = items[itemA]->f;
-		float tempH = items[itemA]->h;
-		float tempG = items[itemA]->g;
-		int tempX = items[itemA]->x;
-		int tempY = items[itemA]->y;
-		Node *tempP = items[itemA]->parent;
-
-		items[itemA]->f = items[itemB]->f;
-		items[itemA]->h = items[itemB]->h;
-		items[itemA]->g = items[itemB]->g;
-		items[itemA]->x = items[itemB]->x;
-		items[itemA]->y = items[itemB]->y;
-		items[itemA]->parent = items[itemB]->parent;
-
-		items[itemB]->f = tempF;
-		items[itemB]->h = tempH;
-		items[itemB]->g = tempG;
-		items[itemB]->x = tempX;
-		items[itemB]->y = tempY;
-		items[itemB]->parent = tempP;
+		Swap(itemA, itemB);
 	}
 
 	void SwapDown(int itemA, int itemB)
 	{
-		float tempF = items[itemA]->f;
-		float tempH = items[itemA]->h;
-		float tempG = items[itemA]->g;
-		int tempX = items[itemA]->x;
-		int tempY = items[itemA]->y;
-		Node *tempP = items[itemA]->parent;
-
-		items[itemA]->f = items[itemB]->f;
-		items[itemA]->h = items[itemB]->h;
-		items[itemA]->g = items[itemB]->g;
-		items[itemA]->x = items[itemB]->x;
-		items[itemA]->y = items[itemB]->y;
-		items[itemA]->parent = items[itemB]->parent;
-
-		items[itemB]->f = tempF;
-		items[itemB]->h = tempH;
-		items[itemB]->g = tempG;
-		items[itemB]->x = tempX;
-		items[itemB]->y = tempY;
-		items[itemB]->parent = tempP;
+		Swap(itemA, itemB);
 	}
 
 	int Count() { return currentItemCount; }
