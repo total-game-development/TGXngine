@@ -449,14 +449,13 @@ public:
 	static constexpr int frames = 1;
 	static constexpr int powerUsage = 250;
 
+	// One berth, as the web version has it. A yard fits one hull at a time, and
+	// holds the berth until the player moves that hull clear, which is what
+	// stops the next one being laid down on top of it. The land producers work
+	// the other way, cycling through many slots without ever reserving one.
 	Vector<Tuple<float, float, int>> deployPositions =
 		{
-			{6.0f, 25.0f, INT_MIN},
 			{10.0f, 25.0f, INT_MIN},
-			{14.0f, 25.0f, INT_MIN},
-			{6.0f, 27.0f, INT_MIN},
-			{10.0f, 27.0f, INT_MIN},
-			{14.0f, 27.0f, INT_MIN},
 		};
 
 	ShipyardState()

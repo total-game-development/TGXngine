@@ -232,7 +232,7 @@ extern "C"
 
 		const bool isVisible = itemInstance->GetTeam() == WorldState::GetInstance().GetTeam() || itemInstance->isVisible();
 
-		if (HoverFromCenter(itemInstance, itemInstance->GetRadius()) && isVisible)
+		if (HoverOverHull(itemInstance) && isVisible)
 		{
 			world.SetItemUidThatIsUnderCursor(itemInstance->GetUid());
 
@@ -361,9 +361,35 @@ void Action(ItemInstance *itemInstance)
 	itemInstance->SetOrders(order);
 }
 
+// Free whichever yard berth this hull was launched into.
+//
+// The berth is held from the moment the hull is laid down until the player
+// orders it away, and the yard will not start another hull while it is held.
+// That is what stops a second hull being built on top of the first: the way to
+// clear the berth is to move the ship out of it.
+void ReleaseDeployBerth(int uid)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	for (auto &[buildingUid, deploys] : world.deployMap)
+	{
+		for (auto &deploy : deploys)
+		{
+			if (std::get<2>(deploy) == uid)
+			{
+				std::get<2>(deploy) = INT_MIN;
+				Log::Info("Yard berth released by UID " + std::to_string(uid));
+				return;
+			}
+		}
+	}
+}
+
 void Move(ItemInstance *itemInstance)
 {
 	Log::Print("Move : " + std::to_string(itemInstance->GetUid()));
+
+	ReleaseDeployBerth(itemInstance->GetUid());
 
 	WorldState &world = WorldState::GetInstance();
 	Physics &physics = Physics::GetInstance();
@@ -825,6 +851,8 @@ void Velocity(ItemInstance *itemInstance)
 void Attack(ItemInstance *itemInstance)
 {
 	Log::Debug("Attack");
+
+	ReleaseDeployBerth(itemInstance->GetUid());
 
 	if (!itemInstance->CanAttack())
 	{

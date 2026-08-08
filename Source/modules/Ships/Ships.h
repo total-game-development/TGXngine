@@ -19,6 +19,30 @@ ItemInstance *globalItem;
 
 static Map<Orders::Order, Function<void(ItemInstance *)>> orderMap;
 
+// Index into the sixteen step direction tables for a hull's current facing.
+//
+// The tables hold sixteen entries, 22.5 degrees apart. A hull has eight
+// facings, 45 degrees apart, so it has to stride two entries per facing.
+// Indexing them directly by facing gives every heading half its true angle,
+// which happens to come out right at facing zero and wrong everywhere else.
+inline size_t DirectionTableIndex(const ItemInstance *itemInstance)
+{
+	const int directions = itemInstance->GetDirections();
+
+	if (directions <= 0)
+	{
+		return 0;
+	}
+
+	const auto tableSize = static_cast<int>(ShipState::cosDirectionAngles.size());
+	const int stride = tableSize / directions;
+
+	const auto facing = static_cast<int>(
+		WrapDirection(std::round(itemInstance->GetDirection()), directions));
+
+	return static_cast<size_t>((facing * stride) % tableSize);
+}
+
 class Ships
 {
 private:
@@ -104,7 +128,7 @@ public:
 		(*spritesRef)[itemState->GetFrame()]->setPosition(
 			sf::Vector2f(xPosition, yPosition));
 
-		auto index = static_cast<size_t>(WrapDirection(std::round(itemState->GetDirection()), itemState->GetDirections()));
+		auto index = DirectionTableIndex(itemState);
 
 		float cosAngle = ShipState::cosDirectionAngles[index];
 		float sinAngle = ShipState::sinDirectionAngles[index];
@@ -183,6 +207,43 @@ using FNPTR_INIT = void (*)();
 void InitTruck();
 
 void Action(ItemInstance *itemInstance);
+
+// True when the cursor is over the hull itself.
+//
+// The generic hover test builds an axis aligned box of the sprite's bounds
+// plus twice the radius on every side. For a hull that is long and narrow
+// inside a square rotating frame that is mostly open water: a battleship is
+// 51 across and 283 along, but the box came out 525 square, so clicks well
+// clear of the ship still picked it up. This rotates the cursor into the
+// hull's own frame and tests the hull's real extent, so the target follows
+// the ship round as it turns.
+inline bool HoverOverHull(ItemInstance *itemInstance)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	const auto *ship = static_cast<const ShipState *>(itemInstance);
+
+	const float centreX = static_cast<float>(itemInstance->GetX() * 20.0);
+	const float centreY = static_cast<float>(itemInstance->GetY() * 20.0) + world.GetBackgroundOffsetY();
+
+	const float offsetX = world.GetGameX() - centreX;
+	const float offsetY = world.GetGameY() - centreY;
+
+	const size_t index = DirectionTableIndex(itemInstance);
+
+	const float cosAngle = ShipState::cosDirectionAngles[index];
+	const float sinAngle = ShipState::sinDirectionAngles[index];
+
+	// Undo the hull's rotation, so the test below is against an upright
+	// rectangle the size of the hull rather than a square around it.
+	const float alongBeam = (offsetX * cosAngle) + (offsetY * sinAngle);
+	const float alongKeel = (offsetY * cosAngle) - (offsetX * sinAngle);
+
+	return std::abs(alongBeam) <= (ship->GetHullWidth() * 0.5f) &&
+		   std::abs(alongKeel) <= (ship->GetHullLength() * 0.5f);
+}
+
+void ReleaseDeployBerth(int uid);
 
 void Move(ItemInstance *itemInstance);
 void MoveTo(ItemInstance *itemInstance);

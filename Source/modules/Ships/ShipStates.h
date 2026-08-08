@@ -221,6 +221,15 @@ public:
 
 	virtual Layer GetLayer() const = 0;
 
+	// Extent of the hull itself, in pixels, measured from the opaque part of
+	// the sprite rather than the sprite's own bounds. A rotating sprite sheet
+	// is square so the hull clears the corners at any heading, which leaves a
+	// lot of empty margin: a battleship is 51 across in a 285 frame. Selection
+	// tests against these so a click has to land on the ship and not on the
+	// water it is sitting in.
+	virtual float GetHullWidth() const = 0;
+	virtual float GetHullLength() const = 0;
+
 	const String &GetLayerGroup() const
 	{
 		static const String surface = "surface";
@@ -273,6 +282,14 @@ public:
 		return Layer::Submerged;
 	}
 
+	float GetHullWidth() const override
+	{
+		return 30.0f;
+	}
+	float GetHullLength() const override
+	{
+		return 143.0f;
+	}
 	float GetRadius() const override
 	{
 		return radius;
@@ -341,6 +358,14 @@ public:
 		return Layer::Surface;
 	}
 
+	float GetHullWidth() const override
+	{
+		return 51.0f;
+	}
+	float GetHullLength() const override
+	{
+		return 283.0f;
+	}
 	float GetRadius() const override
 	{
 		return radius;
@@ -412,6 +437,14 @@ public:
 		return Layer::Surface;
 	}
 
+	float GetHullWidth() const override
+	{
+		return 70.0f;
+	}
+	float GetHullLength() const override
+	{
+		return 217.0f;
+	}
 	float GetRadius() const override
 	{
 		return radius;
@@ -477,6 +510,14 @@ public:
 		return Layer::Surface;
 	}
 
+	float GetHullWidth() const override
+	{
+		return 103.0f;
+	}
+	float GetHullLength() const override
+	{
+		return 394.0f;
+	}
 	float GetRadius() const override
 	{
 		return radius;

@@ -298,6 +298,40 @@ int SidebarButton::GetPowerUsage()
 	return powerUsage;
 }
 
+bool SidebarButton::HasFreeDeployBerth() const
+{
+	// A yard fits one hull at a time. While its berth still holds the last hull
+	// built, another cannot be laid down without stacking one on top of the
+	// other. The player clears the berth by moving that hull out of it.
+	//
+	// Only ships work this way. The land producers cycle through many slots and
+	// never reserve one, so gating them on a free slot would stop their
+	// production outright once every slot had been used.
+	if (type != "ships")
+	{
+		return true;
+	}
+
+	WorldState &world = WorldState::GetInstance();
+
+	auto berths = world.deployMap.find(world.primaryItems[attached]);
+
+	if (berths == world.deployMap.end())
+	{
+		return true;
+	}
+
+	for (const auto &berth : berths->second)
+	{
+		if (std::get<2>(berth) == INT_MIN)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void SidebarButton::BuildImmediately()
 {
 	Log::Print("BuildImmediately");
