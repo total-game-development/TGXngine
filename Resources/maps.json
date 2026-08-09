@@ -55,7 +55,8 @@
 				{"type":"projectiles","name":"bullet"},
 				{"type":"projectiles","name":"grenade"},
 				{"type":"projectiles","name":"rocket"},
-				{"type":"projectiles","name":"shell"}
+				{"type":"projectiles","name":"shell"},
+				{"type":"projectiles","name":"missile"}
 			],
 			"interface":
 			[
@@ -198,7 +199,8 @@
 				{"type":"projectiles","name":"bullet"},
 				{"type":"projectiles","name":"grenade"},
 				{"type":"projectiles","name":"rocket"},
-				{"type":"projectiles","name":"shell"}
+				{"type":"projectiles","name":"shell"},
+				{"type":"projectiles","name":"missile"}
 			],
 			"interface":
 			[

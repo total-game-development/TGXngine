@@ -1,5 +1,6 @@
 #include "Item.h"
 #include <algorithm> // for std::ranges::sort
+#include <utility>
 #include "Config.h"
 #include "Logs.h"
 #include "Lookup.h"
@@ -45,12 +46,18 @@ bool Item::Create(json &data)
 	String name = data.value("name", "Unknown");
 	int uid = data.value("uid", -1);
 
-	itemInstance = awake(name);
-	if (!itemInstance)
+	// Owned here until the world takes it. Every way out of this function below
+	// either hands the instance over or lets this scope end, and the second of
+	// those destroys it -- so no refusal path has to remember to free anything.
+	Unique<ItemInstance> instance{awake(name)};
+
+	if (!instance)
 	{
 		Log::Error("Awake failed for item: " + name);
 		return false;
 	}
+
+	itemInstance = instance.get();
 
 	itemInstance->SetUid(uid);
 	itemInstance->SetTeam(data.value("team", "Neutral"));
@@ -85,7 +92,36 @@ bool Item::Create(json &data)
 	}
 
 	WorldState &world = WorldState::GetInstance();
-	world.items.emplace_back(itemInstance);
+
+	// No art at all means this team has no images for this unit. The asset path
+	// is team/type/name, so a unit fielded by a team that was never drawn finds
+	// nothing, and ImageLoader has already named the file it could not open.
+	//
+	// Refuse the item rather than register one that cannot be drawn. The loader
+	// reports the refusal and carries on with the rest of the level, which is
+	// the whole point -- a missing image should cost you that one unit, not the
+	// run.
+	if (spritePtrs.empty())
+	{
+		Log::Error(
+			"No images for '" + itemInstance->GetTeam() + "/" + itemInstance->GetType() +
+			"/" + name + "' - skipping item " + std::to_string(uid));
+
+		// Give back what was claimed on the way in. The module registered
+		// itself against this uid inside its own Create, and the uid went into
+		// the lookup before that.
+		if (_delete)
+		{
+			_delete(uid);
+		}
+
+		LookUp::Remove(uid);
+
+		itemInstance = nullptr;
+		return false;
+	}
+
+	world.items.emplace_back(std::move(instance));
 
 	Log::Success("Item '" + name + "' Created and Registered");
 	return true;

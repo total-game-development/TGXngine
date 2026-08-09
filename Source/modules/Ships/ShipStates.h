@@ -28,7 +28,11 @@ public:
 	int animationSpeedLimit = 15;
 	size_t accelerationIndex = 0;
 	int velocityThreshold = 0;
-	int reloadTimeLeft = 0;
+
+	// Seconds still to wait before the next shot. Seconds rather than frames,
+	// because the window runs at whatever the monitor refreshes at and a gun
+	// paced by frame count fires faster on a faster screen.
+	float reloadTimeLeft = 0.0f;
 
 	Array<float, 16> body{};
 	Array<float, 16> skin{};
@@ -253,7 +257,7 @@ public:
 		combat.weapon = "rocket";
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 100.0f;
 	}
 
 	Layer GetLayer() const override
@@ -316,10 +320,12 @@ public:
 		AddGroup("surface");
 
 		combat.enabled = true;
-		combat.weapon = "shell";
+		// The web version's battleship fires its primary weapon, which is a
+		// missile. "shell" was never its round -- that belongs to the tank.
+		combat.weapon = "missile";
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
 	}
 
 	Layer GetLayer() const override
@@ -383,7 +389,7 @@ public:
 
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 100.0f;
 	}
 
 	Layer GetLayer() const override
@@ -447,7 +453,7 @@ public:
 
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 800.0f;
 	}
 
 	Layer GetLayer() const override

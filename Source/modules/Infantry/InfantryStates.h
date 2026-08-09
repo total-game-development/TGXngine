@@ -224,7 +224,7 @@ public:
 		logistics.canExtract = false;
 		logistics.loadable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 25.0f;
 	}
 
 	float GetRadius() const override
@@ -276,7 +276,7 @@ public:
 		logistics.canExtract = false;
 		logistics.loadable = true;
 
-		hitPoints = 20.0f;
+		hitPoints = 25.0f;
 	}
 
 	float GetRadius() const override

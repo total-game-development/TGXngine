@@ -53,6 +53,9 @@ extern "C"
 				{Orders::Order::Attack, [](ItemInstance *state) {
 					 Attack(state);
 				 }},
+				{Orders::Order::Attacked, [](ItemInstance *state) {
+					 Attacked(static_cast<ShipState *>(state));
+				 }},
 				{Orders::Order::TurnToFire, [](ItemInstance *state) {
 					 TurnToFire(static_cast<ShipState *>(state));
 				 }},
@@ -300,7 +303,18 @@ extern "C"
 			}
 		}
 
-		(*spritesRef)[itemInstance->GetFrame()]->setPosition(
+		// An item whose team has no art for it loads no sprites at all --
+		// ImageLoader logs the missing file and returns without adding one, so
+		// this list stays empty and indexing it walked off the end. There is
+		// nothing to place, and nothing to animate either.
+		int frame = itemInstance->GetFrame();
+
+		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))
+		{
+			return;
+		}
+
+		(*spritesRef)[frame]->setPosition(
 			sf::Vector2f(
 				((itemInstance->GetX() * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 				((itemInstance->GetY() * Globals::grid_size) + static_cast<float>(world.GetMapYOffset()))));
@@ -397,6 +411,25 @@ void MoveTo(ItemInstance *itemInstance)
 
 		if (targetIndex != -1)
 		{
+			const ItemInstance *target = world.items[targetIndex].get();
+			const float sight = static_cast<float>(shipState->GetSight());
+
+			float rangeX = target->GetX() - itemInstance->GetX();
+			float rangeY = target->GetY() - itemInstance->GetY();
+
+			// Already in range, so there is nowhere to sail to. Standing hands
+			// straight over to the firing orders, the same way arriving in range
+			// mid-route does. Without this a ship asked to shoot something beside
+			// it went looking for a route to the one cell it must not enter -- a
+			// soldier ashore, for a naval hull -- and gave the attack up when
+			// NavalAStar could not find one.
+			if (((rangeX * rangeX) + (rangeY * rangeY)) < (sight * sight))
+			{
+				shipState->hasNextStep = false;
+				itemInstance->SetOrders(Orders::Order::Standing);
+				return;
+			}
+
 			world.items[targetIndex]->RemoveFromGrid(
 				world.currentTerrainMapPassableGrid,
 				physics.GetGridTracker());
@@ -848,14 +881,97 @@ void Attack(ItemInstance *itemInstance)
 	itemInstance->SetOrders(Orders::Order::MoveTo);
 }
 
+// The projectile that lands hands the victim this order along with the uid of
+// whoever fired it. Ships had no handler for it, so the order was looked up,
+// found nothing, and the shot went unanswered.
+//
+// Same sequence as Attack, the target coming from the order rather than the
+// cursor.
+void Attacked(ShipState *itemInstance)
+{
+	if (itemInstance == nullptr)
+	{
+		Log::Warning("Attacked() called with null item instance.");
+		return;
+	}
+
+	// Already approaching a target: a ship taking fire from two directions
+	// would otherwise spend the fight turning between them.
+	if (itemInstance->GetState() == ItemStates::Attacking)
+	{
+		return;
+	}
+
+	// A cruiser or a carrier has nothing to answer with. Standing rather than
+	// attacking, or it would chase its attacker without ever being able to
+	// shoot back -- and the firing orders divide by a reload time it does
+	// not have.
+	if (!itemInstance->CanAttack())
+	{
+		itemInstance->SetOrders(Orders::Order::Standing);
+		return;
+	}
+
+	WorldState &world = WorldState::GetInstance();
+	Physics &physics = Physics::GetInstance();
+
+	int attackerUid = itemInstance->GetOrders()->target_uid;
+	int attackerIndex = LookUp::Get(attackerUid);
+
+	if (attackerIndex < 0 || attackerIndex >= static_cast<int>(world.items.size()))
+	{
+		Log::Warning("Attacked: no such attacker for UID: " + std::to_string(attackerUid));
+		itemInstance->SetOrders(Orders::Order::Standing);
+		return;
+	}
+
+	ItemInstance *attacker = world.items[attackerIndex].get();
+
+	if (attacker == nullptr)
+	{
+		Log::Warning("Attacked: attacker is null for UID: " + std::to_string(attackerUid));
+		itemInstance->SetOrders(Orders::Order::Standing);
+		return;
+	}
+
+	// Off the grid before routing anywhere, exactly as a player-issued attack
+	// does. A ship's own footprint covers the cells around it and A* will not
+	// step through them, so a ship still on the grid can find no way out of
+	// itself.
+	itemInstance->RemoveFromGrid(
+		world.currentTerrainMapPassableGrid,
+		physics.GetGridTracker());
+
+	itemInstance->SetState(ItemStates::Attacking);
+
+	itemInstance->SetTargetUid(attacker->GetUid());
+
+	itemInstance->GetOrders()->toX = attacker->GetX();
+	itemInstance->GetOrders()->toY = attacker->GetY();
+	itemInstance->SetOrders(Orders::Order::MoveTo);
+
+	Log::Info("Returning fire - UID: " + std::to_string(itemInstance->GetUid()) +
+			  " attacker: " + std::to_string(attacker->GetUid()));
+}
+
 void TurnToFire(ShipState *itemInstance)
 {
 	itemInstance->SetState(ItemStates::Firing);
 	itemInstance->SetOrders(Orders::Order::Firing);
 }
 
+// The reload times on the ship states are frame counts carried over from the
+// web version, which ran them down once a frame at 60fps. Vertical sync leaves
+// this window running at whatever the monitor refreshes at, so the same counter
+// emptied about twice as fast on a 120Hz screen as on a 60Hz one. Converting
+// through this keeps the cadence the numbers were chosen for whatever the
+// framerate is.
+constexpr float reloadFramesPerSecond = 60.0f;
+
 void Firing(ShipState *itemInstance)
 {
+	WorldState &world = WorldState::GetInstance();
+
 	int targetIndex = LookUp::Get(itemInstance->GetTargetUid());
 
 	if (targetIndex == -1)
@@ -865,30 +981,31 @@ void Firing(ShipState *itemInstance)
 		return;
 	}
 
-	if ((itemInstance->reloadTimeLeft % itemInstance->GetReloadTime()) == 0)
+	if (itemInstance->reloadTimeLeft > 0.0f)
 	{
-		WorldState &world = WorldState::GetInstance();
-		if (world.items[targetIndex]->GetLife() <= 0)
-		{
-			itemInstance->reloadTimeLeft = 0;
-			itemInstance->SetOrders(Orders::Order::Standing);
-			return;
-		}
-
-		float dx = world.items[targetIndex]->GetX() - itemInstance->GetX();
-		float dy = world.items[targetIndex]->GetY() - itemInstance->GetY();
-
-		if (((dx * dx) + (dy * dy)) < static_cast<float>(itemInstance->GetSight() * itemInstance->GetSight()))
-		{
-			itemInstance->SetOrders(Orders::Order::Fire);
-		}
-		else
-		{
-			itemInstance->SetOrders(Orders::Order::Standing);
-		}
+		itemInstance->reloadTimeLeft -= world.GetDeltaTime();
+		return;
 	}
 
-	itemInstance->reloadTimeLeft++;
+	if (world.items[targetIndex]->GetLife() <= 0)
+	{
+		itemInstance->reloadTimeLeft = 0.0f;
+		itemInstance->SetOrders(Orders::Order::Standing);
+		return;
+	}
+
+	float dx = world.items[targetIndex]->GetX() - itemInstance->GetX();
+	float dy = world.items[targetIndex]->GetY() - itemInstance->GetY();
+
+	if (((dx * dx) + (dy * dy)) < static_cast<float>(itemInstance->GetSight() * itemInstance->GetSight()))
+	{
+		itemInstance->reloadTimeLeft = static_cast<float>(itemInstance->GetReloadTime()) / reloadFramesPerSecond;
+		itemInstance->SetOrders(Orders::Order::Fire);
+	}
+	else
+	{
+		itemInstance->SetOrders(Orders::Order::Standing);
+	}
 }
 
 void Fire(ShipState *itemInstance)

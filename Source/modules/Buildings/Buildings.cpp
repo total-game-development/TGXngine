@@ -110,10 +110,19 @@ extern "C"
 			baseX = globalItem->GetX();
 			baseY = globalItem->GetY();
 
-			(*spritesRef)[globalItem->GetFrame()]->setPosition(
-				sf::Vector2f(
-					x * static_cast<float>(Globals::grid_size + world.GetMapXOffset()),
-					y * static_cast<float>(Globals::grid_size + world.GetMapYOffset())));
+			// Guarded rather than returned from: a building whose team has no
+			// art still has to finish being created, grid and all. Only the
+			// placing of the sprite is skipped.
+			int placementFrame = globalItem->GetFrame();
+
+			if (spritesRef != nullptr && placementFrame >= 0 && placementFrame < static_cast<int>(spritesRef->size()))
+			{
+				(*spritesRef)[placementFrame]->setPosition(
+					sf::Vector2f(
+						x * static_cast<float>(Globals::grid_size + world.GetMapXOffset()),
+						y * static_cast<float>(Globals::grid_size + world.GetMapYOffset())));
+			}
+
 			world.SetPlacement(false);
 		}
 		else
@@ -181,7 +190,18 @@ extern "C"
 			}
 		}
 
-		(*spritesRef)[itemInstance->GetFrame()]->setPosition(
+		// An item whose team has no art for it loads no sprites at all --
+		// ImageLoader logs the missing file and returns without adding one, so
+		// this list stays empty and indexing it walked off the end. There is
+		// nothing to place, and nothing to animate either.
+		int frame = itemInstance->GetFrame();
+
+		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))
+		{
+			return;
+		}
+
+		(*spritesRef)[frame]->setPosition(
 			sf::Vector2f(
 				((itemInstance->GetX() * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 				((itemInstance->GetY() * Globals::grid_size) + static_cast<float>(world.GetMapYOffset()))));

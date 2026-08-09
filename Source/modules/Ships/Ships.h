@@ -106,6 +106,31 @@ public:
 	void Update(ItemInstance *itemState, std::vector<sf::Sprite *> *spritesRef)
 	{
 		WorldState &world = WorldState::GetInstance();
+
+		// The bar was built once at full width and only ever moved after that,
+		// so it never showed a hit. Sized off life here the way Infantry does.
+		float maxHP = itemState->GetHitPoints();
+		float currentHP = itemState->GetLife();
+		float healthRatio = (maxHP > 0.0f) ? (currentHP / maxHP) : 0.0f;
+
+		healthRatio = std::max(0.0f, std::min(1.0f, healthRatio));
+
+		float maxWidth = 20.0f;
+		lifeBar->setSize(sf::Vector2f(maxWidth * healthRatio, 4.0f));
+
+		if (healthRatio > 0.5f)
+		{
+			lifeBar->setFillColor(sf::Color(0, 216, 0, 255));
+		}
+		else if (healthRatio > 0.2f)
+		{
+			lifeBar->setFillColor(sf::Color(255, 140, 0, 255));
+		}
+		else
+		{
+			lifeBar->setFillColor(sf::Color(216, 0, 0, 255));
+		}
+
 		lifeBar->setPosition(
 			((itemState->GetX() * 20.0f) + static_cast<float>(world.GetMapXOffset() - 12)),
 			((itemState->GetY() * 20.0f) + static_cast<float>(world.GetMapYOffset() - 30)));
@@ -245,6 +270,7 @@ void Stop(ItemInstance *item);
 void Velocity(ItemInstance *item);
 
 void Attack(ItemInstance *itemInstance);
+void Attacked(ShipState *itemInstance);
 void TurnToFire(ShipState *itemInstance);
 void Firing(ShipState *itemInstance);
 void Fire(ShipState *itemInstance);
