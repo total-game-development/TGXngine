@@ -106,9 +106,6 @@ public:
 	void Update(ItemInstance *itemState, std::vector<sf::Sprite *> *spritesRef)
 	{
 		WorldState &world = WorldState::GetInstance();
-
-		// The bar was built once at full width and only ever moved after that,
-		// so it never showed a hit. Sized off life here the way Infantry does.
 		float maxHP = itemState->GetHitPoints();
 		float currentHP = itemState->GetLife();
 		float healthRatio = (maxHP > 0.0f) ? (currentHP / maxHP) : 0.0f;

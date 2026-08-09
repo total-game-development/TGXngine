@@ -28,10 +28,6 @@ public:
 	int animationSpeedLimit = 15;
 	size_t accelerationIndex = 0;
 	int velocityThreshold = 0;
-
-	// Seconds still to wait before the next shot. Seconds rather than frames,
-	// because the window runs at whatever the monitor refreshes at and a gun
-	// paced by frame count fires faster on a faster screen.
 	float reloadTimeLeft = 0.0f;
 
 	Array<float, 16> body{};
@@ -320,8 +316,6 @@ public:
 		AddGroup("surface");
 
 		combat.enabled = true;
-		// The web version's battleship fires its primary weapon, which is a
-		// missile. "shell" was never its round -- that belongs to the tank.
 		combat.weapon = "missile";
 		combat.attackable = true;
 

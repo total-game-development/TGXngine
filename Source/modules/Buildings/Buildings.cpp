@@ -110,9 +110,6 @@ extern "C"
 			baseX = globalItem->GetX();
 			baseY = globalItem->GetY();
 
-			// Guarded rather than returned from: a building whose team has no
-			// art still has to finish being created, grid and all. Only the
-			// placing of the sprite is skipped.
 			int placementFrame = globalItem->GetFrame();
 
 			if (spritesRef != nullptr && placementFrame >= 0 && placementFrame < static_cast<int>(spritesRef->size()))
@@ -190,10 +187,6 @@ extern "C"
 			}
 		}
 
-		// An item whose team has no art for it loads no sprites at all --
-		// ImageLoader logs the missing file and returns without adding one, so
-		// this list stays empty and indexing it walked off the end. There is
-		// nothing to place, and nothing to animate either.
 		int frame = itemInstance->GetFrame();
 
 		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))

@@ -288,7 +288,6 @@ public:
 		combat.enabled = true;
 		combat.attackable = true;
 
-		// The web version calls this unit a jeep; the engine renamed it.
 		hitPoints = 150.0f;
 	}
 

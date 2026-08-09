@@ -46,9 +46,6 @@ struct LookUp
 		world.SetLookup(uid, index);
 	}
 
-	// For a uid that was claimed but whose item never reached the world. Get()
-	// survives a leftover entry -- it checks the uid at the index it finds and
-	// falls back to a scan -- but it should not have to.
 	void static Remove(int uid)
 	{
 		WorldState &world = WorldState::GetInstance();

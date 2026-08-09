@@ -10,9 +10,6 @@
 
 namespace TGX
 {
-// How close a round has to be to its target to count as having arrived. The web
-// version carries this per weapon and every one of them sets 0.1, so it is a
-// constant here rather than a field on every projectile.
 constexpr float targetThreshold = 0.1f;
 
 extern "C"
@@ -88,14 +85,6 @@ extern "C"
 		Log::Success("Projectile asset creation complete for: " + globalProjectile->GetName());
 	}
 
-	// Advance only this asset's own rounds.
-	//
-	// Every projectile asset in the level calls here once a frame, so sweeping
-	// the whole of world.projectiles moved each round once per asset -- four
-	// times over on a level carrying bullet, grenade, rocket and shell. Rounds
-	// crossed the ground at four times their stated speed, which for a shell is
-	// quick enough that there is barely anything to see between the gun and the
-	// target.
 	MODULE_API void Update(ProjectileInstance *projectileType, Vector<sf::Sprite *> * /*spritesRef*/)
 	{
 		WorldState &world = WorldState::GetInstance();
@@ -127,13 +116,6 @@ extern "C"
 						? world.items[targetIndex].get()
 						: nullptr;
 
-				// Steer at where the target is now, not where it stood when the
-				// round left the barrel. The web version holds a reference to
-				// the target and re-reads its position every tick. Flying at the
-				// fire-time coordinates instead meant a round arrived over
-				// ground a moving target had already walked off, and the hit was
-				// credited there all the same -- so things died without ever
-				// having been caught up with.
 				if (target)
 				{
 					projectile->targetX = target->GetX();
@@ -146,9 +128,6 @@ extern "C"
 
 				float step = static_cast<float>(projectile->GetSpeed()) * (1.0f / 96.0f) * world.GetDeltaTime();
 
-				// The window has to be at least one step wide or a fast round
-				// steps clean over its target and flies on for ever. Same rule
-				// the web version applies.
 				float hitWindowSquared = std::max(targetThreshold, step * step);
 
 				if (distSq < hitWindowSquared)

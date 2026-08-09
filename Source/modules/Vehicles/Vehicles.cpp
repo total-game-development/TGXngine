@@ -312,10 +312,6 @@ extern "C"
 			}
 		}
 
-		// An item whose team has no art for it loads no sprites at all --
-		// ImageLoader logs the missing file and returns without adding one, so
-		// this list stays empty and indexing it walked off the end. There is
-		// nothing to place, and nothing to animate either.
 		int frame = itemInstance->GetFrame();
 
 		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))
