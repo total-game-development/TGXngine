@@ -177,7 +177,13 @@ void Sidebar::Click()
 						}
 					}
 
-					if (world.GetCash() - button.GetCost() >= 0)
+					if (!button.HasFreeDeployBerth())
+					{
+						Log::Warning("Yard berth occupied, move the last hull clear before building another");
+						button.buttonState = SidebarButton::States::Off;
+						button.drawState = SidebarButton::States::Off;
+					}
+					else if (world.GetCash() - button.GetCost() >= 0)
 					{
 						Log::Success("Buy!");
 

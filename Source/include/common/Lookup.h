@@ -45,5 +45,11 @@ struct LookUp
 		WorldState &world = WorldState::GetInstance();
 		world.SetLookup(uid, index);
 	}
+
+	void static Remove(int uid)
+	{
+		WorldState &world = WorldState::GetInstance();
+		world.GetLookup().erase(uid);
+	}
 };
 } // namespace TGX

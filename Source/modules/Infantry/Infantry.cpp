@@ -272,7 +272,14 @@ extern "C"
 			}
 		}
 
-		(*spritesRef)[itemInstance->GetFrame()]->setPosition(
+		int frame = itemInstance->GetFrame();
+
+		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))
+		{
+			return;
+		}
+
+		(*spritesRef)[frame]->setPosition(
 			sf::Vector2f(
 				((itemInstance->GetX() * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 				((itemInstance->GetY() * Globals::grid_size) + static_cast<float>(world.GetMapYOffset()))));
@@ -603,8 +610,12 @@ void Moving(InfantryState *itemInstance)
 	}
 	else
 	{
+		itemInstance->SetDirection(
+			WrapDirection(itemInstance->GetDirection() + difference, itemInstance->GetDirections()));
+
 		float movement = itemInstance->GetSpeed() * (1.0f / 64.0f) * world.GetDeltaTime();
-		float angleRadians = -(std::round(itemInstance->GetDirection()) / static_cast<float>(itemInstance->GetDirections())) * 2.0f * PI;
+
+		float angleRadians = -(itemInstance->GetDirection() / static_cast<float>(itemInstance->GetDirections())) * 2.0f * PI;
 
 		float moveX = -(movement * std::sin(angleRadians));
 		float moveY = -(movement * std::cos(angleRadians));

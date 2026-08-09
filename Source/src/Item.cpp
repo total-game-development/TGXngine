@@ -1,5 +1,6 @@
 #include "Item.h"
 #include <algorithm> // for std::ranges::sort
+#include <utility>
 #include "Config.h"
 #include "Logs.h"
 #include "Lookup.h"
@@ -45,12 +46,15 @@ bool Item::Create(json &data)
 	String name = data.value("name", "Unknown");
 	int uid = data.value("uid", -1);
 
-	itemInstance = awake(name);
-	if (!itemInstance)
+	Unique<ItemInstance> instance{awake(name)};
+
+	if (!instance)
 	{
 		Log::Error("Awake failed for item: " + name);
 		return false;
 	}
+
+	itemInstance = instance.get();
 
 	itemInstance->SetUid(uid);
 	itemInstance->SetTeam(data.value("team", "Neutral"));
@@ -85,7 +89,25 @@ bool Item::Create(json &data)
 	}
 
 	WorldState &world = WorldState::GetInstance();
-	world.items.emplace_back(itemInstance);
+
+	if (spritePtrs.empty())
+	{
+		Log::Error(
+			"No images for '" + itemInstance->GetTeam() + "/" + itemInstance->GetType() +
+			"/" + name + "' - skipping item " + std::to_string(uid));
+
+		if (_delete)
+		{
+			_delete(uid);
+		}
+
+		LookUp::Remove(uid);
+
+		itemInstance = nullptr;
+		return false;
+	}
+
+	world.items.emplace_back(std::move(instance));
 
 	Log::Success("Item '" + name + "' Created and Registered");
 	return true;

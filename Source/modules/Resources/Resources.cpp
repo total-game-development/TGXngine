@@ -78,7 +78,14 @@ extern "C"
 			}
 		}
 
-		(*spritesRef)[resourceInstance->GetFrame()]->setPosition(
+		int frame = resourceInstance->GetFrame();
+
+		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))
+		{
+			return;
+		}
+
+		(*spritesRef)[frame]->setPosition(
 			sf::Vector2f(
 				((resourceInstance->GetX() * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 				((resourceInstance->GetY() * Globals::grid_size) + static_cast<float>(world.GetMapYOffset()))));

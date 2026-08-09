@@ -1,4 +1,6 @@
 #include "Projectile.h"
+
+#include <algorithm>
 #include "Globals.h"
 #include "Lookup.h"
 #include "Orders.h"
@@ -8,6 +10,8 @@
 
 namespace TGX
 {
+constexpr float targetThreshold = 0.1f;
+
 extern "C"
 {
 	MODULE_API void Init()
@@ -37,6 +41,10 @@ extern "C"
 		if (name == "rocket")
 		{
 			return globalProjectile = new RocketInstance();
+		}
+		if (name == "missile")
+		{
+			return globalProjectile = new MissileInstance();
 		}
 		if (name == "shell")
 		{
@@ -77,12 +85,21 @@ extern "C"
 		Log::Success("Projectile asset creation complete for: " + globalProjectile->GetName());
 	}
 
-	MODULE_API void Update(AssetState * /*assetState*/, Vector<sf::Sprite *> * /*spritesRef*/)
+	MODULE_API void Update(ProjectileInstance *projectileType, Vector<sf::Sprite *> * /*spritesRef*/)
 	{
 		WorldState &world = WorldState::GetInstance();
 
-		for (auto &[weaponName, projectileList] : world.projectiles)
+		if (!projectileType)
 		{
+			return;
+		}
+
+		auto listIt = world.projectiles.find(projectileType->GetName());
+
+		if (listIt != world.projectiles.end())
+		{
+			auto &projectileList = listIt->second;
+
 			for (int i = static_cast<int>(projectileList.size()) - 1; i >= 0; --i)
 			{
 				ProjectileInstance *projectile = projectileList[i].get();
@@ -92,41 +109,52 @@ extern "C"
 					continue;
 				}
 
+				int targetIndex = LookUp::Get(projectile->targetUid);
+
+				ItemInstance *target =
+					(targetIndex >= 0 && targetIndex < static_cast<int>(world.items.size()))
+						? world.items[targetIndex].get()
+						: nullptr;
+
+				if (target)
+				{
+					projectile->targetX = target->GetX();
+					projectile->targetY = target->GetY();
+				}
+
 				float dx = projectile->targetX - projectile->x;
 				float dy = projectile->targetY - projectile->y;
 				float distSq = (dx * dx) + (dy * dy);
 
-				if (distSq < 0.1)
+				float step = static_cast<float>(projectile->GetSpeed()) * (1.0f / 96.0f) * world.GetDeltaTime();
+
+				float hitWindowSquared = std::max(targetThreshold, step * step);
+
+				if (distSq < hitWindowSquared)
 				{
-					int targetIndex = LookUp::Get(projectile->targetUid);
-					int shooterIndex = LookUp::Get(projectile->uid);
-
-					if (targetIndex >= 0 && targetIndex < static_cast<int>(world.items.size()))
+					if (target)
 					{
-						ItemInstance *target = world.items[targetIndex].get();
+						int shooterIndex = LookUp::Get(projectile->uid);
 
-						if (target)
+						if (shooterIndex >= 0 && shooterIndex < static_cast<int>(world.items.size()))
 						{
-							if (shooterIndex >= 0 && shooterIndex < static_cast<int>(world.items.size()))
-							{
-								int shooterUid = world.items[shooterIndex]->GetUid();
-								auto targetState = target->GetState();
+							int shooterUid = world.items[shooterIndex]->GetUid();
+							auto targetState = target->GetState();
 
-								if (targetState != ItemStates::Firing && targetState != ItemStates::Retreating)
+							if (targetState != ItemStates::Firing && targetState != ItemStates::Retreating)
+							{
+								if (target->GetOrders())
 								{
-									if (target->GetOrders())
-									{
-										target->GetOrders()->order = Orders::Order::Attacked;
-										target->GetOrders()->target_uid = shooterUid;
-									}
+									target->GetOrders()->order = Orders::Order::Attacked;
+									target->GetOrders()->target_uid = shooterUid;
 								}
 							}
+						}
 
-							target->Damage(projectile->GetDamage());
-							if (target->GetLife() <= 0)
-							{
-								target->SetOrders(Orders::Order::Destroyed);
-							}
+						target->Damage(projectile->GetDamage());
+						if (target->GetLife() <= 0)
+						{
+							target->SetOrders(Orders::Order::Destroyed);
 						}
 					}
 
@@ -136,11 +164,10 @@ extern "C"
 
 				float dist = std::sqrt(distSq);
 
-				if (dist > 0.0f && static_cast<float>(projectile->GetSpeed()) > 0.0f)
+				if (dist > 0.0f && step > 0.0f)
 				{
-					float movement = static_cast<float>(projectile->GetSpeed()) * (1.0f / 96.0f) * world.GetDeltaTime();
-					projectile->x += (dx / dist) * movement;
-					projectile->y += (dy / dist) * movement;
+					projectile->x += (dx / dist) * step;
+					projectile->y += (dy / dist) * step;
 				}
 				else
 				{

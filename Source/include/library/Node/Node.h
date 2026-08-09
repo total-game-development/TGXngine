@@ -22,6 +22,9 @@ struct Node
 	int heapIndex = 0;
 	NodeType type;
 
+	int dx = 0;
+	int dy = 0;
+
 	static inline int default_construct_counter;
 	static inline int import_x_y_construct_counter;
 	static inline int import_x_y_g_h_f_construct_counter;

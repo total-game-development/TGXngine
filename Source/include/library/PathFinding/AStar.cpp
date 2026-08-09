@@ -184,7 +184,7 @@ void AStar::Search(
 		}
 		else
 		{
-			while (current != nullptr)
+			while (current != nullptr && current->parent != nullptr)
 			{
 				path.emplace_back(current->x, current->y);
 				current = current->parent;

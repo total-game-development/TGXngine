@@ -7,6 +7,7 @@
 				{"type":"buildings", "name":"modules/Buildings"},
 				{"type":"infantry", "name":"modules/Infantry"},
 				{"type":"vehicles", "name":"modules/Vehicles"},
+				{"type":"ships", "name":"modules/Ships"},
 				{"type":"projectiles", "name":"modules/Projectiles"},
 				{"type":"interface", "name":"modules/Interface"},
 				{"type":"triggers", "name":"modules/Triggers"},

@@ -45,6 +45,10 @@ extern "C"
 		{
 			return globalItem = new VehicleAssemblyTunnelState();
 		}
+		if (name == "shipyard")
+		{
+			return globalItem = new ShipyardState();
+		}
 		if (name == "oil_extractor")
 		{
 			return globalItem = new OilExtractor();
@@ -106,10 +110,16 @@ extern "C"
 			baseX = globalItem->GetX();
 			baseY = globalItem->GetY();
 
-			(*spritesRef)[globalItem->GetFrame()]->setPosition(
-				sf::Vector2f(
-					x * static_cast<float>(Globals::grid_size + world.GetMapXOffset()),
-					y * static_cast<float>(Globals::grid_size + world.GetMapYOffset())));
+			int placementFrame = globalItem->GetFrame();
+
+			if (spritesRef != nullptr && placementFrame >= 0 && placementFrame < static_cast<int>(spritesRef->size()))
+			{
+				(*spritesRef)[placementFrame]->setPosition(
+					sf::Vector2f(
+						x * static_cast<float>(Globals::grid_size + world.GetMapXOffset()),
+						y * static_cast<float>(Globals::grid_size + world.GetMapYOffset())));
+			}
+
 			world.SetPlacement(false);
 		}
 		else
@@ -177,7 +187,14 @@ extern "C"
 			}
 		}
 
-		(*spritesRef)[itemInstance->GetFrame()]->setPosition(
+		int frame = itemInstance->GetFrame();
+
+		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))
+		{
+			return;
+		}
+
+		(*spritesRef)[frame]->setPosition(
 			sf::Vector2f(
 				((itemInstance->GetX() * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 				((itemInstance->GetY() * Globals::grid_size) + static_cast<float>(world.GetMapYOffset()))));

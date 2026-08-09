@@ -91,6 +91,35 @@ public:
 	}
 };
 
+class MissileInstance : public ProjectileInstance
+{
+public:
+	static constexpr int frames = 11;
+	static constexpr int speed = 720; // web weapon speed 12
+	static constexpr float damage = 40;
+
+	MissileInstance() : ProjectileInstance("missile") {}
+	int GetFrames() const override
+	{
+		return frames;
+	}
+
+	int GetSpeed() const override
+	{
+		return speed;
+	}
+
+	float GetDamage() const override
+	{
+		return damage;
+	}
+
+	Unique<ProjectileInstance> Clone() const override
+	{
+		return std::make_unique<MissileInstance>(*this);
+	}
+};
+
 class ShellInstance : public ProjectileInstance
 {
 public:

@@ -235,7 +235,7 @@ public:
 
 		logistics.canExtract = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 50.0f;
 	}
 
 	float GetRadius() const override
@@ -288,7 +288,7 @@ public:
 		combat.enabled = true;
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 150.0f;
 	}
 
 	float GetRadius() const override
@@ -338,7 +338,7 @@ public:
 		combat.weapon = "shell";
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 1500.0f;
 	}
 
 	float GetRadius() const override
@@ -388,7 +388,7 @@ public:
 		combat.enabled = true;
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 100.0f;
 	}
 
 	float GetRadius() const override
@@ -438,7 +438,7 @@ public:
 
 		combat.attackable = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 200.0f;
 
 		SetExtra(ItemInstance::ItemProperty::LoadThreshold, 64);
 		SetExtra(ItemInstance::ItemProperty::LoadCapacity, 5);

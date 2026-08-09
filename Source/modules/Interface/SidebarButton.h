@@ -82,6 +82,7 @@ public:
 	int GetPowerUsage();
 	void ResetButtonState();
 	void ResetDrawState();
+	bool HasFreeDeployBerth() const;
 
 private:
 	void BuildImmediately();

@@ -298,6 +298,33 @@ int SidebarButton::GetPowerUsage()
 	return powerUsage;
 }
 
+bool SidebarButton::HasFreeDeployBerth() const
+{
+	if (type != "ships")
+	{
+		return true;
+	}
+
+	WorldState &world = WorldState::GetInstance();
+
+	auto berths = world.deployMap.find(world.primaryItems[attached]);
+
+	if (berths == world.deployMap.end())
+	{
+		return true;
+	}
+
+	for (const auto &berth : berths->second)
+	{
+		if (std::get<2>(berth) == INT_MIN)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void SidebarButton::BuildImmediately()
 {
 	Log::Print("BuildImmediately");

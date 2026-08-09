@@ -5,6 +5,7 @@
 #include "test_common/TestTree.hpp"
 #include "test_common/TestUtils.hpp"
 #include "test_library/TestCollision.hpp"
+#include "test_library/TestNavalAStar.hpp"
 
 int main(int argc, char **argv)
 {

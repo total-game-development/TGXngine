@@ -14,9 +14,10 @@ class Heap
 private:
 	T *items;
 	int currentItemCount = 0;
+	size_t capacity = 0;
 
 public:
-	Heap(size_t size)
+	Heap(size_t size) : capacity(size)
 	{
 		items = new T[size];
 	}
@@ -29,6 +30,12 @@ public:
 
 	void Add(T item)
 	{
+		if (static_cast<size_t>(currentItemCount) >= capacity)
+		{
+			Log::Error("Heap is full, item rejected. Increase the reserved size.");
+			return;
+		}
+
 		items[currentItemCount] = item;
 		items[currentItemCount]->heapIndex = currentItemCount;
 
@@ -124,52 +131,25 @@ public:
 		}
 	}
 
+	void Swap(int itemA, int itemB)
+	{
+		T temporary = items[itemA];
+
+		items[itemA] = items[itemB];
+		items[itemB] = temporary;
+
+		items[itemA]->heapIndex = itemA;
+		items[itemB]->heapIndex = itemB;
+	}
+
 	void SwapUp(int itemA, int itemB)
 	{
-		float tempF = items[itemA]->f;
-		float tempH = items[itemA]->h;
-		float tempG = items[itemA]->g;
-		int tempX = items[itemA]->x;
-		int tempY = items[itemA]->y;
-		Node *tempP = items[itemA]->parent;
-
-		items[itemA]->f = items[itemB]->f;
-		items[itemA]->h = items[itemB]->h;
-		items[itemA]->g = items[itemB]->g;
-		items[itemA]->x = items[itemB]->x;
-		items[itemA]->y = items[itemB]->y;
-		items[itemA]->parent = items[itemB]->parent;
-
-		items[itemB]->f = tempF;
-		items[itemB]->h = tempH;
-		items[itemB]->g = tempG;
-		items[itemB]->x = tempX;
-		items[itemB]->y = tempY;
-		items[itemB]->parent = tempP;
+		Swap(itemA, itemB);
 	}
 
 	void SwapDown(int itemA, int itemB)
 	{
-		float tempF = items[itemA]->f;
-		float tempH = items[itemA]->h;
-		float tempG = items[itemA]->g;
-		int tempX = items[itemA]->x;
-		int tempY = items[itemA]->y;
-		Node *tempP = items[itemA]->parent;
-
-		items[itemA]->f = items[itemB]->f;
-		items[itemA]->h = items[itemB]->h;
-		items[itemA]->g = items[itemB]->g;
-		items[itemA]->x = items[itemB]->x;
-		items[itemA]->y = items[itemB]->y;
-		items[itemA]->parent = items[itemB]->parent;
-
-		items[itemB]->f = tempF;
-		items[itemB]->h = tempH;
-		items[itemB]->g = tempG;
-		items[itemB]->x = tempX;
-		items[itemB]->y = tempY;
-		items[itemB]->parent = tempP;
+		Swap(itemA, itemB);
 	}
 
 	int Count() { return currentItemCount; }

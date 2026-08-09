@@ -79,11 +79,23 @@ class NavalRoutesConfigurePath : public ConfigurePath
 public:
 	HeuristicType heuristicType = HeuristicType::Euclidean;
 
-	NavalRoutesConfigurePath() : ConfigurePath(PathDirections::Four) {}
+	float turnPenalty = 2.0f;
+
+	NavalRoutesConfigurePath() : ConfigurePath(PathDirections::Eight) {}
 
 	HeuristicType GetHeuristicType() const override
 	{
 		return heuristicType;
+	}
+
+	bool IsTraversable(int cellValue) const override
+	{
+		if (codeMode == static_cast<int>(CellCollisionMode::Soft))
+		{
+			return cellValue <= static_cast<int>(CellCollisionMode::Soft);
+		}
+
+		return cellValue == static_cast<int>(CellCollisionMode::Off);
 	}
 };
 

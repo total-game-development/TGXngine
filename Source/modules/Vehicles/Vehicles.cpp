@@ -312,7 +312,14 @@ extern "C"
 			}
 		}
 
-		(*spritesRef)[itemInstance->GetFrame()]->setPosition(
+		int frame = itemInstance->GetFrame();
+
+		if (spritesRef == nullptr || frame < 0 || frame >= static_cast<int>(spritesRef->size()))
+		{
+			return;
+		}
+
+		(*spritesRef)[frame]->setPosition(
 			sf::Vector2f(
 				((itemInstance->GetX() * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 				((itemInstance->GetY() * Globals::grid_size) + static_cast<float>(world.GetMapYOffset()))));
@@ -569,13 +576,16 @@ void Moving(VehicleState *itemInstance)
 	}
 	else
 	{
+		itemInstance->SetDirection(
+			WrapDirection(itemInstance->GetDirection() + difference, itemInstance->GetDirections()));
+
 		movement =
 			itemInstance->GetSpeed() *
 			VehicleState::accelerationFactor[itemInstance->accelerationIndex] *
 			(1.0f / 96.0f) * world.GetDeltaTime();
 
 		float angleRadians =
-			-(std::round(itemInstance->GetDirection()) / static_cast<float>(itemInstance->GetDirections()) * 2.0f * PI);
+			-(itemInstance->GetDirection() / static_cast<float>(itemInstance->GetDirections()) * 2.0f * PI);
 
 		float moveX = -(movement * std::sin(angleRadians));
 		float moveY = -(movement * std::cos(angleRadians));
@@ -591,6 +601,12 @@ void Moving(VehicleState *itemInstance)
 
 void Animate(VehicleState *itemState)
 {
+	if (itemState->GetFrames() < itemState->GetDirections() * 2)
+	{
+		vehicles[itemState->GetUid()]->animationOffset = 0;
+		return;
+	}
+
 	if ((vehicles[itemState->GetUid()]->animationSpeed % itemState->animationSpeedLimit) == 0)
 	{
 		if (vehicles[itemState->GetUid()]->animationCount < itemState->animationLimit)
