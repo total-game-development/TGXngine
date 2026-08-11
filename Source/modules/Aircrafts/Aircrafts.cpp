@@ -857,7 +857,7 @@ void Approach(AircraftState *itemInstance)
 		itemInstance->takeOffPositionY = airport->GetCenterY() + airport->helipadDeployPosition.y;
 
 		itemInstance->currentHangerPosition = 0;
-		itemInstance->landingDirection = airport->helipadApproachPosition.direction;
+		itemInstance->landingDirection = airport->helipadDeployPosition.direction;
 		itemInstance->SetSpeed(itemInstance->GetTopSpeed());
 
 		itemInstance->SetOrders(Orders::Order::Approaching);

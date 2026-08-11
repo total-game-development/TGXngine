@@ -400,7 +400,7 @@ public:
 			{9.85f, 0.5f, 0, 4.0f}};
 
 	const AirWayPoint helipadApproachPosition = {9.85f, 0.5f, 6, 4.0f};
-	const AirWayPoint helipadDeployPosition = {9.85f, 0.5f, 6, 0.0f};
+	const AirWayPoint helipadDeployPosition = {9.85f, 0.5f, 0, 0.0f};
 
 	AirportState()
 	{
