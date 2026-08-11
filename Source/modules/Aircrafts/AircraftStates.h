@@ -33,6 +33,7 @@ public:
 
 	bool landed = true;
 	bool takingOff = false;
+	bool holding = false;
 
 	int deployUid = INT_MIN;
 	int currentHangerPosition = 0;
@@ -101,6 +102,11 @@ public:
 	virtual bool CanLandOnHelipad() const = 0;
 
 	virtual bool CanTargetAir() const
+	{
+		return false;
+	}
+
+	virtual bool TurnsOnTheSpot() const
 	{
 		return false;
 	}
@@ -178,6 +184,10 @@ public:
 	{
 		return true;
 	}
+	bool TurnsOnTheSpot() const override
+	{
+		return true;
+	}
 };
 
 class JetState : public AircraftState
@@ -186,7 +196,7 @@ public:
 	static constexpr float radius = 15.0f;
 	static constexpr int frames = 16;
 	static constexpr int directions = 8;
-	static constexpr int turnSpeed = 120;
+	static constexpr int turnSpeed = 24;
 	static constexpr float topSpeed = 1440.0f;
 	static constexpr float attackSpeed = 2160.0f;
 	static constexpr float groundSpeed = 360.0f;
@@ -253,7 +263,7 @@ public:
 	static constexpr float radius = 15.0f;
 	static constexpr int frames = 16;
 	static constexpr int directions = 8;
-	static constexpr int turnSpeed = 120;
+	static constexpr int turnSpeed = 12;
 	static constexpr float topSpeed = 720.0f;
 	static constexpr float attackSpeed = 1080.0f;
 	static constexpr float groundSpeed = 360.0f;
@@ -320,7 +330,7 @@ public:
 	static constexpr float radius = 15.0f;
 	static constexpr int frames = 16;
 	static constexpr int directions = 8;
-	static constexpr int turnSpeed = 60;
+	static constexpr int turnSpeed = 12;
 	static constexpr float topSpeed = 720.0f;
 	static constexpr float attackSpeed = 720.0f;
 	static constexpr float groundSpeed = 360.0f;

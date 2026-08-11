@@ -198,10 +198,12 @@ public:
 	static constexpr int frames = 1;
 	static constexpr int powerUsage = 250;
 	static constexpr int hangersPerRunway = 4;
+	static constexpr int runwayCount = 2;
 	static constexpr int footprintColumns = 27;
 	static constexpr int footprintRows = 26;
 
 	int helipadUid = INT_MIN;
+	Array<int, runwayCount> runwayUids = {INT_MIN, INT_MIN};
 
 	const Vector<HangerPosition> hangerPositions =
 		{

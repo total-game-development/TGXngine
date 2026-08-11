@@ -427,6 +427,46 @@ void ReleaseHanger(AircraftState *itemInstance)
 	}
 }
 
+int RunwayForHanger(int hangerIndex)
+{
+	return (hangerIndex / AirportState::hangersPerRunway) % AirportState::runwayCount;
+}
+
+bool ClaimRunway(AirportState *airport, int hangerIndex, int uid)
+{
+	int runway = RunwayForHanger(hangerIndex);
+
+	if (runway < 0 || runway >= AirportState::runwayCount)
+	{
+		return false;
+	}
+
+	if (airport->runwayUids[runway] != INT_MIN && airport->runwayUids[runway] != uid)
+	{
+		return false;
+	}
+
+	airport->runwayUids[runway] = uid;
+
+	return true;
+}
+
+void ReleaseRunway(AirportState *airport, int uid)
+{
+	if (airport == nullptr)
+	{
+		return;
+	}
+
+	for (auto &runwayUid : airport->runwayUids)
+	{
+		if (runwayUid == uid)
+		{
+			runwayUid = INT_MIN;
+		}
+	}
+}
+
 void Advance(AircraftState *itemInstance, float speed)
 {
 	WorldState &world = WorldState::GetInstance();
@@ -512,7 +552,9 @@ void Move(ItemInstance *itemInstance)
 	}
 
 	ReleaseHanger(aircraft);
+	ReleaseRunway(GetAirport(aircraft->deployUid), aircraft->GetUid());
 
+	aircraft->holding = false;
 	itemInstance->SetSpeed(aircraft->GetTopSpeed());
 	itemInstance->SetState(ItemStates::Flying);
 
@@ -581,7 +623,13 @@ void Moving(AircraftState *itemInstance)
 	{
 		float direction = itemInstance->GetDirection() + (turnAmount * std::abs(difference) / difference);
 		itemInstance->SetDirection(WrapDirection(direction, itemInstance->GetDirections()));
-		return;
+
+		if (itemInstance->TurnsOnTheSpot())
+		{
+			return;
+		}
+
+		itemInstance->minDistance = AircraftState::farthestDistance;
 	}
 
 	Advance(itemInstance, itemInstance->GetSpeed());
@@ -663,6 +711,11 @@ void TakeOff(AircraftState *itemInstance)
 				continue;
 			}
 
+			if (!ClaimRunway(airport, static_cast<int>(i), itemInstance->GetUid()))
+			{
+				return;
+			}
+
 			std::get<2>(deploys[i]) = INT_MIN;
 
 			itemInstance->currentHangerPosition = static_cast<int>(i);
@@ -739,6 +792,8 @@ void TakingOff(AircraftState *itemInstance)
 
 void Fly(AircraftState *itemInstance)
 {
+	ReleaseRunway(GetAirport(itemInstance->deployUid), itemInstance->GetUid());
+
 	itemInstance->takingOff = false;
 	itemInstance->takingOffIndex = 0;
 	itemInstance->landingIndex = 0;
@@ -814,6 +869,12 @@ void Circle(AircraftState *itemInstance)
 		itemInstance->wayPointY = AircraftState::circlePaths[itemInstance->circleIndex].y + itemInstance->GetY();
 
 		itemInstance->minDistance = AircraftState::farthestDistance;
+
+		if (itemInstance->holding)
+		{
+			itemInstance->SetOrders(Orders::Order::Approach);
+		}
+
 		return;
 	}
 
@@ -852,6 +913,7 @@ void Approach(AircraftState *itemInstance)
 		}
 
 		airport->helipadUid = itemInstance->GetUid();
+		itemInstance->deployUid = airport->GetUid();
 
 		itemInstance->approachPositionX = airport->GetCenterX() + airport->helipadApproachPosition.x;
 		itemInstance->approachPositionY = airport->GetCenterY() + airport->helipadApproachPosition.y;
@@ -886,12 +948,22 @@ void Approach(AircraftState *itemInstance)
 			continue;
 		}
 
-		size_t runway = (j / AirportState::hangersPerRunway) % airport->approachPositions.size();
+		std::get<2>(deploys[j]) = itemInstance->GetUid();
+		itemInstance->deployUid = airport->GetUid();
+
+		if (!ClaimRunway(airport, static_cast<int>(j), itemInstance->GetUid()))
+		{
+			Hold(itemInstance);
+			return;
+		}
+
+		size_t runway = static_cast<size_t>(RunwayForHanger(static_cast<int>(j))) %
+						airport->approachPositions.size();
 
 		itemInstance->approachPositionX = airport->GetCenterX() + airport->approachPositions[runway].x;
 		itemInstance->approachPositionY = airport->GetCenterY() + airport->approachPositions[runway].y;
 
-		std::get<2>(deploys[j]) = itemInstance->GetUid();
+		itemInstance->holding = false;
 
 		itemInstance->currentHangerPosition = static_cast<int>(j);
 		itemInstance->landingDirection = airport->hangerPositions[j].direction;
@@ -905,8 +977,15 @@ void Approach(AircraftState *itemInstance)
 		return;
 	}
 
-	Log::Info("No free hanger at airport " + std::to_string(airport->GetUid()));
-	itemInstance->SetOrders(Orders::Order::Fly);
+	Hold(itemInstance);
+}
+
+void Hold(AircraftState *itemInstance)
+{
+	itemInstance->holding = true;
+
+	EnterCircle(itemInstance);
+	itemInstance->SetOrders(Orders::Order::Circle);
 }
 
 void Approaching(AircraftState *itemInstance)
@@ -935,6 +1014,9 @@ void Approaching(AircraftState *itemInstance)
 
 void FinishLanding(AircraftState *itemInstance)
 {
+	ReleaseRunway(GetAirport(itemInstance->deployUid), itemInstance->GetUid());
+
+	itemInstance->holding = false;
 	itemInstance->landingIndex = 0;
 	itemInstance->takingOffIndex = 0;
 	itemInstance->takeOffSpeed = AircraftState::initialTakeOffSpeed;
@@ -1105,7 +1187,9 @@ void Attack(ItemInstance *itemInstance)
 	}
 
 	ReleaseHanger(aircraft);
+	ReleaseRunway(GetAirport(aircraft->deployUid), aircraft->GetUid());
 
+	aircraft->holding = false;
 	itemInstance->SetSpeed(aircraft->GetAttackSpeed());
 
 	itemInstance->GetOrders()->toX = targetInstance->GetX();
@@ -1296,7 +1380,10 @@ void Destroyed(ItemInstance *itemInstance)
 {
 	WorldState &world = WorldState::GetInstance();
 
-	ReleaseHanger(static_cast<AircraftState *>(itemInstance));
+	auto *aircraft = static_cast<AircraftState *>(itemInstance);
+
+	ReleaseHanger(aircraft);
+	ReleaseRunway(GetAirport(aircraft->deployUid), aircraft->GetUid());
 
 	String removeItem = StringConcat("uid:", itemInstance->GetUid());
 	world.gameEvents.emplace_back(UIAction::RemoveGameItem, removeItem);

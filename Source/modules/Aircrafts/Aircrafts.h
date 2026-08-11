@@ -135,6 +135,10 @@ Map<int, Unique<Aircrafts>> aircrafts;
 AirportState *GetAirport(int uid);
 void ReleaseHanger(AircraftState *itemInstance);
 
+int RunwayForHanger(int hangerIndex);
+bool ClaimRunway(AirportState *airport, int hangerIndex, int uid);
+void ReleaseRunway(AirportState *airport, int uid);
+
 void Action(ItemInstance *itemInstance);
 
 void Move(ItemInstance *itemInstance);
@@ -150,6 +154,7 @@ void Fly(AircraftState *itemInstance);
 void Circle(AircraftState *itemInstance);
 
 void Approach(AircraftState *itemInstance);
+void Hold(AircraftState *itemInstance);
 void Approaching(AircraftState *itemInstance);
 void Land(AircraftState *itemInstance);
 void Landing(AircraftState *itemInstance);
