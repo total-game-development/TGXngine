@@ -179,7 +179,7 @@ void Sidebar::Click()
 
 					if (!button.HasFreeDeployBerth())
 					{
-						Log::Warning("Yard berth occupied, move the last hull clear before building another");
+						Log::Warning("Deploy berth occupied, move the last unit clear before building another");
 						button.buttonState = SidebarButton::States::Off;
 						button.drawState = SidebarButton::States::Off;
 					}

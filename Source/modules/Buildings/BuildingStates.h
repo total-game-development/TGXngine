@@ -196,11 +196,11 @@ class AirportState : public BuildingState
 public:
 	static constexpr float radius = 9.0f;
 	static constexpr int frames = 1;
-	static constexpr int maximumNumberOfPlanes = 4;
 	static constexpr int powerUsage = 250;
 	static constexpr int hangersPerRunway = 4;
+	static constexpr int footprintColumns = 26;
+	static constexpr int footprintRows = 26;
 
-	int numberOfPlanes = 0;
 	int helipadUid = INT_MIN;
 
 	const Vector<HangerPosition> hangerPositions =
@@ -214,16 +214,7 @@ public:
 			{8.0f, 10.0f, 4},
 			{10.0f, 10.0f, 4}};
 
-	Vector<Tuple<float, float, int>> deployPositions =
-		{
-			std::make_tuple(-9.37f, 13.5f, INT_MIN),
-			std::make_tuple(-7.5f, 13.5f, INT_MIN),
-			std::make_tuple(-5.5f, 13.5f, INT_MIN),
-			std::make_tuple(-3.25f, 13.5f, INT_MIN),
-			std::make_tuple(4.0f, 10.0f, INT_MIN),
-			std::make_tuple(6.0f, 10.0f, INT_MIN),
-			std::make_tuple(8.0f, 10.0f, INT_MIN),
-			std::make_tuple(10.0f, 10.0f, INT_MIN)};
+	Vector<Tuple<float, float, int>> deployPositions;
 
 	const Vector<Vector<AirWayPoint>> takeOffPaths =
 		{
@@ -413,12 +404,22 @@ public:
 
 	AirportState()
 	{
-		passableGrid = Vector<Vector<int>>(8, Vector<int>(16, 1));
-		baseWidth = 300;
-		baseHeight = 160;
+		passableGrid = Vector<Vector<int>>(footprintRows, Vector<int>(footprintColumns, 1));
+		baseWidth = 540;
+		baseHeight = 520;
 		canBePrimary = true;
 
 		hitPoints = 500.0f;
+
+		deployPositions.reserve(hangerPositions.size());
+
+		for (const auto &hanger : hangerPositions)
+		{
+			deployPositions.emplace_back(
+				hanger.x + (static_cast<float>(footprintColumns) / 2.0f),
+				hanger.y + (static_cast<float>(footprintRows) / 2.0f),
+				INT_MIN);
+		}
 	}
 
 	const Vector<Tuple<float, float, int>> &GetDeployPositions() const override

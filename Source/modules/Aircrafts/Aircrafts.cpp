@@ -141,11 +141,10 @@ extern "C"
 
 		if (globalItem->IsTraining())
 		{
-			int index = LookUp::Get(world.primaryItems["airport"]);
+			AirportState *airport = GetAirport(world.primaryItems["airport"]);
 
-			if (index != -1)
+			if (airport != nullptr)
 			{
-				auto *airport = static_cast<AirportState *>(world.items[index].get());
 				int deployUid = airport->GetUid();
 				auto deployIt = world.deployMap.find(deployUid);
 
@@ -696,7 +695,7 @@ void TakingOff(AircraftState *itemInstance)
 
 	float distanceFromDestinationSquared = DistanceSquared(
 		itemInstance->GetX(), itemInstance->GetY(),
-		airport->GetX() + wayPoint.x, airport->GetY() + wayPoint.y);
+		airport->GetCenterX() + wayPoint.x, airport->GetCenterY() + wayPoint.y);
 
 	if (distanceFromDestinationSquared < arrivalThreshold ||
 		distanceFromDestinationSquared > itemInstance->previousDistance)
@@ -835,11 +834,11 @@ void Approach(AircraftState *itemInstance)
 
 		airport->helipadUid = itemInstance->GetUid();
 
-		itemInstance->approachPositionX = airport->GetX() + airport->helipadApproachPosition.x;
-		itemInstance->approachPositionY = airport->GetY() + airport->helipadApproachPosition.y;
+		itemInstance->approachPositionX = airport->GetCenterX() + airport->helipadApproachPosition.x;
+		itemInstance->approachPositionY = airport->GetCenterY() + airport->helipadApproachPosition.y;
 
-		itemInstance->takeOffPositionX = airport->GetX() + airport->helipadDeployPosition.x;
-		itemInstance->takeOffPositionY = airport->GetY() + airport->helipadDeployPosition.y;
+		itemInstance->takeOffPositionX = airport->GetCenterX() + airport->helipadDeployPosition.x;
+		itemInstance->takeOffPositionY = airport->GetCenterY() + airport->helipadDeployPosition.y;
 
 		itemInstance->currentHangerPosition = 0;
 		itemInstance->landingDirection = airport->helipadApproachPosition.direction;
@@ -870,8 +869,8 @@ void Approach(AircraftState *itemInstance)
 
 		size_t runway = (j / AirportState::hangersPerRunway) % airport->approachPositions.size();
 
-		itemInstance->approachPositionX = airport->GetX() + airport->approachPositions[runway].x;
-		itemInstance->approachPositionY = airport->GetY() + airport->approachPositions[runway].y;
+		itemInstance->approachPositionX = airport->GetCenterX() + airport->approachPositions[runway].x;
+		itemInstance->approachPositionY = airport->GetCenterY() + airport->approachPositions[runway].y;
 
 		std::get<2>(deploys[j]) = itemInstance->GetUid();
 
@@ -1019,7 +1018,7 @@ void Landing(AircraftState *itemInstance)
 
 	float distanceFromDestinationSquared = DistanceSquared(
 		itemInstance->GetX(), itemInstance->GetY(),
-		airport->GetX() + wayPoint->x, airport->GetY() + wayPoint->y);
+		airport->GetCenterX() + wayPoint->x, airport->GetCenterY() + wayPoint->y);
 
 	if (distanceFromDestinationSquared < arrivalThreshold ||
 		distanceFromDestinationSquared > itemInstance->previousDistance)
