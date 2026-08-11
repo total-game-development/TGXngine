@@ -50,6 +50,10 @@ extern "C"
 		{
 			return globalProjectile = new ShellInstance();
 		}
+		if (name == "bomb")
+		{
+			return globalProjectile = new BombInstance();
+		}
 
 		return nullptr;
 	}

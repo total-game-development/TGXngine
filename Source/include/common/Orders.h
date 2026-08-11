@@ -37,7 +37,13 @@ public:
 		Loading,
 		Unload,
 		Unloading,
-		Extract
+		Extract,
+		TakeOff,
+		Fly,
+		Approaching,
+		Land,
+		BreakAway,
+		BreakingAway
 	};
 
 	int id = 0;
@@ -117,6 +123,18 @@ public:
 				return "unloading";
 			case Order::Action:
 				return "action";
+			case Order::TakeOff:
+				return "take-off";
+			case Order::Fly:
+				return "fly";
+			case Order::Approaching:
+				return "approaching";
+			case Order::Land:
+				return "land";
+			case Order::BreakAway:
+				return "break-away";
+			case Order::BreakingAway:
+				return "breaking-away";
 			default:
 				return "Unknown";
 		}
@@ -152,6 +170,12 @@ public:
 			{"loading", Order::Loading},
 			{"unloading", Order::Unloading},
 			{"action", Order::Action},
+			{"take-off", Order::TakeOff},
+			{"fly", Order::Fly},
+			{"approaching", Order::Approaching},
+			{"land", Order::Land},
+			{"break-away", Order::BreakAway},
+			{"breaking-away", Order::BreakingAway},
 		};
 
 		auto it = map.find(str);

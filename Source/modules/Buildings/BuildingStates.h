@@ -176,6 +176,21 @@ public:
 	}
 };
 
+struct AirWayPoint
+{
+	float x = 0.0f;
+	float y = 0.0f;
+	int direction = 0;
+	float speed = 0.0f;
+};
+
+struct HangerPosition
+{
+	float x = 0.0f;
+	float y = 0.0f;
+	int direction = 0;
+};
+
 class AirportState : public BuildingState
 {
 public:
@@ -183,98 +198,218 @@ public:
 	static constexpr int frames = 1;
 	static constexpr int maximumNumberOfPlanes = 4;
 	static constexpr int powerUsage = 250;
+	static constexpr int hangersPerRunway = 4;
 
-	const Pair<float, float> approachPosition = std::make_pair(22.5f, 3.6f);
 	int numberOfPlanes = 0;
+	int helipadUid = INT_MIN;
+
+	const Vector<HangerPosition> hangerPositions =
+		{
+			{-9.37f, 13.5f, 0},
+			{-7.5f, 13.5f, 0},
+			{-5.5f, 13.5f, 0},
+			{-3.25f, 13.5f, 0},
+			{4.0f, 10.0f, 4},
+			{6.0f, 10.0f, 4},
+			{8.0f, 10.0f, 4},
+			{10.0f, 10.0f, 4}};
 
 	Vector<Tuple<float, float, int>> deployPositions =
 		{
-			std::make_tuple(-2.35f, -6.65f, INT_MIN),
-			std::make_tuple(-1.5f, -6.65f, INT_MIN),
-			std::make_tuple(0.5f, -6.65f, INT_MIN),
-			std::make_tuple(1.25f, -6.65f, INT_MIN)};
+			std::make_tuple(-9.37f, 13.5f, INT_MIN),
+			std::make_tuple(-7.5f, 13.5f, INT_MIN),
+			std::make_tuple(-5.5f, 13.5f, INT_MIN),
+			std::make_tuple(-3.25f, 13.5f, INT_MIN),
+			std::make_tuple(4.0f, 10.0f, INT_MIN),
+			std::make_tuple(6.0f, 10.0f, INT_MIN),
+			std::make_tuple(8.0f, 10.0f, INT_MIN),
+			std::make_tuple(10.0f, 10.0f, INT_MIN)};
 
-	Vector<Vector<Tuple<int, int, int>>> takeOffPaths =
+	const Vector<Vector<AirWayPoint>> takeOffPaths =
 		{
-			{std::make_tuple(65, 2, 1),
-			 std::make_tuple(520, 3, 1),
-			 std::make_tuple(740, 4, 1),
-			 std::make_tuple(1050, 6, 4),
-			 std::make_tuple(1075, 6, 9),
-			 std::make_tuple(1150, 6, 11),
-			 std::make_tuple(1200, 6, 12)},
-			{std::make_tuple(65, 2, 1),
-			 std::make_tuple(470, 3, 1),
-			 std::make_tuple(685, 4, 1),
-			 std::make_tuple(995, 6, 4),
-			 std::make_tuple(1040, 6, 9),
-			 std::make_tuple(1095, 6, 11),
-			 std::make_tuple(1145, 6, 12)},
-			{std::make_tuple(65, 2, 1),
-			 std::make_tuple(340, 3, 1),
-			 std::make_tuple(555, 4, 1),
-			 std::make_tuple(865, 6, 4),
-			 std::make_tuple(900, 6, 9),
-			 std::make_tuple(965, 6, 11),
-			 std::make_tuple(1015, 6, 12)},
-			{std::make_tuple(65, 2, 1),
-			 std::make_tuple(290, 3, 1),
-			 std::make_tuple(505, 4, 1),
-			 std::make_tuple(815, 6, 4),
-			 std::make_tuple(850, 6, 9),
-			 std::make_tuple(915, 6, 11),
-			 std::make_tuple(965, 6, 12)}};
+			{{-9.37f, 7.5f, 6, 2.0f},
+			 {-10.5f, 7.5f, 5, 2.0f},
+			 {-12.5f, 9.7f, 4, 2.0f},
+			 {-12.5f, 11.75f, 2, 2.0f},
+			 {-12.0f, 11.75f, 2, 8.0f},
+			 {-6.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 24.0f},
+			 {6.0f, 11.75f, 2, 32.0f},
+			 {12.0f, 11.75f, 2, 48.0f}},
+			{{-7.5f, 7.5f, 6, 2.0f},
+			 {-10.5f, 7.5f, 5, 2.0f},
+			 {-12.5f, 9.7f, 4, 2.0f},
+			 {-12.5f, 11.75f, 2, 2.0f},
+			 {-12.0f, 11.75f, 2, 8.0f},
+			 {-6.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 24.0f},
+			 {6.0f, 11.75f, 2, 32.0f},
+			 {12.0f, 11.75f, 2, 48.0f}},
+			{{-5.5f, 7.5f, 6, 2.0f},
+			 {-10.5f, 7.5f, 5, 2.0f},
+			 {-12.5f, 9.7f, 4, 2.0f},
+			 {-12.5f, 11.75f, 2, 2.0f},
+			 {-12.0f, 11.75f, 2, 8.0f},
+			 {-6.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 24.0f},
+			 {6.0f, 11.75f, 2, 32.0f},
+			 {12.0f, 11.75f, 2, 48.0f}},
+			{{-3.25f, 7.5f, 6, 2.0f},
+			 {-10.5f, 7.5f, 5, 2.0f},
+			 {-12.5f, 9.7f, 4, 2.0f},
+			 {-12.5f, 11.75f, 2, 2.0f},
+			 {-12.0f, 11.75f, 2, 8.0f},
+			 {-6.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 24.0f},
+			 {6.0f, 11.75f, 2, 32.0f},
+			 {12.0f, 11.75f, 2, 48.0f}},
+			{{4.0f, 8.0f, 2, 2.0f},
+			 {11.0f, 8.0f, 1, 2.0f},
+			 {12.0f, 6.5f, 0, 2.0f},
+			 {12.0f, 3.75f, 6, 2.0f},
+			 {11.5f, 3.75f, 6, 8.0f},
+			 {5.5f, 3.75f, 6, 18.0f},
+			 {0.5f, 3.75f, 6, 24.0f},
+			 {-6.5f, 3.75f, 6, 32.0f},
+			 {-12.5f, 3.75f, 6, 48.0f}},
+			{{6.0f, 8.0f, 2, 2.0f},
+			 {11.0f, 8.0f, 1, 2.0f},
+			 {12.0f, 6.5f, 0, 2.0f},
+			 {12.0f, 3.75f, 6, 2.0f},
+			 {11.5f, 3.75f, 6, 8.0f},
+			 {5.5f, 3.75f, 6, 18.0f},
+			 {0.5f, 3.75f, 6, 24.0f},
+			 {-6.5f, 3.75f, 6, 32.0f},
+			 {-12.5f, 3.75f, 6, 48.0f}},
+			{{8.0f, 8.0f, 2, 2.0f},
+			 {11.0f, 8.0f, 1, 2.0f},
+			 {12.0f, 6.5f, 0, 2.0f},
+			 {12.0f, 3.75f, 6, 2.0f},
+			 {11.5f, 3.75f, 6, 8.0f},
+			 {5.5f, 3.75f, 6, 18.0f},
+			 {0.5f, 3.75f, 6, 24.0f},
+			 {-6.5f, 3.75f, 6, 32.0f},
+			 {-12.5f, 3.75f, 6, 48.0f}},
+			{{10.0f, 8.0f, 2, 2.0f},
+			 {11.0f, 8.0f, 1, 2.0f},
+			 {12.0f, 6.5f, 0, 2.0f},
+			 {12.0f, 3.75f, 6, 2.0f},
+			 {11.5f, 3.75f, 6, 8.0f},
+			 {5.5f, 3.75f, 6, 18.0f},
+			 {0.5f, 3.75f, 6, 24.0f},
+			 {-6.5f, 3.75f, 6, 32.0f},
+			 {-12.5f, 3.75f, 6, 48.0f}}};
 
-	Vector<Vector<Tuple<int, int, int>>> landingPaths =
+	const Vector<Vector<AirWayPoint>> landingPaths =
 		{
-			{std::make_tuple(0, 6, 12),
-			 std::make_tuple(40, 6, 10),
-			 std::make_tuple(60, 6, 8),
-			 std::make_tuple(80, 6, 6),
-			 std::make_tuple(180, 6, 4),
-			 std::make_tuple(210, 6, 3),
-			 std::make_tuple(225, 6, 2),
-			 std::make_tuple(375, 0, 1),
-			 std::make_tuple(570, 1, 1),
-			 std::make_tuple(935, 2, 1),
-			 std::make_tuple(985, 4, 1),
-			 std::make_tuple(1045, 4, 1)},
-			{std::make_tuple(0, 6, 12),
-			 std::make_tuple(40, 6, 10),
-			 std::make_tuple(60, 6, 8),
-			 std::make_tuple(80, 6, 6),
-			 std::make_tuple(180, 6, 4),
-			 std::make_tuple(210, 6, 3),
-			 std::make_tuple(225, 6, 2),
-			 std::make_tuple(375, 0, 1),
-			 std::make_tuple(570, 1, 1),
-			 std::make_tuple(935, 2, 1),
-			 std::make_tuple(1050, 4, 1),
-			 std::make_tuple(1110, 4, 1)},
-			{std::make_tuple(0, 6, 12),
-			 std::make_tuple(40, 6, 10),
-			 std::make_tuple(60, 6, 8),
-			 std::make_tuple(80, 6, 6),
-			 std::make_tuple(180, 6, 4),
-			 std::make_tuple(210, 6, 3),
-			 std::make_tuple(225, 6, 2),
-			 std::make_tuple(375, 0, 1),
-			 std::make_tuple(570, 1, 1),
-			 std::make_tuple(935, 2, 1),
-			 std::make_tuple(1175, 4, 1),
-			 std::make_tuple(1235, 4, 1)},
-			{std::make_tuple(0, 6, 12),
-			 std::make_tuple(40, 6, 10),
-			 std::make_tuple(60, 6, 8),
-			 std::make_tuple(80, 6, 6),
-			 std::make_tuple(180, 6, 4),
-			 std::make_tuple(210, 6, 3),
-			 std::make_tuple(225, 6, 2),
-			 std::make_tuple(375, 0, 1),
-			 std::make_tuple(570, 1, 1),
-			 std::make_tuple(935, 2, 1),
-			 std::make_tuple(1240, 4, 1),
-			 std::make_tuple(1300, 4, 1)}};
+			{{-5.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 16.0f},
+			 {3.0f, 11.75f, 2, 12.0f},
+			 {7.0f, 11.75f, 2, 8.0f},
+			 {10.0f, 11.75f, 2, 4.0f},
+			 {11.0f, 11.75f, 2, 3.0f},
+			 {12.25f, 11.75f, 2, 2.0f},
+			 {12.25f, 9.6f, 0, 2.0f},
+			 {-0.5f, 9.6f, 6, 2.0f},
+			 {-2.0f, 7.5f, 7, 2.0f},
+			 {-9.37f, 7.5f, 6, 2.0f},
+			 {-9.37f, 9.5f, 4, 2.0f}},
+			{{-5.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 16.0f},
+			 {3.0f, 11.75f, 2, 12.0f},
+			 {7.0f, 11.75f, 2, 8.0f},
+			 {10.0f, 11.75f, 2, 4.0f},
+			 {11.0f, 11.75f, 2, 3.0f},
+			 {12.25f, 11.75f, 2, 2.0f},
+			 {12.25f, 9.6f, 0, 2.0f},
+			 {-0.5f, 9.6f, 6, 2.0f},
+			 {-2.0f, 7.5f, 7, 2.0f},
+			 {-7.5f, 7.5f, 6, 2.0f},
+			 {-7.5f, 9.5f, 4, 2.0f}},
+			{{-5.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 16.0f},
+			 {3.0f, 11.75f, 2, 12.0f},
+			 {7.0f, 11.75f, 2, 8.0f},
+			 {10.0f, 11.75f, 2, 4.0f},
+			 {11.0f, 11.75f, 2, 3.0f},
+			 {12.25f, 11.75f, 2, 2.0f},
+			 {12.25f, 9.6f, 0, 2.0f},
+			 {-0.5f, 9.6f, 6, 2.0f},
+			 {-2.0f, 7.5f, 7, 2.0f},
+			 {-5.5f, 7.5f, 6, 2.0f},
+			 {-5.5f, 9.5f, 4, 2.0f}},
+			{{-5.0f, 11.75f, 2, 18.0f},
+			 {0.0f, 11.75f, 2, 16.0f},
+			 {3.0f, 11.75f, 2, 12.0f},
+			 {7.0f, 11.75f, 2, 8.0f},
+			 {10.0f, 11.75f, 2, 4.0f},
+			 {11.0f, 11.75f, 2, 3.0f},
+			 {12.25f, 11.75f, 2, 2.0f},
+			 {12.25f, 9.6f, 0, 2.0f},
+			 {-0.5f, 9.6f, 6, 2.0f},
+			 {-2.0f, 7.5f, 7, 2.0f},
+			 {-3.25f, 7.5f, 6, 2.0f},
+			 {-3.25f, 9.5f, 4, 2.0f}},
+			{{5.0f, 3.75f, 6, 18.0f},
+			 {0.0f, 3.75f, 6, 16.0f},
+			 {-3.0f, 3.75f, 6, 12.0f},
+			 {-7.0f, 3.75f, 6, 8.0f},
+			 {-10.0f, 3.75f, 6, 4.0f},
+			 {-11.0f, 3.75f, 6, 3.0f},
+			 {-12.25f, 3.75f, 6, 2.0f},
+			 {-12.25f, 5.75f, 4, 2.0f},
+			 {1.5f, 5.75f, 2, 2.0f},
+			 {2.5f, 8.5f, 3, 2.0f},
+			 {4.0f, 8.5f, 2, 2.0f},
+			 {4.0f, 5.75f, 0, 2.0f}},
+			{{5.0f, 3.75f, 6, 18.0f},
+			 {0.0f, 3.75f, 6, 16.0f},
+			 {-3.0f, 3.75f, 6, 12.0f},
+			 {-7.0f, 3.75f, 6, 8.0f},
+			 {-10.0f, 3.75f, 6, 4.0f},
+			 {-11.0f, 3.75f, 6, 3.0f},
+			 {-12.25f, 3.75f, 6, 2.0f},
+			 {-12.25f, 5.75f, 4, 2.0f},
+			 {1.5f, 5.75f, 2, 2.0f},
+			 {2.5f, 8.5f, 3, 2.0f},
+			 {6.0f, 8.5f, 2, 2.0f},
+			 {6.0f, 5.75f, 0, 2.0f}},
+			{{5.0f, 3.75f, 6, 18.0f},
+			 {0.0f, 3.75f, 6, 16.0f},
+			 {-3.0f, 3.75f, 6, 12.0f},
+			 {-7.0f, 3.75f, 6, 8.0f},
+			 {-10.0f, 3.75f, 6, 4.0f},
+			 {-11.0f, 3.75f, 6, 3.0f},
+			 {-12.25f, 3.75f, 6, 2.0f},
+			 {-12.25f, 5.75f, 4, 2.0f},
+			 {1.5f, 5.75f, 2, 2.0f},
+			 {2.5f, 8.5f, 3, 2.0f},
+			 {8.0f, 8.5f, 2, 2.0f},
+			 {8.0f, 5.75f, 0, 2.0f}},
+			{{5.0f, 3.75f, 6, 18.0f},
+			 {0.0f, 3.75f, 6, 16.0f},
+			 {-3.0f, 3.75f, 6, 12.0f},
+			 {-7.0f, 3.75f, 6, 8.0f},
+			 {-10.0f, 3.75f, 6, 4.0f},
+			 {-11.0f, 3.75f, 6, 3.0f},
+			 {-12.25f, 3.75f, 6, 2.0f},
+			 {-12.25f, 5.75f, 4, 2.0f},
+			 {1.5f, 5.75f, 2, 2.0f},
+			 {2.5f, 8.5f, 3, 2.0f},
+			 {10.0f, 8.5f, 2, 2.0f},
+			 {10.0f, 5.75f, 0, 2.0f}}};
+
+	const Vector<AirWayPoint> approachPositions =
+		{
+			{-18.5f, 11.75f, 2, 18.0f},
+			{18.5f, 3.75f, 6, 18.0f}};
+
+	const Vector<AirWayPoint> helipadLandingPaths =
+		{
+			{9.85f, 0.5f, 0, 4.0f}};
+
+	const AirWayPoint helipadApproachPosition = {9.85f, 0.5f, 6, 4.0f};
+	const AirWayPoint helipadDeployPosition = {9.85f, 4.6f, 0, 0.0f};
 
 	AirportState()
 	{
@@ -283,7 +418,12 @@ public:
 		baseHeight = 160;
 		canBePrimary = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
+	}
+
+	const Vector<Tuple<float, float, int>> &GetDeployPositions() const override
+	{
+		return deployPositions;
 	}
 
 	float GetRadius() const override

@@ -300,7 +300,7 @@ int SidebarButton::GetPowerUsage()
 
 bool SidebarButton::HasFreeDeployBerth() const
 {
-	if (type != "ships")
+	if (type != "ships" && type != "aircrafts")
 	{
 		return true;
 	}

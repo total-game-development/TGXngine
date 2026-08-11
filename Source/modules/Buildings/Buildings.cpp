@@ -49,6 +49,10 @@ extern "C"
 		{
 			return globalItem = new ShipyardState();
 		}
+		if (name == "airport")
+		{
+			return globalItem = new AirportState();
+		}
 		if (name == "oil_extractor")
 		{
 			return globalItem = new OilExtractor();

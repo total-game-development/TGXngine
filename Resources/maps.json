@@ -45,6 +45,10 @@
 				{"type":"buildings","name":"water_extractor","team":"technology"},
 				{"type":"buildings","name":"oil_extractor","team":"technology"},
 				{"type":"buildings","name":"shipyard","team":"technology"},
+				{"type":"buildings","name":"airport","team":"technology"},
+				{"type":"aircrafts","name":"apache","team":"technology"},
+				{"type":"aircrafts","name":"jet","team":"technology"},
+				{"type":"aircrafts","name":"bomber","team":"technology"},
 				{"type":"infantry","name":"soldier","team":"technology"},
 				{"type":"infantry","name":"rocketeer","team":"technology"},
 				{"type":"infantry","name":"grenadier","team":"technology"},
@@ -56,7 +60,8 @@
 				{"type":"projectiles","name":"grenade"},
 				{"type":"projectiles","name":"rocket"},
 				{"type":"projectiles","name":"shell"},
-				{"type":"projectiles","name":"missile"}
+				{"type":"projectiles","name":"missile"},
+				{"type":"projectiles","name":"bomb"}
 			],
 			"interface":
 			[
@@ -103,9 +108,13 @@
 				{"type":"buildings","name":"powerplant","x":44,"y":4,"direction":0,"team":"technology","uid":-101},
 				{"type":"buildings","name":"science_post","x":60,"y":14,"direction":0,"team":"technology","uid":-120},
 				{"type":"buildings","name":"shipyard","x":44,"y":90,"direction":0,"team":"technology","uid":-199},
+				{"type":"buildings","name":"airport","x":70,"y":40,"direction":0,"team":"technology","uid":-197},
+				{"type":"aircrafts","name":"apache","x":80,"y":55,"direction":4,"team":"technology","uid":-196},
+				{"type":"aircrafts","name":"jet","x":86,"y":55,"direction":4,"team":"technology","uid":-195},
+				{"type":"aircrafts","name":"bomber","x":92,"y":55,"direction":4,"team":"technology","uid":-194},
 				{"type":"infantry","name":"soldier","x":3,"y":4,"direction":0,"team":"social-earth","uid":-148},
 				{"type":"infantry","name":"soldier","x":5,"y":29,"direction":0,"team":"technology","uid":-145},
-				{"type":"infantry","name":"soldier","x":13,"y":20,"direction":0,"team":"social-earth","uid":-146},
+				{"type":"vehicles","name":"truck","x":13,"y":110,"direction":0,"team":"social-earth","uid":-146},
 				{"type":"infantry","name":"soldier","x":5,"y":10,"direction":0,"team":"social-earth","uid":-149},
 				{"type":"infantry","name":"soldier","x":39,"y":19,"direction":0,"team":"technology","uid":-147},
 				{"type":"infantry","name":"soldier","x":9,"y":9,"direction":0,"team":"technology","uid":-150},
@@ -116,7 +125,7 @@
 				{"type":"vehicles","name":"rocket_truck","x":18,"y":5,"direction":0,"team":"technology","uid":-158},
 				{"type":"vehicles","name":"apc","x":20,"y":5,"direction":0,"team":"technology","uid":-159},
 				{"type":"vehicles","name":"prospector","x":26,"y":5,"direction":0,"team":"technology","uid":-160},
-				{"type":"ships","name":"battleship","x":5,"y":118,"direction":2,"team":"technology","uid":-154},
+				{"type":"ships","name":"battleship","x":5,"y":128,"direction":2,"team":"technology","uid":-154},
 				{"type":"ships","name":"submarine","x":120,"y":132,"direction":7,"team":"technology","uid":-167},
 				{"type":"ships","name":"submarine","x":124,"y":120,"direction":0,"team":"social-earth","uid":-125},
 				{"type":"ships","name":"cruiser","x":40,"y":152,"direction":6,"team":"technology","uid":-198},
@@ -200,7 +209,8 @@
 				{"type":"projectiles","name":"grenade"},
 				{"type":"projectiles","name":"rocket"},
 				{"type":"projectiles","name":"shell"},
-				{"type":"projectiles","name":"missile"}
+				{"type":"projectiles","name":"missile"},
+				{"type":"projectiles","name":"bomb"}
 			],
 			"interface":
 			[
