@@ -205,14 +205,14 @@ public:
 
 	const Vector<HangerPosition> hangerPositions =
 		{
-			{-9.37f, 13.5f, 0},
-			{-7.5f, 13.5f, 0},
-			{-5.5f, 13.5f, 0},
-			{-3.25f, 13.5f, 0},
-			{4.0f, 10.0f, 4},
-			{6.0f, 10.0f, 4},
-			{8.0f, 10.0f, 4},
-			{10.0f, 10.0f, 4}};
+			{-9.37f, 9.5f, 0},
+			{-7.5f, 9.5f, 0},
+			{-5.5f, 9.5f, 0},
+			{-3.25f, 9.5f, 0},
+			{4.0f, 5.75f, 4},
+			{6.0f, 5.75f, 4},
+			{8.0f, 5.75f, 4},
+			{10.0f, 5.75f, 4}};
 
 	Vector<Tuple<float, float, int>> deployPositions;
 
@@ -400,7 +400,7 @@ public:
 			{9.85f, 0.5f, 0, 4.0f}};
 
 	const AirWayPoint helipadApproachPosition = {9.85f, 0.5f, 6, 4.0f};
-	const AirWayPoint helipadDeployPosition = {9.85f, 4.6f, 0, 0.0f};
+	const AirWayPoint helipadDeployPosition = {9.85f, 0.5f, 6, 0.0f};
 
 	AirportState()
 	{

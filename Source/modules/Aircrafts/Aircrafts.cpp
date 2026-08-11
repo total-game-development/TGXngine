@@ -146,32 +146,48 @@ extern "C"
 			if (airport != nullptr)
 			{
 				int deployUid = airport->GetUid();
-				auto deployIt = world.deployMap.find(deployUid);
 
-				if (deployIt != world.deployMap.end())
+				if (aircraft->CanLandOnHelipad() && airport->helipadUid == INT_MIN)
 				{
-					auto &deploys = deployIt->second;
+					airport->helipadUid = globalItem->GetUid();
 
-					size_t i = 0;
+					globalItem->SetX(airport->GetCenterX() + airport->helipadDeployPosition.x);
+					globalItem->SetY(airport->GetCenterY() + airport->helipadDeployPosition.y);
+					globalItem->SetDirection(static_cast<float>(airport->helipadDeployPosition.direction));
 
-					for (; i < deploys.size(); i++)
+					aircraft->deployUid = deployUid;
+					aircraft->currentHangerPosition = 0;
+					aircraft->landingDirection = airport->helipadDeployPosition.direction;
+				}
+				else
+				{
+					auto deployIt = world.deployMap.find(deployUid);
+
+					if (deployIt != world.deployMap.end())
 					{
-						if (std::get<2>(deploys[i]) == INT_MIN)
+						auto &deploys = deployIt->second;
+
+						size_t i = 0;
+
+						for (; i < deploys.size(); i++)
 						{
-							std::get<2>(deploys[i]) = globalItem->GetUid();
-							break;
+							if (std::get<2>(deploys[i]) == INT_MIN)
+							{
+								std::get<2>(deploys[i]) = globalItem->GetUid();
+								break;
+							}
 						}
-					}
 
-					if (i < deploys.size())
-					{
-						globalItem->SetX(airport->GetX() + std::get<0>(deploys[i]));
-						globalItem->SetY(airport->GetY() + std::get<1>(deploys[i]));
-						globalItem->SetDirection(static_cast<float>(airport->hangerPositions[i].direction));
+						if (i < deploys.size())
+						{
+							globalItem->SetX(airport->GetX() + std::get<0>(deploys[i]));
+							globalItem->SetY(airport->GetY() + std::get<1>(deploys[i]));
+							globalItem->SetDirection(static_cast<float>(airport->hangerPositions[i].direction));
 
-						aircraft->deployUid = deployUid;
-						aircraft->currentHangerPosition = static_cast<int>(i);
-						aircraft->landingDirection = airport->hangerPositions[i].direction;
+							aircraft->deployUid = deployUid;
+							aircraft->currentHangerPosition = static_cast<int>(i);
+							aircraft->landingDirection = airport->hangerPositions[i].direction;
+						}
 					}
 				}
 			}
