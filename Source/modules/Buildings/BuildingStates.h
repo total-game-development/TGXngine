@@ -199,6 +199,11 @@ public:
 	static constexpr int powerUsage = 250;
 	static constexpr int hangersPerRunway = 4;
 	static constexpr int runwayCount = 2;
+	// Take-off waypoint where the aircraft lines up on the runway itself; the
+	// waypoints before it are the taxi out from the hanger.
+	static constexpr int runwayEntryIndex = 3;
+	// Landing waypoint where the aircraft turns off the runway onto the taxiway.
+	static constexpr int runwayClearIndex = 7;
 	static constexpr int footprintColumns = 27;
 	static constexpr int footprintRows = 26;
 

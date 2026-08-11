@@ -168,6 +168,7 @@ void ReleaseHanger(AircraftState *itemInstance);
 int RunwayForHanger(int hangerIndex);
 bool ClaimRunway(AirportState *airport, int hangerIndex, int uid);
 void ReleaseRunway(AirportState *airport, int uid);
+bool TaxiClear(const AircraftState *itemInstance, const AirportState *airport);
 
 void Action(ItemInstance *itemInstance);
 

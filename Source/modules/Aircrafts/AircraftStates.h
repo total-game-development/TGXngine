@@ -112,6 +112,12 @@ public:
 		return false;
 	}
 
+	// How far the aircraft ahead has to be before this one leaves the hanger.
+	virtual float GetTaxiSeparation() const
+	{
+		return 3.0f;
+	}
+
 	virtual int GetTakeOffLandingOffset() const
 	{
 		return 8;
@@ -256,6 +262,10 @@ public:
 	{
 		return false;
 	}
+	float GetTaxiSeparation() const override
+	{
+		return 2.5f;
+	}
 };
 
 class BomberState : public AircraftState
@@ -322,6 +332,10 @@ public:
 	bool CanLandOnHelipad() const override
 	{
 		return false;
+	}
+	float GetTaxiSeparation() const override
+	{
+		return 3.5f;
 	}
 };
 

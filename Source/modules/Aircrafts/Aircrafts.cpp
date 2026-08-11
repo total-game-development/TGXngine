@@ -451,6 +451,40 @@ bool ClaimRunway(AirportState *airport, int hangerIndex, int uid)
 	return true;
 }
 
+bool TaxiClear(const AircraftState *itemInstance, const AirportState *airport)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	const float separation = itemInstance->GetTaxiSeparation();
+
+	for (const auto &item : world.items)
+	{
+		const ItemInstance *other = item.get();
+
+		if (other == nullptr || other == itemInstance || !other->IsAircraft())
+		{
+			continue;
+		}
+
+		const auto *otherAircraft = static_cast<const AircraftState *>(other);
+
+		if (!otherAircraft->takingOff || otherAircraft->deployUid != airport->GetUid())
+		{
+			continue;
+		}
+
+		float dx = otherAircraft->GetX() - itemInstance->GetX();
+		float dy = otherAircraft->GetY() - itemInstance->GetY();
+
+		if (((dx * dx) + (dy * dy)) < (separation * separation))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void ReleaseRunway(AirportState *airport, int uid)
 {
 	if (airport == nullptr)
@@ -505,6 +539,13 @@ void EnterCircle(AircraftState *itemInstance)
 {
 	itemInstance->circleIndex = static_cast<int>(WrapDirection(
 		std::round(itemInstance->GetDirection()), itemInstance->GetDirections()));
+
+	// The circle waypoints step through the eight headings one at a time, so the
+	// aircraft has to be on one of them for the leg it flies to line up with the
+	// leg it is aiming at. Coming out of a turn the heading sits between two, and
+	// flying a leg up to 22.5 degrees across the waypoint leaves the circle
+	// wandering instead of closing.
+	itemInstance->SetDirection(static_cast<float>(itemInstance->circleIndex));
 
 	itemInstance->wayPointX = AircraftState::circlePaths[itemInstance->circleIndex].x + itemInstance->GetX();
 	itemInstance->wayPointY = AircraftState::circlePaths[itemInstance->circleIndex].y + itemInstance->GetY();
@@ -713,7 +754,9 @@ void TakeOff(AircraftState *itemInstance)
 				continue;
 			}
 
-			if (!ClaimRunway(airport, static_cast<int>(i), itemInstance->GetUid()))
+			// The runway is claimed later, at the hold-short point. Leaving the
+			// hanger only needs the aircraft ahead to be clear of the taxiway.
+			if (!TaxiClear(itemInstance, airport))
 			{
 				return;
 			}
@@ -762,6 +805,14 @@ void TakingOff(AircraftState *itemInstance)
 		static_cast<size_t>(itemInstance->takingOffIndex) >= path.size())
 	{
 		itemInstance->SetOrders(Orders::Order::Fly);
+		return;
+	}
+
+	// Hold short until the runway is clear. The aircraft has already taxied to
+	// the last waypoint before it and simply waits there.
+	if (itemInstance->takingOffIndex >= AirportState::runwayEntryIndex &&
+		!ClaimRunway(airport, itemInstance->currentHangerPosition, itemInstance->GetUid()))
+	{
 		return;
 	}
 
@@ -984,9 +1035,15 @@ void Approach(AircraftState *itemInstance)
 
 void Hold(AircraftState *itemInstance)
 {
-	itemInstance->holding = true;
+	// Only lay out the circle when the hold starts. Asking again each lap and
+	// re-entering here would restart the pattern from the current heading every
+	// time, which reads as the aircraft wandering rather than holding.
+	if (!itemInstance->holding)
+	{
+		itemInstance->holding = true;
+		EnterCircle(itemInstance);
+	}
 
-	EnterCircle(itemInstance);
 	itemInstance->SetOrders(Orders::Order::Circle);
 }
 
@@ -1128,6 +1185,14 @@ void Landing(AircraftState *itemInstance)
 	{
 		itemInstance->previousDistance = AircraftState::farthestDistance;
 		itemInstance->landingIndex++;
+
+		// Off the runway and onto the taxiway: the next aircraft can come in
+		// while this one taxis the rest of the way to its hanger.
+		if (itemInstance->landingIndex >= AirportState::runwayClearIndex)
+		{
+			ReleaseRunway(airport, itemInstance->GetUid());
+		}
+
 		itemInstance->SetOrders(Orders::Order::Land);
 		return;
 	}
