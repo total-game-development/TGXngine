@@ -334,8 +334,13 @@ extern "C"
 		int facing = static_cast<int>(WrapDirection(
 			std::round(itemInstance->GetDirection()), itemInstance->GetDirections()));
 
+		int airborneOffset = (aircraft->GetSpeed() < aircraft->GetGroundSpeed())
+								 ? 0
+								 : aircraft->GetTakeOffLandingOffset();
+
 		itemInstance->SetFrame(
-			(facing + aircrafts[itemInstance->GetUid()]->animationOffset) % itemInstance->GetFrames());
+			(facing + aircrafts[itemInstance->GetUid()]->animationOffset + airborneOffset) %
+			itemInstance->GetFrames());
 
 		aircrafts[itemInstance->GetUid()]->Update(itemInstance, spritesRef);
 	}
@@ -665,6 +670,7 @@ void TakeOff(AircraftState *itemInstance)
 
 			itemInstance->currentHangerPosition = static_cast<int>(i);
 			itemInstance->takingOffIndex = 0;
+			itemInstance->takeOffSpeed = AircraftState::initialTakeOffSpeed;
 			itemInstance->previousDistance = AircraftState::farthestDistance;
 			itemInstance->landed = false;
 			itemInstance->takingOff = true;
@@ -934,7 +940,7 @@ void FinishLanding(AircraftState *itemInstance)
 {
 	itemInstance->landingIndex = 0;
 	itemInstance->takingOffIndex = 0;
-	itemInstance->takeOffSpeed = 0.0f;
+	itemInstance->takeOffSpeed = AircraftState::initialTakeOffSpeed;
 	itemInstance->takingOff = false;
 	itemInstance->landed = true;
 	itemInstance->SetSpeed(0.0f);
@@ -1303,36 +1309,16 @@ void Animate(AircraftState *itemInstance)
 {
 	auto &aircraft = aircrafts[itemInstance->GetUid()];
 
-	if (itemInstance->GetFrames() < itemInstance->GetDirections() * 2)
-	{
-		aircraft->animationOffset = 0;
-		return;
-	}
-
-	if (itemInstance->landed && itemInstance->GetSpeed() < itemInstance->GetGroundSpeed())
-	{
-		aircraft->animationOffset = 0;
-		return;
-	}
-
 	if ((aircraft->animationSpeed % itemInstance->animationSpeedLimit) == 0)
 	{
 		if (aircraft->animationCount < itemInstance->animationLimit)
 		{
+			aircraft->animationOffset = itemInstance->GetDirections() * aircraft->animationCount;
 			aircraft->animationCount++;
 		}
 		else
 		{
 			aircraft->animationCount = 0;
-
-			if (aircraft->animationOffset == 0)
-			{
-				aircraft->animationOffset = itemInstance->GetTakeOffLandingOffset();
-			}
-			else
-			{
-				aircraft->animationOffset = 0;
-			}
 		}
 	}
 

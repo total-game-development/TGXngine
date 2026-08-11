@@ -28,6 +28,7 @@ public:
 	~AircraftState() override = default;
 
 	static constexpr float pathSpeedScale = 60.0f;
+	static constexpr float initialTakeOffSpeed = pathSpeedScale;
 	static constexpr float farthestDistance = std::numeric_limits<float>::max();
 
 	bool landed = true;
@@ -41,10 +42,10 @@ public:
 	int circleIndex = 0;
 	int circleCounter = 0;
 
-	int animationLimit = 2;
-	int animationSpeedLimit = 15;
+	int animationLimit = 1;
+	int animationSpeedLimit = 2;
 
-	float takeOffSpeed = 0.0f;
+	float takeOffSpeed = initialTakeOffSpeed;
 	float wayPointX = 0.0f;
 	float wayPointY = 0.0f;
 	float approachPositionX = 0.0f;
@@ -127,6 +128,8 @@ public:
 	{
 		SetDirections(directions);
 		SetAircraft(true);
+
+		animationLimit = 2;
 
 		AddGroup("army");
 		AddGroup("aircrafts");
