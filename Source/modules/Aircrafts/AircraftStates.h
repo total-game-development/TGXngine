@@ -34,6 +34,7 @@ public:
 	bool landed = true;
 	bool takingOff = false;
 	bool holding = false;
+	bool turning = false;
 
 	int deployUid = INT_MIN;
 	int currentHangerPosition = 0;

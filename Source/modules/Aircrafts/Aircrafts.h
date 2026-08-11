@@ -16,22 +16,52 @@ ItemInstance *globalItem;
 
 static Map<Orders::Order, Function<void(ItemInstance *)>> orderMap;
 
-inline size_t DirectionTableIndex(const ItemInstance *itemInstance)
+inline void Heading(const ItemInstance *itemInstance, float &headingX, float &headingY)
 {
-	const int directions = itemInstance->GetDirections();
+	headingX = 0.0f;
+	headingY = 0.0f;
 
-	if (directions <= 0)
+	const int directions = itemInstance->GetDirections();
+	const auto tableSize = static_cast<int>(AircraftState::cosDirectionAngles.size());
+
+	if (directions <= 0 || directions > tableSize)
 	{
-		return 0;
+		return;
 	}
 
-	const auto tableSize = static_cast<int>(AircraftState::cosDirectionAngles.size());
-	const int stride = tableSize / directions;
+	const float wrapped = WrapDirection(itemInstance->GetDirection(), directions);
+	const float floored = std::floor(wrapped);
 
-	const auto facing = static_cast<int>(
-		WrapDirection(std::round(itemInstance->GetDirection()), directions));
+	auto lower = static_cast<size_t>(floored);
+	float fraction = wrapped - floored;
 
-	return static_cast<size_t>((facing * stride) % tableSize);
+	if (lower >= static_cast<size_t>(directions))
+	{
+		lower = 0;
+		fraction = 0.0f;
+	}
+
+	size_t upper = lower + 1;
+
+	if (upper >= static_cast<size_t>(directions))
+	{
+		upper = 0;
+	}
+
+	const float x = AircraftState::sinDirectionAngles[lower] +
+					((AircraftState::sinDirectionAngles[upper] - AircraftState::sinDirectionAngles[lower]) * fraction);
+	const float y = AircraftState::cosDirectionAngles[lower] +
+					((AircraftState::cosDirectionAngles[upper] - AircraftState::cosDirectionAngles[lower]) * fraction);
+
+	const float length = std::sqrt((x * x) + (y * y));
+
+	if (length <= 0.0f)
+	{
+		return;
+	}
+
+	headingX = x / length;
+	headingY = y / length;
 }
 
 class Aircrafts

@@ -473,10 +473,12 @@ void Advance(AircraftState *itemInstance, float speed)
 
 	float movement = speed * movementScale * world.GetDeltaTime();
 
-	size_t index = DirectionTableIndex(itemInstance);
+	float headingX = 0.0f;
+	float headingY = 0.0f;
+	Heading(itemInstance, headingX, headingY);
 
-	float moveX = movement * AircraftState::sinDirectionAngles[index];
-	float moveY = -movement * AircraftState::cosDirectionAngles[index];
+	float moveX = movement * headingX;
+	float moveY = -movement * headingY;
 
 	itemInstance->SetLastMovementX(moveX);
 	itemInstance->SetLastMovementY(moveY);
@@ -590,7 +592,7 @@ void MoveTo(ItemInstance *itemInstance)
 			itemInstance->GetOrders()->toX, itemInstance->GetOrders()->toY);
 
 		if (distanceFromDestinationSquared < ArrivalThresholdSquared(aircraft) ||
-			distanceFromDestinationSquared > aircraft->minDistance)
+			(!aircraft->turning && distanceFromDestinationSquared > aircraft->minDistance))
 		{
 			EnterCircle(aircraft);
 			itemInstance->SetOrders(Orders::Order::Circle);
@@ -619,7 +621,9 @@ void Moving(AircraftState *itemInstance)
 
 	float turnAmount = static_cast<float>(itemInstance->GetTurnSpeed()) * turnScale * world.GetDeltaTime();
 
-	if (std::abs(difference) > turnAmount)
+	itemInstance->turning = std::abs(difference) > turnAmount;
+
+	if (itemInstance->turning)
 	{
 		float direction = itemInstance->GetDirection() + (turnAmount * std::abs(difference) / difference);
 		itemInstance->SetDirection(WrapDirection(direction, itemInstance->GetDirections()));
@@ -628,8 +632,6 @@ void Moving(AircraftState *itemInstance)
 		{
 			return;
 		}
-
-		itemInstance->minDistance = AircraftState::farthestDistance;
 	}
 
 	Advance(itemInstance, itemInstance->GetSpeed());
@@ -998,7 +1000,7 @@ void Approaching(AircraftState *itemInstance)
 		itemInstance->approachPositionX, itemInstance->approachPositionY);
 
 	if (distanceFromDestinationSquared < ArrivalThresholdSquared(itemInstance) ||
-		distanceFromDestinationSquared > itemInstance->minDistance)
+		(!itemInstance->turning && distanceFromDestinationSquared > itemInstance->minDistance))
 	{
 		itemInstance->SetX(itemInstance->approachPositionX);
 		itemInstance->SetY(itemInstance->approachPositionY);
@@ -1329,12 +1331,14 @@ void BreakAway(AircraftState *itemInstance)
 
 	float movement = itemInstance->GetSpeed() * movementScale * world.GetDeltaTime();
 
-	size_t index = DirectionTableIndex(itemInstance);
+	float headingX = 0.0f;
+	float headingY = 0.0f;
+	Heading(itemInstance, headingX, headingY);
 
 	itemInstance->breakAwayToX =
-		(movement * AircraftState::sinDirectionAngles[index] * breakAwayDistance) + itemInstance->GetX();
+		(movement * headingX * breakAwayDistance) + itemInstance->GetX();
 	itemInstance->breakAwayToY =
-		(-movement * AircraftState::cosDirectionAngles[index] * breakAwayDistance) + itemInstance->GetY();
+		(-movement * headingY * breakAwayDistance) + itemInstance->GetY();
 
 	itemInstance->minDistance = AircraftState::farthestDistance;
 
