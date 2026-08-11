@@ -584,9 +584,6 @@ void Moving(AircraftState *itemInstance)
 		return;
 	}
 
-	itemInstance->SetDirection(
-		WrapDirection(itemInstance->GetDirection() + difference, itemInstance->GetDirections()));
-
 	Advance(itemInstance, itemInstance->GetSpeed());
 
 	if (itemInstance->GetState() != ItemStates::Attacking)
