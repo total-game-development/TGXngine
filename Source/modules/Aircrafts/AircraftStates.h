@@ -112,10 +112,14 @@ public:
 		return false;
 	}
 
-	// How far the aircraft ahead has to be before this one leaves the hanger.
-	virtual float GetTaxiSeparation() const
+	// How far along its take-off roll this aircraft has to be before the next
+	// one may leave its hanger, counted in waypoints past the runway entry. One
+	// means the taxiway is handed on the moment this aircraft is on the runway,
+	// which keeps the queue tight; a larger aircraft takes another waypoint to
+	// be clear of the entry.
+	virtual int GetTaxiReleaseOffset() const
 	{
-		return 3.0f;
+		return 1;
 	}
 
 	virtual int GetTakeOffLandingOffset() const
@@ -262,10 +266,6 @@ public:
 	{
 		return false;
 	}
-	float GetTaxiSeparation() const override
-	{
-		return 2.5f;
-	}
 };
 
 class BomberState : public AircraftState
@@ -333,9 +333,9 @@ public:
 	{
 		return false;
 	}
-	float GetTaxiSeparation() const override
+	int GetTaxiReleaseOffset() const override
 	{
-		return 3.5f;
+		return 2;
 	}
 };
 

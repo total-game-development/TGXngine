@@ -210,6 +210,13 @@ public:
 	int helipadUid = INT_MIN;
 	Array<int, runwayCount> runwayUids = {INT_MIN, INT_MIN};
 
+	// The aircraft currently taxiing out to each runway. Every hanger on a
+	// runway feeds the same taxi path -- the four routes differ only in their
+	// first waypoint and then merge -- so aircraft released together converge
+	// and overlap however far apart their hangers are. One at a time on the
+	// taxiway, handed on as soon as the leader is on the runway.
+	Array<int, runwayCount> taxiUids = {INT_MIN, INT_MIN};
+
 	const Vector<HangerPosition> hangerPositions =
 		{
 			{-9.37f, 9.5f, 0},

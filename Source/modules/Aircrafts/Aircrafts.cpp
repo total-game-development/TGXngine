@@ -451,38 +451,39 @@ bool ClaimRunway(AirportState *airport, int hangerIndex, int uid)
 	return true;
 }
 
-bool TaxiClear(const AircraftState *itemInstance, const AirportState *airport)
+bool ClaimTaxiway(AirportState *airport, int hangerIndex, int uid)
 {
-	WorldState &world = WorldState::GetInstance();
+	int runway = RunwayForHanger(hangerIndex);
 
-	const float separation = itemInstance->GetTaxiSeparation();
-
-	for (const auto &item : world.items)
+	if (runway < 0 || runway >= AirportState::runwayCount)
 	{
-		const ItemInstance *other = item.get();
-
-		if (other == nullptr || other == itemInstance || !other->IsAircraft())
-		{
-			continue;
-		}
-
-		const auto *otherAircraft = static_cast<const AircraftState *>(other);
-
-		if (!otherAircraft->takingOff || otherAircraft->deployUid != airport->GetUid())
-		{
-			continue;
-		}
-
-		float dx = otherAircraft->GetX() - itemInstance->GetX();
-		float dy = otherAircraft->GetY() - itemInstance->GetY();
-
-		if (((dx * dx) + (dy * dy)) < (separation * separation))
-		{
-			return false;
-		}
+		return false;
 	}
 
+	if (airport->taxiUids[runway] != INT_MIN && airport->taxiUids[runway] != uid)
+	{
+		return false;
+	}
+
+	airport->taxiUids[runway] = uid;
+
 	return true;
+}
+
+void ReleaseTaxiway(AirportState *airport, int uid)
+{
+	if (airport == nullptr)
+	{
+		return;
+	}
+
+	for (auto &taxiUid : airport->taxiUids)
+	{
+		if (taxiUid == uid)
+		{
+			taxiUid = INT_MIN;
+		}
+	}
 }
 
 void ReleaseRunway(AirportState *airport, int uid)
@@ -754,9 +755,9 @@ void TakeOff(AircraftState *itemInstance)
 				continue;
 			}
 
-			// The runway is claimed later, at the hold-short point. Leaving the
-			// hanger only needs the aircraft ahead to be clear of the taxiway.
-			if (!TaxiClear(itemInstance, airport))
+			// One aircraft at a time between the hangers and the runway. The
+			// runway itself is claimed later, at the hold-short point.
+			if (!ClaimTaxiway(airport, static_cast<int>(i), itemInstance->GetUid()))
 			{
 				return;
 			}
@@ -816,6 +817,16 @@ void TakingOff(AircraftState *itemInstance)
 		return;
 	}
 
+	// Far enough onto the runway to hand the taxiway to the next one, which
+	// leaves its hanger and follows this aircraft down while it is still
+	// rolling. Until here it kept the taxiway to itself, so the queue comes out
+	// one at a time however the hanger routes merge.
+	if (itemInstance->takingOffIndex >=
+		AirportState::runwayEntryIndex + itemInstance->GetTaxiReleaseOffset())
+	{
+		ReleaseTaxiway(airport, itemInstance->GetUid());
+	}
+
 	const AirWayPoint &wayPoint = path[itemInstance->takingOffIndex];
 
 	float distanceFromDestinationSquared = DistanceSquared(
@@ -845,7 +856,14 @@ void TakingOff(AircraftState *itemInstance)
 
 void Fly(AircraftState *itemInstance)
 {
-	ReleaseRunway(GetAirport(itemInstance->deployUid), itemInstance->GetUid());
+	AirportState *departureAirport = GetAirport(itemInstance->deployUid);
+
+	ReleaseRunway(departureAirport, itemInstance->GetUid());
+
+	// Normally handed on partway down the roll, but a take-off that aborted --
+	// the airport destroyed under it, or no hanger to roll from -- comes
+	// straight here and would otherwise keep the taxiway shut for good.
+	ReleaseTaxiway(departureAirport, itemInstance->GetUid());
 
 	itemInstance->takingOff = false;
 	itemInstance->takingOffIndex = 0;
@@ -1451,8 +1469,11 @@ void Destroyed(ItemInstance *itemInstance)
 
 	auto *aircraft = static_cast<AircraftState *>(itemInstance);
 
+	AirportState *airport = GetAirport(aircraft->deployUid);
+
 	ReleaseHanger(aircraft);
-	ReleaseRunway(GetAirport(aircraft->deployUid), aircraft->GetUid());
+	ReleaseRunway(airport, aircraft->GetUid());
+	ReleaseTaxiway(airport, aircraft->GetUid());
 
 	String removeItem = StringConcat("uid:", itemInstance->GetUid());
 	world.gameEvents.emplace_back(UIAction::RemoveGameItem, removeItem);
