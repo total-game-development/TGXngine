@@ -817,12 +817,12 @@ void TakingOff(AircraftState *itemInstance)
 		return;
 	}
 
-	// Far enough onto the runway to hand the taxiway to the next one, which
-	// leaves its hanger and follows this aircraft down while it is still
-	// rolling. Until here it kept the taxiway to itself, so the queue comes out
-	// one at a time however the hanger routes merge.
+	// Past the point the hanger routes merge, so the next one can leave its
+	// hanger and follow this aircraft down the taxiway rather than waiting for
+	// the runway. Until here it kept the taxiway to itself, which is what stops
+	// two aircraft arriving at the merge together.
 	if (itemInstance->takingOffIndex >=
-		AirportState::runwayEntryIndex + itemInstance->GetTaxiReleaseOffset())
+		AirportState::taxiHandoverIndex + itemInstance->GetTaxiReleaseOffset())
 	{
 		ReleaseTaxiway(airport, itemInstance->GetUid());
 	}

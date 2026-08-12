@@ -112,14 +112,13 @@ public:
 		return false;
 	}
 
-	// How far along its take-off roll this aircraft has to be before the next
-	// one may leave its hanger, counted in waypoints past the runway entry. One
-	// means the taxiway is handed on the moment this aircraft is on the runway,
-	// which keeps the queue tight; a larger aircraft takes another waypoint to
-	// be clear of the entry.
+	// Extra waypoints past the airport's handover point this aircraft needs
+	// before the next one may leave its hanger. Zero hands the taxiway on as
+	// soon as it is clear of the merge, which keeps the queue tight; a larger
+	// aircraft takes another waypoint to be out of the way.
 	virtual int GetTaxiReleaseOffset() const
 	{
-		return 1;
+		return 0;
 	}
 
 	virtual int GetTakeOffLandingOffset() const
@@ -335,7 +334,7 @@ public:
 	}
 	int GetTaxiReleaseOffset() const override
 	{
-		return 2;
+		return 1;
 	}
 };
 
