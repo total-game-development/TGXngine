@@ -1503,7 +1503,18 @@ void Fire(AircraftState *itemInstance)
 
 	if (it == world.projectileRegistry.end())
 	{
-		itemInstance->SetOrders(Orders::Order::Firing);
+		// The level never loaded this weapon. Going back to Firing would send
+		// the aircraft straight here again -- a loop that leaves it stopped over
+		// its target, shooting nothing -- so break off as though the run were
+		// finished and say once why nothing came off the rails.
+		Log::Warning(
+			"No projectile '" + projectileName + "' loaded for " + itemInstance->GetName() +
+			" - breaking off");
+
+		itemInstance->reloadTimeLeft =
+			static_cast<float>(itemInstance->GetReloadTime()) / reloadFramesPerSecond;
+
+		NoTarget(itemInstance);
 		return;
 	}
 
