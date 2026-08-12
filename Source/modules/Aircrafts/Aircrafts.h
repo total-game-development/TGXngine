@@ -188,6 +188,7 @@ void Moving(AircraftState *itemInstance);
 
 void Stand();
 void Standing(AircraftState *itemInstance);
+void ResumeFlight(AircraftState *itemInstance);
 
 void TakeOff(AircraftState *itemInstance);
 void TakingOff(AircraftState *itemInstance);

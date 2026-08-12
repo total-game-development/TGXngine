@@ -546,6 +546,29 @@ float DistanceSquared(float fromX, float fromY, float toX, float toY)
 	return (dx * dx) + (dy * dy);
 }
 
+// Put an aircraft back to what it should be doing when it has nothing else to
+// do. Standing still is only an answer on the ground: an aircraft told to stop
+// while airborne would hang in the sky, so it goes back to holding a circle.
+void ResumeFlight(AircraftState *itemInstance)
+{
+	if (itemInstance->landed)
+	{
+		itemInstance->SetState(ItemStates::Stand);
+		itemInstance->SetOrders(Orders::Order::Stand);
+		return;
+	}
+
+	if (itemInstance->takingOff)
+	{
+		itemInstance->SetOrders(Orders::Order::TakingOff);
+		return;
+	}
+
+	itemInstance->SetState(ItemStates::Flying);
+	EnterCircle(itemInstance);
+	itemInstance->SetOrders(Orders::Order::Circle);
+}
+
 // The nearest enemy this aircraft is allowed to shoot at, or INT_MIN. Reads
 // the "army" quadtree, which Physics rebuilds from every item's position each
 // frame, so this sees whatever is actually out there rather than a cached list.
@@ -838,7 +861,7 @@ void Standing(AircraftState *itemInstance)
 		return;
 	}
 
-	itemInstance->SetOrders(Orders::Order::Stand);
+	ResumeFlight(itemInstance);
 }
 
 void TakeOff(AircraftState *itemInstance)
@@ -1417,33 +1440,43 @@ void Attack(ItemInstance *itemInstance)
 
 void Attacked(AircraftState *itemInstance)
 {
+	// Being attacked arrives as an order: the round that landed overwrote
+	// whatever this aircraft was doing with it. So every path out of here has to
+	// leave it on some other order. Returning without setting one leaves it
+	// sitting on Attacked, handed straight back here every frame, which for an
+	// aircraft means stopping dead in mid air.
+
+	// Already in a fight: carry on with the target it has rather than turning on
+	// whatever just hit it. Attack revalidates that target, so this also covers
+	// the one it was on having died.
 	if (itemInstance->GetState() == ItemStates::Attacking)
 	{
+		itemInstance->SetOrders(Orders::Order::Attack);
 		return;
 	}
 
 	if (!itemInstance->CanAttack())
 	{
-		itemInstance->SetOrders(Orders::Order::Standing);
+		ResumeFlight(itemInstance);
 		return;
 	}
 
 	WorldState &world = WorldState::GetInstance();
 
-	int attackerUid = itemInstance->GetOrders()->target_uid;
-	int attackerIndex = LookUp::Get(attackerUid);
+	const int attackerIndex = LookUp::Get(itemInstance->GetOrders()->target_uid);
 
 	if (attackerIndex < 0 || static_cast<size_t>(attackerIndex) >= world.items.size())
 	{
-		itemInstance->SetOrders(Orders::Order::Standing);
+		ResumeFlight(itemInstance);
 		return;
 	}
 
 	ItemInstance *attacker = world.items[attackerIndex].get();
 
-	if (attacker == nullptr || (attacker->IsAircraft() && !itemInstance->CanTargetAir()))
+	if (attacker == nullptr || attacker->GetLife() <= 0.0f ||
+		(attacker->IsAircraft() ? !itemInstance->CanTargetAir() : !itemInstance->CanTargetLand()))
 	{
-		itemInstance->SetOrders(Orders::Order::Standing);
+		ResumeFlight(itemInstance);
 		return;
 	}
 
