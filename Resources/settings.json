@@ -4,6 +4,6 @@
 		"canvasHeightOffset": 0,
 		"production": false,
 		"debugOnScreen": false,
-		"fogOfWar": true
+		"fogOfWar": false
 	}
 }
