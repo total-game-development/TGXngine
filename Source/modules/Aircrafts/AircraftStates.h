@@ -36,6 +36,15 @@ public:
 	bool holding = false;
 	bool turning = false;
 
+	// Sweeping toward a destination and free to take on anything that comes
+	// into range on the way. Armed by Search and dropped the moment a target is
+	// taken, so an aircraft only hunts when it was sent hunting.
+	bool isAttackMove = false;
+
+	// Rounds left. Counted down as the web version does, where it tracks the
+	// magazine without stopping an empty aircraft firing.
+	int ammo = 0;
+
 	int deployUid = INT_MIN;
 	int currentHangerPosition = 0;
 	int landingDirection = 0;
@@ -105,6 +114,16 @@ public:
 	virtual bool CanTargetAir() const
 	{
 		return false;
+	}
+
+	virtual bool CanTargetLand() const
+	{
+		return true;
+	}
+
+	virtual int GetAmmoCapacity() const
+	{
+		return 2000;
 	}
 
 	virtual bool TurnsOnTheSpot() const
@@ -197,6 +216,10 @@ public:
 	bool TurnsOnTheSpot() const override
 	{
 		return true;
+	}
+	int GetAmmoCapacity() const override
+	{
+		return 20000;
 	}
 };
 

@@ -203,12 +203,13 @@ public:
 	// waypoints before it are the taxi out from the hanger.
 	static constexpr int runwayEntryIndex = 3;
 
-	// Take-off waypoint by which an aircraft is clear of the point the four
-	// hanger routes merge at, so the next one can start rolling out behind it.
-	// Waypoint 1 is the merge itself and waypoint 2 is about three cells beyond
-	// it -- far enough that the follower reaches the merge with the leader
-	// already gone, and much sooner than waiting for the runway.
-	static constexpr int taxiHandoverIndex = 2;
+	// Take-off waypoint the leader has to reach before the next one may leave
+	// its hanger. Waypoint 1 is the first taxi leg, where the four hanger
+	// routes converge, so the next aircraft pulls out while the one ahead is
+	// still short of the merge and the queue runs nose to tail. They are far
+	// enough apart in the hangers, and travel at the same taxi speed, that the
+	// follower never catches the leader on the way round.
+	static constexpr int taxiHandoverIndex = 1;
 	// Landing waypoint where the aircraft turns off the runway onto the taxiway.
 	static constexpr int runwayClearIndex = 7;
 	static constexpr int footprintColumns = 27;

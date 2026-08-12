@@ -17,6 +17,11 @@ constexpr float reloadFramesPerSecond = 60.0f;
 constexpr float arrivalThreshold = 0.01f;
 constexpr float breakAwayDistance = 80.0f;
 
+// How far out an aircraft notices something worth attacking, in cells. Well
+// beyond its firing sight: this is the range at which it turns toward a target,
+// and the web version scans the same 30-cell box around the aircraft.
+constexpr float detectionRange = 30.0f;
+
 extern "C"
 {
 	MODULE_API void OutputTest()
@@ -69,6 +74,9 @@ extern "C"
 				 }},
 				{Orders::Order::Landing, [](ItemInstance *state) {
 					 Landing(static_cast<AircraftState *>(state));
+				 }},
+				{Orders::Order::Search, [](ItemInstance *state) {
+					 Search(static_cast<AircraftState *>(state));
 				 }},
 				{Orders::Order::Attack, [](ItemInstance *state) {
 					 Attack(state);
@@ -212,6 +220,8 @@ extern "C"
 
 		globalItem->SetLife(globalItem->GetHitPoints());
 		globalItem->SetArmy(true);
+
+		aircraft->ammo = aircraft->GetAmmoCapacity();
 
 		if (!texturesRef->empty())
 		{
@@ -536,6 +546,108 @@ float DistanceSquared(float fromX, float fromY, float toX, float toY)
 	return (dx * dx) + (dy * dy);
 }
 
+// The nearest enemy this aircraft is allowed to shoot at, or INT_MIN. Reads
+// the "army" quadtree, which Physics rebuilds from every item's position each
+// frame, so this sees whatever is actually out there rather than a cached list.
+int FindTarget(const AircraftState *itemInstance, float range)
+{
+	WorldState &world = WorldState::GetInstance();
+	Physics &physics = Physics::GetInstance();
+
+	Boundary nearbyRange(
+		itemInstance->GetX() - range,
+		itemInstance->GetY() - range,
+		itemInstance->GetX() + range,
+		itemInstance->GetY() + range);
+
+	const Vector<PointUID> found = physics.Find({"army"}, nearbyRange);
+
+	int closestUid = INT_MIN;
+	float closestDistance = AircraftState::farthestDistance;
+
+	for (const auto &unit : found)
+	{
+		if (unit.uid == itemInstance->GetUid())
+		{
+			continue;
+		}
+
+		const int index = LookUp::Get(unit.uid);
+
+		if (index < 0 || static_cast<size_t>(index) >= world.items.size())
+		{
+			continue;
+		}
+
+		const ItemInstance *other = world.items[index].get();
+
+		if (other == nullptr || other->GetTeam() == itemInstance->GetTeam())
+		{
+			continue;
+		}
+
+		if (other->GetLife() <= 0.0f || !other->IsAttackable())
+		{
+			continue;
+		}
+
+		// A weapon meant for one layer cannot be turned on the other: the
+		// gunships carry air-to-ground stores and nothing here can reach up.
+		if (other->IsAircraft() ? !itemInstance->CanTargetAir() : !itemInstance->CanTargetLand())
+		{
+			continue;
+		}
+
+		const float distance = DistanceSquared(
+			itemInstance->GetX(), itemInstance->GetY(), other->GetX(), other->GetY());
+
+		if (distance < closestDistance)
+		{
+			closestDistance = distance;
+			closestUid = other->GetUid();
+		}
+	}
+
+	return closestUid;
+}
+
+// Take on a target found while flying, rather than one the player picked.
+void EngageTarget(AircraftState *itemInstance, int targetUid)
+{
+	itemInstance->SetTargetUid(targetUid);
+	itemInstance->isAttackMove = false;
+	itemInstance->SetState(ItemStates::Attacking);
+	itemInstance->SetOrders(Orders::Order::Attack);
+}
+
+void Search(AircraftState *itemInstance)
+{
+	if (itemInstance->CanAttack())
+	{
+		const int targetUid = FindTarget(itemInstance, detectionRange);
+
+		if (targetUid != INT_MIN)
+		{
+			EngageTarget(itemInstance, targetUid);
+			return;
+		}
+	}
+
+	WorldState &world = WorldState::GetInstance();
+
+	// Nothing about: sweep toward somewhere else on the map and take whatever
+	// turns up on the way. Any cell will do -- an aircraft is not held to the
+	// passable grid the way everything on the ground is.
+	itemInstance->GetOrders()->toX =
+		static_cast<float>(Random::get(0, std::max(0, world.GetMapGridWidth() - 1)));
+	itemInstance->GetOrders()->toY =
+		static_cast<float>(Random::get(0, std::max(0, world.GetMapGridHeight() - 1)));
+
+	itemInstance->isAttackMove = true;
+	itemInstance->SetState(ItemStates::Flying);
+	itemInstance->SetOrders(Orders::Order::Move);
+}
+
 void EnterCircle(AircraftState *itemInstance)
 {
 	itemInstance->circleIndex = static_cast<int>(WrapDirection(
@@ -680,6 +792,18 @@ void Moving(AircraftState *itemInstance)
 
 	if (itemInstance->GetState() != ItemStates::Attacking)
 	{
+		// Sweeping under a search order: break off for the first thing that
+		// comes into range rather than flying past it to the destination.
+		if (itemInstance->isAttackMove && itemInstance->CanAttack())
+		{
+			const int foundUid = FindTarget(itemInstance, detectionRange);
+
+			if (foundUid != INT_MIN)
+			{
+				EngageTarget(itemInstance, foundUid);
+			}
+		}
+
 		return;
 	}
 
@@ -1250,11 +1374,20 @@ void Attack(ItemInstance *itemInstance)
 
 	ItemInstance *targetInstance = world.items[targetIndex].get();
 
-	if (targetInstance->IsAircraft() && !aircraft->CanTargetAir())
+	if (targetInstance == nullptr || targetInstance->GetLife() <= 0.0f ||
+		targetInstance->GetTeam() == itemInstance->GetTeam())
 	{
 		NoTarget(aircraft);
 		return;
 	}
+
+	if (targetInstance->IsAircraft() ? !aircraft->CanTargetAir() : !aircraft->CanTargetLand())
+	{
+		NoTarget(aircraft);
+		return;
+	}
+
+	aircraft->isAttackMove = false;
 
 	itemInstance->SetTargetUid(targetInstance->GetUid());
 	itemInstance->SetState(ItemStates::Attacking);
@@ -1392,6 +1525,11 @@ void Fire(AircraftState *itemInstance)
 
 	world.projectiles[projectileName].emplace_back(std::move(bullet));
 
+	if (itemInstance->ammo > 0)
+	{
+		itemInstance->ammo--;
+	}
+
 	itemInstance->reloadTimeLeft = static_cast<float>(itemInstance->GetReloadTime()) / reloadFramesPerSecond;
 
 	if (itemInstance->CanLandOnHelipad())
@@ -1449,6 +1587,20 @@ void BreakingAway(AircraftState *itemInstance)
 
 void NoTarget(AircraftState *itemInstance)
 {
+	// The one it was on has died or is out of reach. Look for another before
+	// giving up, so a strike does not fly home after the first kill while the
+	// rest of the column is still under it.
+	if (!itemInstance->landed && itemInstance->CanAttack())
+	{
+		const int nextUid = FindTarget(itemInstance, detectionRange);
+
+		if (nextUid != INT_MIN)
+		{
+			EngageTarget(itemInstance, nextUid);
+			return;
+		}
+	}
+
 	itemInstance->SetTargetUid(0);
 	itemInstance->SetState(ItemStates::Flying);
 

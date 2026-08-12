@@ -1,17 +1,22 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <effolkronium/random.hpp>
 #include <Common.hpp>
 #include "AircraftStates.h"
 #include "BuildingStates.h"
 #include "Globals.h"
 #include "ItemInstance.h"
+#include "Lookup.h"
 #include "Orders.h"
+#include "Physics.h"
 #include "Point.h"
 #include "Window.h"
 
 namespace TGX
 {
+using Random = effolkronium::random_static;
+
 ItemInstance *globalItem;
 
 static Map<Orders::Order, Function<void(ItemInstance *)>> orderMap;
@@ -172,6 +177,10 @@ bool ClaimTaxiway(AirportState *airport, int hangerIndex, int uid);
 void ReleaseTaxiway(AirportState *airport, int uid);
 
 void Action(ItemInstance *itemInstance);
+
+int FindTarget(const AircraftState *itemInstance, float range);
+void EngageTarget(AircraftState *itemInstance, int targetUid);
+void Search(AircraftState *itemInstance);
 
 void Move(ItemInstance *itemInstance);
 void MoveTo(ItemInstance *itemInstance);
