@@ -15,7 +15,8 @@
 				{"type":"economy", "name":"modules/Economy"},
 				{"type":"ai", "name":"modules/AI"},
 				{"type":"resources", "name":"modules/Resources"},
-				{"type":"fogofwar", "name":"modules/FogOfWar"}
+				{"type":"fogofwar", "name":"modules/FogOfWar"},
+				{"type":"turrets","name":"modules/Turrets"}
 			],
 			"required_jsons":
 			[
@@ -33,7 +34,8 @@
 				{"type":"triggers", "name":"modules/Triggers"},
 				{"type":"economy", "name":"modules/Economy"},
 				{"type":"resources", "name":"modules/Resources"},
-				{"type":"fogofwar", "name":"modules/FogOfWar"}
+				{"type":"fogofwar", "name":"modules/FogOfWar"},
+				{"type":"turrets","name":"modules/Turrets"}
 			],
 			"required_jsons":
 			[

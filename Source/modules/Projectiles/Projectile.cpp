@@ -54,6 +54,10 @@ extern "C"
 		{
 			return globalProjectile = new BombInstance();
 		}
+		if (name == "laser")
+		{
+			return globalProjectile = new LaserInstance();
+		}
 
 		return nullptr;
 	}

@@ -473,6 +473,56 @@
 					"value":"blank",
 					"type":"none"
 				}
+			},
+			{
+				"image":"images/sidebar_buttons/laser-tower/",
+				"frame":0,
+				"frames":4,
+				"extension":".png",
+				"duration":720,
+				"cost":1500,
+				"powerusage":200,
+				"wait":true,
+				"alignment":"horizontal",
+				"x":904,
+				"y":556,
+				"attach":"construction_facility",
+				"click":
+				{
+					"action":"Add",
+					"value":"laser-tower",
+					"type":"turrets"
+				},
+				"buildableGrid":
+				{
+					"x":2,
+					"y":8
+				}
+			},
+			{
+				"image":"images/sidebar_buttons/missile-turret/",
+				"frame":0,
+				"frames":4,
+				"extension":".png",
+				"duration":480,
+				"cost":1500,
+				"powerusage":50,
+				"wait":true,
+				"alignment":"horizontal",
+				"x":948,
+				"y":556,
+				"attach":"construction_facility",
+				"click":
+				{
+					"action":"Add",
+					"value":"missile-turret",
+					"type":"turrets"
+				},
+				"buildableGrid":
+				{
+					"x":4,
+					"y":4
+				}
 			}
 		]
 	}

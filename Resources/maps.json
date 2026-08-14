@@ -52,7 +52,9 @@
 				{"type":"infantry","name":"soldier","team":"technology"},
 				{"type":"infantry","name":"rocketeer","team":"technology"},
 				{"type":"infantry","name":"grenadier","team":"technology"},
-				{"type":"infantry","name":"engineer","team":"technology"}				
+				{"type":"infantry","name":"engineer","team":"technology"},
+				{"type":"turrets","name":"laser-tower","team":"technology"},
+				{"type":"turrets","name":"missile-turret","team":"technology"}
 			],
 			"projectiles":
 			[
@@ -61,7 +63,8 @@
 				{"type":"projectiles","name":"rocket"},
 				{"type":"projectiles","name":"shell"},
 				{"type":"projectiles","name":"missile"},
-				{"type":"projectiles","name":"bomb"}
+				{"type":"projectiles","name":"bomb"},
+				{"type":"projectiles","name":"laser"}
 			],
 			"interface":
 			[
@@ -146,7 +149,10 @@
 				{"type":"infantry","name":"soldier","x":28,"y":26,"direction":0,"team":"technology","uid":-214},
 				{"type":"infantry","name":"soldier","x":29,"y":26,"direction":0,"team":"technology","uid":-215},
 				{"type":"infantry","name":"soldier","x":30,"y":26,"direction":0,"team":"technology","uid":-216},
-				{"type":"infantry","name":"soldier","x":31,"y":26,"direction":0,"team":"technology","uid":-217}
+				{"type":"infantry","name":"soldier","x":31,"y":26,"direction":0,"team":"technology","uid":-217},
+				{"type":"turrets","name":"laser-tower","x":39,"y":31,"direction":0,"team":"technology","uid":-218},
+				{"type":"turrets","name":"laser-tower","x":39,"y":40,"direction":0,"team":"technology","uid":-219},
+				{"type":"turrets","name":"missile-turret","x":39,"y":49,"direction":0,"team":"technology","uid":-220}
 			],
 			"resources":
 			[
@@ -198,7 +204,9 @@
 				{"type":"infantry","name":"soldier","team":"technology"},
 				{"type":"infantry","name":"rocketeer","team":"technology"},
 				{"type":"infantry","name":"grenadier","team":"technology"},
-				{"type":"infantry","name":"engineer","team":"technology"}
+				{"type":"infantry","name":"engineer","team":"technology"},
+				{"type":"turrets","name":"laser-tower","team":"technology"},
+				{"type":"turrets","name":"missile-turret","team":"technology"}
 			],
 			"projectiles":
 			[
@@ -207,7 +215,8 @@
 				{"type":"projectiles","name":"rocket"},
 				{"type":"projectiles","name":"shell"},
 				{"type":"projectiles","name":"missile"},
-				{"type":"projectiles","name":"bomb"}
+				{"type":"projectiles","name":"bomb"},
+				{"type":"projectiles","name":"laser"}
 			],
 			"interface":
 			[

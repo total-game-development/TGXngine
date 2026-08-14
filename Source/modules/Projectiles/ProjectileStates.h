@@ -177,4 +177,37 @@ public:
 		return std::make_unique<ShellInstance>(*this);
 	}
 };
+
+// The laser tower's beam. It is a projectile like everything else rather than
+// an instant hit, so that it damages and reads on screen through the same path
+// as every other round -- but the speed is high enough that the flight is over
+// within a frame or two at any range the tower can reach.
+class LaserInstance : public ProjectileInstance
+{
+public:
+	static constexpr int frames = 1;
+	static constexpr int speed = 1200;
+	static constexpr float damage = 20;
+
+	LaserInstance() : ProjectileInstance("laser") {}
+	int GetFrames() const override
+	{
+		return frames;
+	}
+
+	int GetSpeed() const override
+	{
+		return speed;
+	}
+
+	float GetDamage() const override
+	{
+		return damage;
+	}
+
+	Unique<ProjectileInstance> Clone() const override
+	{
+		return std::make_unique<LaserInstance>(*this);
+	}
+};
 } // namespace TGX
