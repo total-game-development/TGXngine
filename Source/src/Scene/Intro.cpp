@@ -170,7 +170,11 @@ void Intro::Draw()
 
 void Intro::Click()
 {
-	for (const auto &button : buttons)
+	// A copy: a button that loads a scene frees this one on the way, and Free
+	// clears the vector the loop is walking.
+	const Vector<Ref<Button>> pressed = buttons;
+
+	for (const auto &button : pressed)
 	{
 		if (button->Click())
 		{

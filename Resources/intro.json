@@ -20,6 +20,25 @@
 					"action": "LoadScene",
 					"value": "game"
 				}
+			},
+			{
+				"text": "Skirmish",
+				"font": "courier",
+				"font-style": "italic bold",
+				"size": 48,
+				"colour": "FFFFFF",
+				"outline-color": "000060",
+				"outline-size": 4,
+				"alignment": "none",
+				"x": 420,
+				"y": 580,
+				"width": 200,
+				"height": 48,
+				"hover": "FFD700",
+				"click": {
+					"action": "LoadScene",
+					"value": "skirmish"
+				}
 			}
 		]
 	}

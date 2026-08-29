@@ -24,12 +24,14 @@ enum class SceneType : std::uint8_t
 {
 	Unknown,
 	Intro,
+	Skirmish,
 	Game
 };
 
 inline SceneType SceneTypeFromString(const String &str)
 {
 	if (str == "intro") { return SceneType::Intro; }
+	if (str == "skirmish") { return SceneType::Skirmish; }
 	if (str == "game") { return SceneType::Game; }
 	return SceneType::Unknown;
 }

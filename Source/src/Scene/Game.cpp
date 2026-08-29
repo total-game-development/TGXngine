@@ -51,6 +51,12 @@ void Game::Init()
 
 	currentLevel = gameJsonRef["game"]["startLevel"].get<int>();
 
+	// A skirmish agreed in the lobby picks the map; startLevel is the fallback.
+	if (SkirmishSetup::active && SkirmishSetup::level >= 0)
+	{
+		currentLevel = SkirmishSetup::level;
+	}
+
 	WorldState &world = WorldState::GetInstance();
 	world.SetCurrentLevel(currentLevel);
 
@@ -73,6 +79,27 @@ void Game::Init()
 
 	Log::Info("Current Level Number: " + std::to_string(currentLevel));
 
+	// The lobby writes its choices onto the level's own team list, so everything
+	// downstream reads one answer instead of two.
+	if (SkirmishSetup::active && !SkirmishSetup::slots.empty())
+	{
+		json teams = json::array();
+
+		for (const SkirmishSetup::Slot &slot : SkirmishSetup::slots)
+		{
+			if (slot.role == "none")
+			{
+				continue;
+			}
+
+			const String role = SkirmishSetup::spectator ? String{"ai"} : slot.role;
+
+			teams.push_back({{"name", slot.team}, {"type", role}});
+		}
+
+		level["teams"] = teams;
+	}
+
 	if (level.contains("teams"))
 	{
 		for (const auto &teamEntry : level["teams"])
@@ -83,6 +110,13 @@ void Game::Init()
 				break;
 			}
 		}
+	}
+
+	// Nobody took a side, so the view borrows the first one: the renderer, the
+	// economy and the fog of war all need a perspective.
+	if (SkirmishSetup::active && SkirmishSetup::spectator && !SkirmishSetup::slots.empty())
+	{
+		world.SetTeam(SkirmishSetup::slots.front().team);
 	}
 
 	world.SetBackgroundOffsetX(level["backgroundOffsetX"]);
@@ -585,6 +619,10 @@ void Game::ClearSelection()
 void Game::Close()
 {
 	Log::Success("Close Game");
+
+	// Consumed by the match it set up. Left standing it would hijack the next
+	// launch, which reads startLevel.
+	SkirmishSetup::Clear();
 
 	background.reset();
 	item.reset();

@@ -355,6 +355,370 @@
 				{"type":"resources","name":"water","x":26,"y":13,"uid":-1000},
                 {"type":"resources","name":"oil","x":116,"y":72,"uid":-1001}
 			]
+		},
+		{
+			"name": "skirmish-crossing",
+			"type": "skirmish",
+			"briefing": "Two construction facilities, one island, and four resource nodes between them. Secure water and oil with prospectors before the other side does, then push out from your base. Neither side starts with an advantage: whoever gets its economy running first fields the bigger army.",
+			"mapImage": "Resources/images/maps/singleplayer/ai-level/",
+			"numberOfHorizontalTiles": 10,
+			"numberOfVerticalTiles": 6,
+			"backgroundOffsetX": 0,
+			"backgroundOffsetY": 80,
+			"backgroundOffsetWidth": 160,
+			"backgroundOffsetHeight": 0,
+			"positions": [
+				{"x":50, "y":50}
+			],
+			"mapGridWidth": 240,
+			"mapGridHeight": 240,
+			"teams": [
+				{"name":"technology", "type":"player"},
+				{"name":"social-earth", "type":"ai"}
+			],
+			"cash": {"technology":25000, "social-earth":25000},
+			"water": {"technology":0, "social-earth":0},
+			"oil": {"technology":0, "social-earth":0},
+			"additional_requirements": [
+				{"type":"buildings", "name":"powerplant", "team":"technology"},
+				{"type":"buildings", "name":"barracks", "team":"technology"},
+				{"type":"buildings", "name":"factory", "team":"technology"},
+				{"type":"buildings", "name":"radar", "team":"technology"},
+				{"type":"buildings", "name":"extractor", "team":"technology"},
+				{"type":"infantry", "name":"soldier", "team":"technology"},
+				{"type":"infantry", "name":"rocketeer", "team":"technology"},
+				{"type":"infantry", "name":"grenadier", "team":"technology"},
+				{"type":"infantry", "name":"engineer", "team":"technology"},
+				{"type":"turrets", "name":"laser-tower", "team":"technology"},
+				{"type":"turrets", "name":"missile-turret", "team":"technology"}
+			],
+			"projectiles": [
+				{"type":"projectiles", "name":"bullet"},
+				{"type":"projectiles", "name":"grenade"},
+				{"type":"projectiles", "name":"rocket"},
+				{"type":"projectiles", "name":"shell"},
+				{"type":"projectiles", "name":"missile"},
+				{"type":"projectiles", "name":"bomb"},
+				{"type":"projectiles", "name":"laser"}
+			],
+			"interface": [
+				{"type":"interface", "name":"sidebar"}
+			],
+			"triggers": [
+				{"type":"triggers", "name":"log"}
+			],
+			"economy": {
+				"technology": {"cash":25000},
+				"social-earth": {"cash":25000}
+			},
+			"fog_of_war": [
+				{"type":"fog_of_war"},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFFFF"},
+						[
+							2,
+							3,
+							4,
+							5,
+							6,
+							7,
+							8,
+							9
+						]
+					]
+				},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFF33"},
+						[
+							10,
+							11,
+							12,
+							13,
+							14,
+							15,
+							16,
+							17
+						]
+					]
+				}
+			],
+			"ai": [
+				{
+					"name": "builder",
+					"buildLimit": 6,
+					"techTree": {
+						"nodes": [
+							{
+								"name": "construction_facility",
+								"type": "buildings",
+								"role": "building_generator",
+								"buildTime": 1080,
+								"cost": 5000,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": true,
+								"children": [
+									"powerplant"
+								]
+							},
+							{
+								"name": "powerplant",
+								"type": "buildings",
+								"role": "power_generator",
+								"buildTime": 240,
+								"cost": 100,
+								"powerUsage": 0,
+								"powerOutput": 400,
+								"isRoot": false,
+								"children": [
+									"barracks",
+									"vehicle_assembly_tunnel"
+								]
+							},
+							{
+								"name": "barracks",
+								"type": "buildings",
+								"role": "light_land_generator",
+								"buildTime": 360,
+								"cost": 300,
+								"powerUsage": 150,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"soldier",
+									"grenadier",
+									"rocketeer"
+								]
+							},
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{
+								"name": "vehicle_assembly_tunnel",
+								"type": "buildings",
+								"role": "heavy_land_generator",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 250,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"prospector"
+								]
+							},
+							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":480, "cost":500, "powerUsage":250, "powerOutput":0, "isRoot":false}
+						]
+					}
+				}
+			],
+			"items": [
+				{"type":"buildings", "name":"construction_facility", "x":50, "y":50, "direction":0, "team":"technology", "uid":-600},
+				{"type":"buildings", "name":"powerplant", "x":85, "y":50, "direction":0, "team":"technology", "uid":-601},
+				{"type":"buildings", "name":"barracks", "x":50, "y":85, "direction":0, "team":"technology", "uid":-602},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":80, "y":85, "direction":0, "team":"technology", "uid":-603},
+				{"type":"infantry", "name":"soldier", "x":60, "y":78, "direction":0, "team":"technology", "uid":-604},
+				{"type":"infantry", "name":"soldier", "x":63, "y":78, "direction":0, "team":"technology", "uid":-605},
+				{"type":"infantry", "name":"rocketeer", "x":66, "y":78, "direction":0, "team":"technology", "uid":-606},
+				{"type":"buildings", "name":"construction_facility", "x":150, "y":150, "direction":0, "team":"social-earth", "uid":-700},
+				{"type":"buildings", "name":"powerplant", "x":185, "y":150, "direction":0, "team":"social-earth", "uid":-701},
+				{"type":"buildings", "name":"barracks", "x":150, "y":185, "direction":0, "team":"social-earth", "uid":-702},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":180, "y":185, "direction":0, "team":"social-earth", "uid":-703},
+				{"type":"infantry", "name":"soldier", "x":160, "y":178, "direction":0, "team":"social-earth", "uid":-704},
+				{"type":"infantry", "name":"soldier", "x":163, "y":178, "direction":0, "team":"social-earth", "uid":-705},
+				{"type":"infantry", "name":"rocketeer", "x":166, "y":178, "direction":0, "team":"social-earth", "uid":-706}
+			],
+			"resources": [
+				{"type":"resources", "name":"water", "x":100, "y":60, "uid":-1100},
+				{"type":"resources", "name":"oil", "x":110, "y":120, "uid":-1101},
+				{"type":"resources", "name":"water", "x":140, "y":190, "uid":-1102},
+				{"type":"resources", "name":"oil", "x":70, "y":110, "uid":-1103}
+			]
+		},
+		{
+			"name": "skirmish-standoff",
+			"type": "skirmish",
+			"briefing": "The bases face each other across the diagonal, and the only oil sits between them. Expect early contact: hold your water, contest the oil, and keep something back for the counter-attack. A short map, where the first attack lands before either side has finished building.",
+			"mapImage": "Resources/images/maps/singleplayer/ai-level/",
+			"numberOfHorizontalTiles": 10,
+			"numberOfVerticalTiles": 6,
+			"backgroundOffsetX": 0,
+			"backgroundOffsetY": 80,
+			"backgroundOffsetWidth": 160,
+			"backgroundOffsetHeight": 0,
+			"positions": [
+				{"x":40, "y":150}
+			],
+			"mapGridWidth": 240,
+			"mapGridHeight": 240,
+			"teams": [
+				{"name":"technology", "type":"player"},
+				{"name":"social-earth", "type":"ai"}
+			],
+			"cash": {"technology":25000, "social-earth":25000},
+			"water": {"technology":0, "social-earth":0},
+			"oil": {"technology":0, "social-earth":0},
+			"additional_requirements": [
+				{"type":"buildings", "name":"powerplant", "team":"technology"},
+				{"type":"buildings", "name":"barracks", "team":"technology"},
+				{"type":"buildings", "name":"factory", "team":"technology"},
+				{"type":"buildings", "name":"radar", "team":"technology"},
+				{"type":"buildings", "name":"extractor", "team":"technology"},
+				{"type":"infantry", "name":"soldier", "team":"technology"},
+				{"type":"infantry", "name":"rocketeer", "team":"technology"},
+				{"type":"infantry", "name":"grenadier", "team":"technology"},
+				{"type":"infantry", "name":"engineer", "team":"technology"},
+				{"type":"turrets", "name":"laser-tower", "team":"technology"},
+				{"type":"turrets", "name":"missile-turret", "team":"technology"}
+			],
+			"projectiles": [
+				{"type":"projectiles", "name":"bullet"},
+				{"type":"projectiles", "name":"grenade"},
+				{"type":"projectiles", "name":"rocket"},
+				{"type":"projectiles", "name":"shell"},
+				{"type":"projectiles", "name":"missile"},
+				{"type":"projectiles", "name":"bomb"},
+				{"type":"projectiles", "name":"laser"}
+			],
+			"interface": [
+				{"type":"interface", "name":"sidebar"}
+			],
+			"triggers": [
+				{"type":"triggers", "name":"log"}
+			],
+			"economy": {
+				"technology": {"cash":25000},
+				"social-earth": {"cash":25000}
+			},
+			"fog_of_war": [
+				{"type":"fog_of_war"},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFFFF"},
+						[
+							2,
+							3,
+							4,
+							5,
+							6,
+							7,
+							8,
+							9
+						]
+					]
+				},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFF33"},
+						[
+							10,
+							11,
+							12,
+							13,
+							14,
+							15,
+							16,
+							17
+						]
+					]
+				}
+			],
+			"ai": [
+				{
+					"name": "builder",
+					"buildLimit": 6,
+					"techTree": {
+						"nodes": [
+							{
+								"name": "construction_facility",
+								"type": "buildings",
+								"role": "building_generator",
+								"buildTime": 1080,
+								"cost": 5000,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": true,
+								"children": [
+									"powerplant"
+								]
+							},
+							{
+								"name": "powerplant",
+								"type": "buildings",
+								"role": "power_generator",
+								"buildTime": 240,
+								"cost": 100,
+								"powerUsage": 0,
+								"powerOutput": 400,
+								"isRoot": false,
+								"children": [
+									"barracks",
+									"vehicle_assembly_tunnel"
+								]
+							},
+							{
+								"name": "barracks",
+								"type": "buildings",
+								"role": "light_land_generator",
+								"buildTime": 360,
+								"cost": 300,
+								"powerUsage": 150,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"soldier",
+									"grenadier",
+									"rocketeer"
+								]
+							},
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{
+								"name": "vehicle_assembly_tunnel",
+								"type": "buildings",
+								"role": "heavy_land_generator",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 250,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"prospector"
+								]
+							},
+							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":480, "cost":500, "powerUsage":250, "powerOutput":0, "isRoot":false}
+						]
+					}
+				}
+			],
+			"items": [
+				{"type":"buildings", "name":"construction_facility", "x":40, "y":150, "direction":0, "team":"technology", "uid":-600},
+				{"type":"buildings", "name":"powerplant", "x":75, "y":150, "direction":0, "team":"technology", "uid":-601},
+				{"type":"buildings", "name":"barracks", "x":40, "y":185, "direction":0, "team":"technology", "uid":-602},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":70, "y":185, "direction":0, "team":"technology", "uid":-603},
+				{"type":"infantry", "name":"soldier", "x":50, "y":178, "direction":0, "team":"technology", "uid":-604},
+				{"type":"infantry", "name":"soldier", "x":53, "y":178, "direction":0, "team":"technology", "uid":-605},
+				{"type":"infantry", "name":"rocketeer", "x":56, "y":178, "direction":0, "team":"technology", "uid":-606},
+				{"type":"buildings", "name":"construction_facility", "x":160, "y":40, "direction":0, "team":"social-earth", "uid":-700},
+				{"type":"buildings", "name":"powerplant", "x":195, "y":40, "direction":0, "team":"social-earth", "uid":-701},
+				{"type":"buildings", "name":"barracks", "x":160, "y":75, "direction":0, "team":"social-earth", "uid":-702},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":190, "y":75, "direction":0, "team":"social-earth", "uid":-703},
+				{"type":"infantry", "name":"soldier", "x":170, "y":68, "direction":0, "team":"social-earth", "uid":-704},
+				{"type":"infantry", "name":"soldier", "x":173, "y":68, "direction":0, "team":"social-earth", "uid":-705},
+				{"type":"infantry", "name":"rocketeer", "x":176, "y":68, "direction":0, "team":"social-earth", "uid":-706}
+			],
+			"resources": [
+				{"type":"resources", "name":"water", "x":40, "y":110, "uid":-1100},
+				{"type":"resources", "name":"water", "x":170, "y":90, "uid":-1101},
+				{"type":"resources", "name":"oil", "x":100, "y":100, "uid":-1102},
+				{"type":"resources", "name":"oil", "x":110, "y":130, "uid":-1103}
+			]
 		}
 	]	
 }

@@ -41,6 +41,106 @@
 			[
 				{"type":"obstruction", "name":"ai-level-obstruction.json"}
 			]
+		},
+		{
+			"required_libraries": [
+				{
+					"type": "buildings",
+					"name": "modules/Buildings"
+				},
+				{
+					"type": "infantry",
+					"name": "modules/Infantry"
+				},
+				{
+					"type": "vehicles",
+					"name": "modules/Vehicles"
+				},
+				{
+					"type": "projectiles",
+					"name": "modules/Projectiles"
+				},
+				{
+					"type": "interface",
+					"name": "modules/Interface"
+				},
+				{
+					"type": "triggers",
+					"name": "modules/Triggers"
+				},
+				{
+					"type": "economy",
+					"name": "modules/Economy"
+				},
+				{
+					"type": "resources",
+					"name": "modules/Resources"
+				},
+				{
+					"type": "fogofwar",
+					"name": "modules/FogOfWar"
+				},
+				{
+					"type": "turrets",
+					"name": "modules/Turrets"
+				}
+			],
+			"required_jsons": [
+				{
+					"type": "obstruction",
+					"name": "ai-level-obstruction.json"
+				}
+			]
+		},
+		{
+			"required_libraries": [
+				{
+					"type": "buildings",
+					"name": "modules/Buildings"
+				},
+				{
+					"type": "infantry",
+					"name": "modules/Infantry"
+				},
+				{
+					"type": "vehicles",
+					"name": "modules/Vehicles"
+				},
+				{
+					"type": "projectiles",
+					"name": "modules/Projectiles"
+				},
+				{
+					"type": "interface",
+					"name": "modules/Interface"
+				},
+				{
+					"type": "triggers",
+					"name": "modules/Triggers"
+				},
+				{
+					"type": "economy",
+					"name": "modules/Economy"
+				},
+				{
+					"type": "resources",
+					"name": "modules/Resources"
+				},
+				{
+					"type": "fogofwar",
+					"name": "modules/FogOfWar"
+				},
+				{
+					"type": "turrets",
+					"name": "modules/Turrets"
+				}
+			],
+			"required_jsons": [
+				{
+					"type": "obstruction",
+					"name": "ai-level-obstruction.json"
+				}
+			]
 		}
 	]
 }

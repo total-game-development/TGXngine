@@ -1,0 +1,12 @@
+{
+	"singleplayer":
+	{
+		"mapTable":{
+			"0": "grass"
+		},
+		"mapObstructedTerrain":[],
+		"mapObstructedIsle":[
+			[0, 0, 57600]
+		]
+	}
+}

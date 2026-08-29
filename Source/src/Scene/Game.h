@@ -12,6 +12,7 @@
 #include "Navigation.h"
 #include "Projectile.h"
 #include "Scene.h"
+#include "SkirmishSetup.h"
 #include "WayPoints/WayPoints.h"
 #include "io/Loader.h"
 

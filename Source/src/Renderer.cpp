@@ -14,6 +14,7 @@
 #include "SFML/Window/Event.hpp"
 #include "Scene/Game.h"
 #include "Scene/Intro.h"
+#include "Scene/Skirmish.h"
 #include "StringUtils.hpp"
 #include "Window.h"
 
@@ -32,6 +33,7 @@ Renderer::Renderer()
 	Window::GetInstance();
 
 	scenes.insert({SceneType::Intro, std::make_shared<Intro>()});
+	scenes.insert({SceneType::Skirmish, std::make_shared<Skirmish>()});
 	scenes.insert({SceneType::Game, std::make_shared<Game>()});
 
 	functions[UIAction::Log] = &Renderer::Log;

@@ -19,7 +19,10 @@ TextButton::~TextButton()
 bool TextButton::Click()
 {
 	WorldState &world = WorldState::GetInstance();
-	if (Intersect(world.GetMouseX(), world.GetMouseY(), x, y, x + static_cast<float>(width), y + static_cast<float>(height)))
+	// Same rectangle Draw hit-tests. It was passed x + width, which Intersect
+	// adds to the corner again, so a button reached twice its width and the
+	// whole screen below it -- invisible with one button, fatal with two.
+	if (Intersect(world.GetMouseX(), world.GetMouseY(), x, y, static_cast<float>(width), static_cast<float>(height)))
 	{
 		if (action == UIAction::None)
 		{
