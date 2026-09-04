@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <Common.hpp>
+#include <algorithm>
 #include "ItemInstance.h"
 #include "Window.h"
 
@@ -35,16 +36,21 @@ class Buildings
 {
 private:
 	sf::RectangleShape *selectionRectangle;
+	sf::RectangleShape *lifeBar;
+	float lifeBarWidth = 0.0f;
+	bool showLifeBar = false;
 
 public:
 	Buildings(ItemInstance *itemInstance)
 	{
 		CreateSelectionRectangle(itemInstance->GetX(), itemInstance->GetY(), itemInstance->GetWidth(), itemInstance->GetHeight());
+		CreateLifeBar(itemInstance->GetWidth());
 	}
 
 	~Buildings()
 	{
 		delete selectionRectangle;
+		delete lifeBar;
 	}
 
 	void Draw(ItemInstance *itemInstance, Vector<sf::Sprite *> *spritesRef)
@@ -56,6 +62,11 @@ public:
 			window.Draw(*selectionRectangle);
 		}
 
+		if (showLifeBar)
+		{
+			window.Draw(*lifeBar);
+		}
+
 		window.Draw(*(*spritesRef)[itemInstance->GetFrame()]);
 	}
 
@@ -65,6 +76,37 @@ public:
 		selectionRectangle->setPosition(
 			((itemState->GetX() * 20.0f) + static_cast<float>(world.GetMapXOffset())),
 			((itemState->GetY() * 20.0f) + static_cast<float>(world.GetMapYOffset())));
+
+		const float maxHitPoints = itemState->GetHitPoints();
+		const float ratio = (maxHitPoints > 0.0f)
+								? std::max(0.0f, std::min(1.0f, itemState->GetLife() / maxHitPoints))
+								: 0.0f;
+
+		showLifeBar = itemState->IsSelected() || ratio < 1.0f;
+
+		if (!showLifeBar)
+		{
+			return;
+		}
+
+		lifeBar->setSize(sf::Vector2f(lifeBarWidth * ratio, 4.0f));
+
+		if (ratio > 0.5f)
+		{
+			lifeBar->setFillColor(sf::Color(0, 216, 0, 255));
+		}
+		else if (ratio > 0.2f)
+		{
+			lifeBar->setFillColor(sf::Color(255, 140, 0, 255));
+		}
+		else
+		{
+			lifeBar->setFillColor(sf::Color(216, 0, 0, 255));
+		}
+
+		lifeBar->setPosition(
+			((itemState->GetX() * 20.0f) + static_cast<float>(world.GetMapXOffset())),
+			((itemState->GetY() * 20.0f) + static_cast<float>(world.GetMapYOffset()) - 8.0f));
 	}
 
 private:
@@ -75,6 +117,16 @@ private:
 		selectionRectangle->setFillColor(sf::Color(255, 216, 0, 51));
 		selectionRectangle->setOutlineColor(sf::Color(255, 255, 0, 128));
 		selectionRectangle->setOutlineThickness(1);
+	}
+
+	void CreateLifeBar(int width)
+	{
+		lifeBarWidth = static_cast<float>(width);
+
+		lifeBar = new sf::RectangleShape(sf::Vector2f(lifeBarWidth, 4.0f));
+		lifeBar->setFillColor(sf::Color(0, 216, 0, 255));
+		lifeBar->setOutlineColor(sf::Color(0, 0, 0, 255));
+		lifeBar->setOutlineThickness(1);
 	}
 };
 

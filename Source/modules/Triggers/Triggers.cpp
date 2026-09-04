@@ -13,10 +13,12 @@ extern "C"
 
 	MODULE_API void Awake(const String &name)
 	{
-		Function<bool()> testFunction = [] { return HasWon(); };
+		Function<bool()> wonTest = [] { return HasWon(); };
+		Function<bool()> lostTest = [] { return HasLost(); };
 
 		std::lock_guard<std::mutex> lock(trigger_mutex);
-		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::LoadScene, "intro", testFunction));
+		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::LoadScene, "intro", wonTest));
+		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::LoadScene, "intro", lostTest));
 
 		Log::Success("Trigger created: " + name + ", number of triggers: " + std::to_string(triggers.size()));
 	}
@@ -87,16 +89,64 @@ void Run()
 	Log::Clean("Trigger thread stopped");
 }
 
-bool HasWon()
+Outcome CurrentOutcome()
 {
 	WorldState &world = WorldState::GetInstance();
+
+	bool mine = false;
+	bool theirs = false;
+
 	for (const auto &item : world.items)
 	{
-		if (item->GetTeam() != world.GetTeam())
+		if (!item)
 		{
-			return false;
+			continue;
+		}
+
+		if (item->GetTeam() == world.GetTeam())
+		{
+			mine = true;
+		}
+		else
+		{
+			theirs = true;
+		}
+
+		if (mine && theirs)
+		{
+			return Outcome::Undecided;
 		}
 	}
+
+	if (!mine && !theirs)
+	{
+		return Outcome::Undecided;
+	}
+
+	return theirs ? Outcome::Lost : Outcome::Won;
+}
+
+bool HasWon()
+{
+	if (CurrentOutcome() != Outcome::Won)
+	{
+		return false;
+	}
+
+	Log::Success("Match over: " + WorldState::GetInstance().GetTeam() + " holds the map");
+
+	return true;
+}
+
+bool HasLost()
+{
+	if (CurrentOutcome() != Outcome::Lost)
+	{
+		return false;
+	}
+
+	Log::Warning("Match over: " + WorldState::GetInstance().GetTeam() + " has nothing left");
+
 	return true;
 }
 } // namespace TGX
