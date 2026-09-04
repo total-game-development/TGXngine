@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Common.hpp>
+#include <algorithm>
+#include <cmath>
 #include "Core.h"
 #include "Flags.h"
 #include "Globals.h"
@@ -154,6 +156,59 @@ public:
 		}
 
 		return direction;
+	}
+
+	// The nearest cell nothing is standing on, scanned outward in rings from
+	// the one asked for. A destination inside a building can never be entered,
+	// so the search that follows has to be pointed at the ground beside it.
+	static Point NearestOpenCell(const Vector<Vector<int>> &grid, Point target, bool &found)
+	{
+		found = false;
+
+		if (grid.empty() || grid[0].empty())
+		{
+			return target;
+		}
+
+		const int rows = static_cast<int>(grid.size());
+		const int cols = static_cast<int>(grid[0].size());
+
+		auto open = [&](int x, int y) {
+			return x >= 0 && y >= 0 && x < cols && y < rows &&
+				   grid[y][x] == Flags::CELL_COLLISION_MODE_OFF;
+		};
+
+		if (open(target.x, target.y))
+		{
+			found = true;
+
+			return target;
+		}
+
+		const int limit = std::max(rows, cols);
+
+		for (int ring = 1; ring <= limit; ring++)
+		{
+			for (int offsetY = -ring; offsetY <= ring; offsetY++)
+			{
+				for (int offsetX = -ring; offsetX <= ring; offsetX++)
+				{
+					if (std::abs(offsetX) != ring && std::abs(offsetY) != ring)
+					{
+						continue;
+					}
+
+					if (open(target.x + offsetX, target.y + offsetY))
+					{
+						found = true;
+
+						return {target.x + offsetX, target.y + offsetY};
+					}
+				}
+			}
+		}
+
+		return target;
 	}
 
 	static void DeleteAllMarkers(Vector<Vector<int>> &terrainGrid)

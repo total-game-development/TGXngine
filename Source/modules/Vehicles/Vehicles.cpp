@@ -657,10 +657,23 @@ void SetPath(VehicleState *itemInstance, float toX, float toY)
 {
 	WorldState &world = WorldState::GetInstance();
 
+	bool reachable = false;
+	Point destination = Navigation::NearestOpenCell(
+		world.currentTerrainMapPassableGrid,
+		{toX, toY},
+		reachable);
+
+	if (!reachable)
+	{
+		itemInstance->path.clear();
+
+		return;
+	}
+
 	itemInstance->path = Navigation::GetInstance().GetPath(
 		world.currentTerrainMapPassableGrid,
 		{itemInstance->GetX(), itemInstance->GetY()},
-		{toX, toY},
+		destination,
 		itemInstance->GetCellCollisionMode());
 }
 
