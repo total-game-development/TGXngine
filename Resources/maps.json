@@ -294,7 +294,7 @@
 								"name": "soldier",
 								"type": "infantry",
 								"role": "light_land_offensive",
-								"buildTime": 360,
+								"buildTime": 36,
 								"cost": 300,
 								"powerUsage": 0,
 								"powerOutput": 0,
@@ -304,7 +304,7 @@
 								"name": "grenadier",
 								"type": "infantry",
 								"role": "light_land_offensive",
-								"buildTime": 360,
+								"buildTime": 36,
 								"cost": 300,
 								"powerUsage": 0,
 								"powerOutput": 0,
@@ -314,7 +314,7 @@
 								"name": "rocketeer",
 								"type": "infantry",
 								"role": "light_land_offensive",
-								"buildTime": 360,
+								"buildTime": 36,
 								"cost": 300,
 								"powerUsage": 0,
 								"powerOutput": 0,
@@ -494,9 +494,9 @@
 									"rocketeer"
 								]
 							},
-							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
 							{
 								"name": "vehicle_assembly_tunnel",
 								"type": "buildings",
@@ -676,9 +676,9 @@
 									"rocketeer"
 								]
 							},
-							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
 							{
 								"name": "vehicle_assembly_tunnel",
 								"type": "buildings",
@@ -824,9 +824,9 @@
 									"rocketeer"
 								]
 							},
-							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false}
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":36, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false}
 						]
 					}
 				}
