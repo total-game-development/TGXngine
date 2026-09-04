@@ -48,6 +48,9 @@ protected:
 
 	int currentLevel = 0;
 
+	String outcome;
+	sf::FloatRect exitButton;
+
 public:
 	Game();
 	~Game() override;
@@ -60,10 +63,12 @@ public:
 	void Close() override;
 	void Free() override;
 	void AddGameItem(json &item);
+	void SetOutcome(const String &result);
 	void RemoveGameItem(json &item);
 
 private:
 	void HandlePanning();
+	void DrawOutcome();
 	void HandleSingleSelection();
 	void ClearSelection();
 	std::optional<nlohmann::json> LoadJsonFile(std::string_view filePath);

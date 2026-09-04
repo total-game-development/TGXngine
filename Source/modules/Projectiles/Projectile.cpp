@@ -126,8 +126,8 @@ extern "C"
 
 				if (target)
 				{
-					projectile->targetX = target->GetX();
-					projectile->targetY = target->GetY();
+					projectile->targetX = target->GetCenterX();
+					projectile->targetY = target->GetCenterY();
 				}
 
 				float dx = projectile->targetX - projectile->x;
@@ -174,6 +174,11 @@ extern "C"
 
 				if (dist > 0.0f && step > 0.0f)
 				{
+					projectile->direction = FindAngle(
+						projectile->targetX, projectile->targetY,
+						projectile->x, projectile->y,
+						projectile->directions);
+
 					projectile->x += (dx / dist) * step;
 					projectile->y += (dy / dist) * step;
 				}
@@ -214,12 +219,26 @@ extern "C"
 			return;
 		}
 
-		sf::Sprite *sprite = (*inSritesRef)[spriteIndex];
+		const int directions = std::min(it->second->directions, it->second->GetFrames());
 
 		Window &window = Window::GetInstance();
 
 		for (auto &projectile : projectileList)
 		{
+			int frame = spriteIndex;
+
+			if (directions > 0)
+			{
+				frame += static_cast<int>(WrapDirection(std::round(projectile->direction), directions));
+			}
+
+			if (frame < 0 || frame >= static_cast<int>(inSritesRef->size()))
+			{
+				frame = spriteIndex;
+			}
+
+			sf::Sprite *sprite = (*inSritesRef)[frame];
+
 			sprite->setPosition(sf::Vector2f(
 				((projectile->x * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 				((projectile->y * Globals::grid_size) + static_cast<float>(world.GetMapYOffset()))));

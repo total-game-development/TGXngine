@@ -17,8 +17,8 @@ extern "C"
 		Function<bool()> lostTest = [] { return HasLost(); };
 
 		std::lock_guard<std::mutex> lock(trigger_mutex);
-		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::LoadScene, "intro", wonTest));
-		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::LoadScene, "intro", lostTest));
+		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::GameOver, "won", wonTest));
+		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::GameOver, "lost", lostTest));
 
 		Log::Success("Trigger created: " + name + ", number of triggers: " + std::to_string(triggers.size()));
 	}

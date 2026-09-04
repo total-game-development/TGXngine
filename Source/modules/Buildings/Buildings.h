@@ -89,7 +89,10 @@ public:
 			return;
 		}
 
-		lifeBar->setSize(sf::Vector2f(lifeBarWidth * ratio, 4.0f));
+		const float footprint = (itemState->GetCenterX() - itemState->GetX()) * 2.0f * 20.0f;
+		const float barWidth = (footprint > 0.0f) ? footprint : lifeBarWidth;
+
+		lifeBar->setSize(sf::Vector2f(barWidth * ratio, 4.0f));
 
 		if (ratio > 0.5f)
 		{
@@ -105,7 +108,7 @@ public:
 		}
 
 		lifeBar->setPosition(
-			((itemState->GetX() * 20.0f) + static_cast<float>(world.GetMapXOffset())),
+			((itemState->GetCenterX() * 20.0f) + static_cast<float>(world.GetMapXOffset()) - (barWidth / 2.0f)),
 			((itemState->GetY() * 20.0f) + static_cast<float>(world.GetMapYOffset()) - 8.0f));
 	}
 

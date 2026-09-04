@@ -41,6 +41,7 @@ Renderer::Renderer()
 	functions[UIAction::Print] = &Renderer::Print;
 	functions[UIAction::AddGameItem] = &Renderer::AddGameItem;
 	functions[UIAction::RemoveGameItem] = &Renderer::RemoveGameItem;
+	functions[UIAction::GameOver] = &Renderer::GameOver;
 	functions[UIAction::Cancel] = &Renderer::Cancel;
 
 	world.SetCanvasSize(Globals::canvasWidth, Globals::canvasHeight);
@@ -258,6 +259,20 @@ void Renderer::AddGameItem(Any item)
 
 	Log::Print("Command: " + command);
 	Log::Print("Name: " + name);
+}
+
+void Renderer::GameOver(Any outcome)
+{
+	auto result = std::any_cast<String>(outcome);
+
+	Log::Success("GameOver: " + result);
+
+	auto game = std::static_pointer_cast<Game>(scenes[SceneType::Game]);
+
+	if (game)
+	{
+		game->SetOutcome(result);
+	}
 }
 
 void Renderer::RemoveGameItem(Any item)

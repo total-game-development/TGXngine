@@ -61,7 +61,8 @@ enum class UIAction : std::uint8_t
 	Print,
 	Send,
 	AddGameItem,
-	RemoveGameItem
+	RemoveGameItem,
+	GameOver
 };
 
 inline UIAction UIActionFromString(const String &str)
@@ -77,6 +78,7 @@ inline UIAction UIActionFromString(const String &str)
 	if (str == "Send") { return UIAction::Send; }
 	if (str == "AddGameItem") { return UIAction::AddGameItem; }
 	if (str == "RemoveGameItem") { return UIAction::RemoveGameItem; }
+	if (str == "GameOver") { return UIAction::GameOver; }
 	return UIAction::Unknown;
 }
 
@@ -104,6 +106,8 @@ inline String UIActionToString(UIAction action)
 			return "AddGameItem";
 		case UIAction::RemoveGameItem:
 			return "RemoveGameItem";
+		case UIAction::GameOver:
+			return "GameOver";
 		default:
 			return "none";
 	}

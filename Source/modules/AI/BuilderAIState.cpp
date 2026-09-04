@@ -309,8 +309,8 @@ void BuilderAIState::CommandArmy()
 			continue;
 		}
 
-		const float deltaX = item->GetX() - musterX;
-		const float deltaY = item->GetY() - musterY;
+		const float deltaX = item->GetCenterX() - musterX;
+		const float deltaY = item->GetCenterY() - musterY;
 		const float distance = (deltaX * deltaX) + (deltaY * deltaY);
 
 		if (targetUid == -1 || distance < targetDistance)

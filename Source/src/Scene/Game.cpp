@@ -182,8 +182,21 @@ void Game::Init()
 	Log::Success("Game Init");
 }
 
+void Game::SetOutcome(const String &result)
+{
+	if (outcome.empty())
+	{
+		outcome = result;
+	}
+}
+
 void Game::Update()
 {
+	if (!outcome.empty())
+	{
+		return;
+	}
+
 	WorldState &world = WorldState::GetInstance();
 	Physics &physics = Physics::GetInstance();
 
@@ -290,6 +303,8 @@ void Game::Draw()
 		grid->Draw();
 	}
 
+	DrawOutcome();
+
 	if ((frame % Globals::targetFPS) == 0)
 	{
 		WorldState &world = WorldState::GetInstance();
@@ -307,6 +322,18 @@ void Game::Draw()
 
 void Game::Click()
 {
+	if (!outcome.empty())
+	{
+		Mouse &mouse = Mouse::GetInstance();
+
+		if (exitButton.contains(mouse.x, mouse.y))
+		{
+			WorldState::GetInstance().gameEvents.emplace_back(UIAction::LoadScene, String{"intro"});
+		}
+
+		return;
+	}
+
 	WorldState &world = WorldState::GetInstance();
 	world.SetLeftClicked(true);
 
@@ -399,6 +426,81 @@ void Game::Release()
 			world.selected.emplace_back(itemIinstance->GetUid());
 		}
 	}
+}
+
+void Game::DrawOutcome()
+{
+	if (outcome.empty())
+	{
+		return;
+	}
+
+	WorldState &world = WorldState::GetInstance();
+	Window &window = Window::GetInstance();
+
+	const auto screenWidth = static_cast<float>(Globals::canvasWidth + world.GetCanvasOffsetWidth());
+	const auto screenHeight = static_cast<float>(Globals::canvasHeight + world.GetCanvasOffsetHeight());
+
+	sf::RectangleShape shade({screenWidth, screenHeight});
+	shade.setFillColor(sf::Color(8, 10, 14, 160));
+	window.Draw(shade);
+
+	const float panelWidth = 420.0f;
+	const float panelHeight = 200.0f;
+	const float panelX = (screenWidth - panelWidth) / 2.0f;
+	const float panelY = (screenHeight - panelHeight) / 2.0f;
+
+	sf::RectangleShape panel({panelWidth, panelHeight});
+	panel.setPosition(panelX, panelY);
+	panel.setFillColor(sf::Color(18, 22, 30, 245));
+	panel.setOutlineColor(sf::Color(96, 116, 148));
+	panel.setOutlineThickness(1.0f);
+	window.Draw(panel);
+
+	const bool won = (outcome == "won");
+
+	sf::Text title(won ? "VICTORY" : "DEFEAT", font, 40);
+	title.setFillColor(won ? sf::Color(255, 215, 0) : sf::Color(216, 80, 80));
+	title.setPosition(
+		panelX + ((panelWidth - title.getLocalBounds().width) / 2.0f),
+		panelY + 28.0f);
+	window.Draw(title);
+
+	sf::Text detail(
+		won ? "Nothing of the other side is left standing."
+			: "You have nothing left on the map.",
+		font, 15);
+	detail.setFillColor(sf::Color(150, 160, 175));
+	detail.setPosition(
+		panelX + ((panelWidth - detail.getLocalBounds().width) / 2.0f),
+		panelY + 90.0f);
+	window.Draw(detail);
+
+	const float buttonWidth = 160.0f;
+	const float buttonHeight = 40.0f;
+
+	exitButton = sf::FloatRect(
+		panelX + ((panelWidth - buttonWidth) / 2.0f),
+		panelY + panelHeight - buttonHeight - 24.0f,
+		buttonWidth,
+		buttonHeight);
+
+	Mouse &mouse = Mouse::GetInstance();
+	const bool hovered = exitButton.contains(mouse.x, mouse.y);
+
+	sf::RectangleShape button({buttonWidth, buttonHeight});
+	button.setPosition(exitButton.left, exitButton.top);
+	button.setFillColor(hovered ? sf::Color(58, 72, 96) : sf::Color(34, 42, 56));
+	button.setOutlineColor(sf::Color(96, 116, 148));
+	button.setOutlineThickness(1.0f);
+	window.Draw(button);
+
+	sf::Text label("Exit", font, 18);
+	label.setFillColor(sf::Color::White);
+	label.setPosition(
+		exitButton.left + ((buttonWidth - label.getLocalBounds().width) / 2.0f),
+		exitButton.top + 8.0f);
+	window.Draw(label);
 }
 
 void Game::HandlePanning()
@@ -631,6 +733,9 @@ void Game::Close()
 	// Consumed by the match it set up. Left standing it would hijack the next
 	// launch, which reads startLevel.
 	SkirmishSetup::Clear();
+
+	outcome.clear();
+	exitButton = sf::FloatRect();
 
 	background.reset();
 	item.reset();

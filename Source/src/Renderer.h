@@ -28,6 +28,7 @@ public:
 	void Print(const Any &message);
 	void AddGameItem(Any item);
 	void RemoveGameItem(Any item);
+	void GameOver(Any outcome);
 	void Cancel(const Any &item);
 
 	Renderer(const Renderer &) = delete;

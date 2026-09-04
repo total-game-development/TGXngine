@@ -37,7 +37,7 @@ class GrenadeInstance : public ProjectileInstance
 {
 public:
 	static constexpr int frames = 8;
-	static constexpr int speed = 360;
+	static constexpr int speed = 600; // web grenadier weapon speed 10
 	static constexpr float damage = 12;
 
 	GrenadeInstance() : ProjectileInstance("grenade") {}
@@ -66,7 +66,7 @@ class RocketInstance : public ProjectileInstance
 {
 public:
 	static constexpr int frames = 11;
-	static constexpr int speed = 600;
+	static constexpr int speed = 960; // web rocketeer weapon speed 16
 	static constexpr int damage = 10;
 
 	RocketInstance() : ProjectileInstance("rocket") {}
