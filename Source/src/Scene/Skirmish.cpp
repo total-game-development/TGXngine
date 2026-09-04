@@ -168,19 +168,23 @@ void Skirmish::SelectLevel(std::size_t index)
 	Layout();
 }
 
-// The map's first background tile stands in for preview art none of these maps ship.
 void Skirmish::LoadPreview()
 {
 	hasPreview = false;
 
-	const String mapImage = CurrentLevel().value("mapImage", String{});
+	String file = CurrentLevel().value("mapPreview", String{});
 
-	if (mapImage.empty())
+	if (file.empty())
 	{
-		return;
-	}
+		const String mapImage = CurrentLevel().value("mapImage", String{});
 
-	const String file = mapImage + "0.png";
+		if (mapImage.empty())
+		{
+			return;
+		}
+
+		file = mapImage + "0.png";
+	}
 
 	if (!std::filesystem::exists(file) || !previewTexture.loadFromFile(file))
 	{

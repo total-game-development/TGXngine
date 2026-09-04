@@ -719,6 +719,135 @@
 				{"type":"resources", "name":"oil", "x":100, "y":100, "uid":-1102},
 				{"type":"resources", "name":"oil", "x":110, "y":130, "uid":-1103}
 			]
+		},
+		{
+			"name": "skirmish-snow",
+			"type": "skirmish",
+			"briefing": "Scientists are stranded on the ice between the two camps. Move in, secure them, and walk them back to your own lines before the other side reaches them. Expect resistance the moment you cross the middle of the island: there is nowhere to build out to, so what you start with and what the barracks turns out is the whole war.",
+			"mapImage": "Resources/images/maps/singleplayer/skirmish-snow/",
+			"mapPreview": "Resources/images/preview/skirmish/skirmish-snow/preview.png",
+			"numberOfHorizontalTiles": 4,
+			"numberOfVerticalTiles": 3,
+			"backgroundOffsetX": 0,
+			"backgroundOffsetY": 80,
+			"backgroundOffsetWidth": 160,
+			"backgroundOffsetHeight": 0,
+			"positions": [
+				{"x":20, "y":14}
+			],
+			"mapGridWidth": 100,
+			"mapGridHeight": 100,
+			"teams": [
+				{"name":"technology", "type":"player"},
+				{"name":"social-earth", "type":"ai"}
+			],
+			"cash": {"technology":25000, "social-earth":12500},
+			"water": {"technology":0, "social-earth":0},
+			"oil": {"technology":0, "social-earth":0},
+			"additional_requirements": [
+				{"type":"infantry", "name":"soldier", "team":"technology"},
+				{"type":"infantry", "name":"rocketeer", "team":"technology"},
+				{"type":"infantry", "name":"grenadier", "team":"technology"},
+				{"type":"infantry", "name":"scientist", "team":"technology"},
+				{"type":"infantry", "name":"soldier", "team":"social-earth"},
+				{"type":"infantry", "name":"rocketeer", "team":"social-earth"},
+				{"type":"infantry", "name":"grenadier", "team":"social-earth"}
+			],
+			"projectiles": [
+				{"type":"projectiles", "name":"bullet"},
+				{"type":"projectiles", "name":"grenade"},
+				{"type":"projectiles", "name":"rocket"}
+			],
+			"interface": [
+				{"type":"interface", "name":"sidebar"}
+			],
+			"triggers": [
+				{"type":"triggers", "name":"log"}
+			],
+			"economy": {
+				"technology": {"cash":25000},
+				"social-earth": {"cash":12500}
+			},
+			"fog_of_war": [
+				{"type":"fog_of_war"},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFFFF"},
+						[
+							2,
+							3,
+							4,
+							5,
+							6,
+							7,
+							8,
+							9
+						]
+					]
+				},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFF33"},
+						[
+							10,
+							11,
+							12,
+							13,
+							14,
+							15,
+							16,
+							17
+						]
+					]
+				}
+			],
+			"ai": [
+				{
+					"name": "builder",
+					"buildLimit": 8,
+					"techTree": {
+						"nodes": [
+							{
+								"name": "barracks",
+								"type": "buildings",
+								"role": "light_land_generator",
+								"buildTime": 360,
+								"cost": 300,
+								"powerUsage": 150,
+								"powerOutput": 0,
+								"isRoot": true,
+								"children": [
+									"soldier",
+									"grenadier",
+									"rocketeer"
+								]
+							},
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":360, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false}
+						]
+					}
+				}
+			],
+			"items": [
+				{"type":"infantry", "name":"scientist", "x":42, "y":50, "direction":0, "team":"technology", "uid":-200},
+				{"type":"infantry", "name":"scientist", "x":45, "y":49, "direction":0, "team":"technology", "uid":-201},
+				{"type":"infantry", "name":"scientist", "x":40, "y":53, "direction":0, "team":"technology", "uid":-202},
+				{"type":"infantry", "name":"scientist", "x":43, "y":47, "direction":0, "team":"technology", "uid":-203},
+				{"type":"infantry", "name":"scientist", "x":41, "y":51, "direction":0, "team":"technology", "uid":-204},
+				{"type":"infantry", "name":"scientist", "x":46, "y":50, "direction":0, "team":"technology", "uid":-205},
+				{"type":"infantry", "name":"scientist", "x":39, "y":50, "direction":0, "team":"technology", "uid":-206},
+				{"type":"infantry", "name":"scientist", "x":47, "y":46, "direction":0, "team":"technology", "uid":-207},
+				{"type":"infantry", "name":"scientist", "x":41, "y":48, "direction":0, "team":"technology", "uid":-208},
+				{"type":"infantry", "name":"scientist", "x":46, "y":48, "direction":0, "team":"technology", "uid":-209},
+				{"type":"infantry", "name":"soldier", "x":20, "y":14, "direction":0, "team":"technology", "uid":-100},
+				{"type":"buildings", "name":"barracks", "x":28, "y":22, "direction":0, "team":"technology", "uid":-101},
+				{"type":"buildings", "name":"barracks", "x":40, "y":64, "direction":0, "team":"social-earth", "uid":-500},
+				{"type":"infantry", "name":"soldier", "x":38, "y":68, "direction":0, "team":"social-earth", "uid":-501}
+			],
+			"resources": []
 		}
 	]	
 }

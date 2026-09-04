@@ -100,6 +100,10 @@ extern "C"
 		{
 			return globalItem = new RocketeerState();
 		}
+		if (name == "scientist")
+		{
+			return globalItem = new ScientistState();
+		}
 
 		return nullptr;
 	}

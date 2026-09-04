@@ -304,4 +304,56 @@ public:
 		return reloadTime;
 	}
 };
+
+class ScientistState : public InfantryState
+{
+public:
+	static constexpr float radius = 9.0f;
+	static constexpr int frames = 16;
+	static constexpr int directions = 8;
+	static constexpr int turnSpeed = 360;
+	static constexpr float speed = 150;
+	static constexpr int sight = 6;
+	static constexpr int reloadTime = 120;
+
+	ScientistState()
+	{
+		SetDirections(directions);
+		AddGroup("army");
+
+		combat.weapon = "none";
+		combat.enabled = false;
+		combat.attackable = true;
+
+		logistics.canExtract = false;
+		logistics.loadable = true;
+
+		hitPoints = 25.0f;
+	}
+
+	float GetRadius() const override
+	{
+		return radius;
+	}
+	int GetFrames() const override
+	{
+		return frames;
+	}
+	float GetSpeed() const override
+	{
+		return speed;
+	}
+	int GetTurnSpeed() const override
+	{
+		return turnSpeed;
+	}
+	int GetSight() const override
+	{
+		return sight;
+	}
+	int GetReloadTime() const override
+	{
+		return reloadTime;
+	}
+};
 } // namespace TGX
