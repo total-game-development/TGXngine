@@ -9,6 +9,46 @@
 
 namespace TGX
 {
+namespace
+{
+void Destroyed(BuildingState *building)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	const auto &grid = building->passableGrid;
+
+	for (size_t y = 0; y < grid.size(); ++y)
+	{
+		for (size_t x = 0; x < grid[y].size(); ++x)
+		{
+			const int gridX = static_cast<int>(building->GetX()) + static_cast<int>(x);
+			const int gridY = static_cast<int>(building->GetY()) + static_cast<int>(y);
+
+			if (gridY < 0 || gridY >= world.GetMapGridHeight() || gridX < 0 || gridX >= world.GetMapGridWidth())
+			{
+				continue;
+			}
+
+			world.currentTerrainMapPassableGrid[gridY][gridX] = Flags::CELL_COLLISION_MODE_OFF;
+		}
+	}
+
+	if (building->GetPowerUsage() < 0)
+	{
+		world.SetPowerTotal(world.GetPowerTotal() + building->GetPowerUsage());
+	}
+	else
+	{
+		world.SetPowerUsage(world.GetPowerUsage() - building->GetPowerUsage());
+	}
+
+	world.deployMap.erase(building->GetUid());
+
+	String removeItem = StringConcat("uid:", building->GetUid());
+	world.gameEvents.emplace_back(UIAction::RemoveGameItem, removeItem);
+}
+} // namespace
+
 extern "C"
 {
 	MODULE_API void OutputTest()
@@ -148,6 +188,7 @@ extern "C"
 		}
 
 		globalItem->SetBuildable(true);
+		globalItem->SetLife(globalItem->GetHitPoints());
 		world.SetPrimaryItems(globalItem->GetTeam(), globalItem->GetName(), globalItem->GetUid());
 
 		if (buildingState->GetPowerUsage() < 0)
@@ -165,8 +206,12 @@ extern "C"
 		Log::Print(StringConcat("This building is processing it's orders ", orders));
 	}
 
-	MODULE_API void ProcessOrders()
+	MODULE_API void ProcessOrders(ItemInstance *itemInstance)
 	{
+		if (itemInstance != nullptr && itemInstance->GetOrders()->order == Orders::Order::Destroyed)
+		{
+			Destroyed(static_cast<BuildingState *>(itemInstance));
+		}
 	}
 
 	MODULE_API void Draw(ItemInstance *itemInstance, std::vector<sf::Sprite *> *spritesRef)
@@ -180,14 +225,22 @@ extern "C"
 
 		if (HoverFromCorner(itemInstance))
 		{
-			world.SetItemUnderCursor(true);
 			world.SetItemUidThatIsUnderCursor(itemInstance->GetUid());
 
-			if (world.IsLeftClicked())
+			if (world.GetTeam() == itemInstance->GetTeam())
 			{
-				Log::Print("Building is clicked");
-				itemInstance->SetSelected(true);
-				world.selected.emplace_back(itemInstance->GetUid());
+				world.SetItemUnderCursor(true);
+
+				if (world.IsLeftClicked())
+				{
+					Log::Print("Building is clicked");
+					itemInstance->SetSelected(true);
+					world.selected.emplace_back(itemInstance->GetUid());
+				}
+			}
+			else
+			{
+				world.SetEnemyItemUnderCursor(true);
 			}
 		}
 

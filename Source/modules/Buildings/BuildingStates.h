@@ -19,6 +19,11 @@ public:
 
 	static inline int cellCollisionMode = 1000;
 
+	BuildingState()
+	{
+		combat.attackable = true;
+	}
+
 	int GetCellCollisionMode() const override
 	{
 		return cellCollisionMode;
@@ -91,7 +96,7 @@ public:
 		passableGrid = Vector<Vector<int>>(23, Vector<int>(23, 1));
 		canBePrimary = false;
 
-		hitPoints = 30.0f;
+		hitPoints = 5000.0f;
 	}
 
 	float GetRadius() const override
@@ -125,7 +130,7 @@ public:
 		baseHeight = 69;
 		canBePrimary = false;
 
-		hitPoints = 30.0f;
+		hitPoints = 200.0f;
 	}
 
 	float GetRadius() const override
@@ -499,7 +504,7 @@ public:
 		baseHeight = 78;
 		canBePrimary = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
 	}
 
 	float GetRadius() const override
@@ -567,7 +572,7 @@ public:
 		baseHeight = 97;
 		canBePrimary = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
 	}
 
 	float GetRadius() const override
@@ -616,7 +621,7 @@ public:
 		baseHeight = 190;
 		canBePrimary = true;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
 	}
 
 	float GetRadius() const override
@@ -661,7 +666,7 @@ public:
 		baseHeight = 100;
 		canBePrimary = false;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
 	}
 
 	float GetRadius() const override
@@ -695,7 +700,7 @@ public:
 		baseHeight = 100;
 		canBePrimary = false;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
 	}
 
 	float GetRadius() const override
@@ -729,7 +734,7 @@ public:
 		baseHeight = 100;
 		canBePrimary = false;
 
-		hitPoints = 30.0f;
+		hitPoints = 500.0f;
 	}
 
 	float GetRadius() const override
