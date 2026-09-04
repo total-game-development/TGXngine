@@ -19,13 +19,20 @@ void AStar::Search(
 	const Vector<Vector<int>> &grid,
 	const Unique<ConfigurePath> &configure)
 {
-	if (grid[end.y][end.x] == 1)
+	path.clear();
+
+	if (start.x < 0 || start.y < 0 || start.x >= cols || start.y >= rows ||
+		end.x < 0 || end.y < 0 || end.x >= cols || end.y >= rows)
+	{
+		Log::Error("AStar: start or end lies outside the grid");
+		return;
+	}
+
+	if (!configure->IsTraversable(grid[end.y][end.x]))
 	{
 		Log::Error("AStar NO PATH TO END");
 		return;
 	}
-
-	path.clear();
 
 	HeuristicType heuristicType = configure->GetHeuristicType();
 	auto &heuristicFunction = heuristicFunctions[heuristicType];

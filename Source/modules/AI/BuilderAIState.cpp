@@ -346,7 +346,7 @@ void BuilderAIState::CommandArmy()
 
 		item->SetState(ItemStates::Attacking);
 		item->SetTargetUid(targetUid);
-		item->SetOrders(Orders::Order::MoveTo);
+		item->SetOrders(Orders::Order::Move);
 	}
 }
 
