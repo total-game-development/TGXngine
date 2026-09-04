@@ -149,13 +149,13 @@ extern "C"
 							int shooterUid = world.items[shooterIndex]->GetUid();
 							auto targetState = target->GetState();
 
-							if (targetState != ItemStates::Firing && targetState != ItemStates::Retreating)
+							if (targetState != ItemStates::Firing && targetState != ItemStates::Retreating &&
+								target->GetOrders() &&
+								(target->GetOrders()->order == Orders::Order::Stand ||
+								 target->GetOrders()->order == Orders::Order::Standing))
 							{
-								if (target->GetOrders())
-								{
-									target->GetOrders()->order = Orders::Order::Attacked;
-									target->GetOrders()->target_uid = shooterUid;
-								}
+								target->GetOrders()->order = Orders::Order::Attacked;
+								target->GetOrders()->target_uid = shooterUid;
 							}
 						}
 

@@ -8,7 +8,7 @@ class BulletInstance : public ProjectileInstance
 {
 public:
 	static constexpr int frames = 11;
-	static constexpr int speed = 420;
+	static constexpr int speed = 1200; // web weapon speed 20
 	static constexpr float damage = 5;
 
 	BulletInstance() : ProjectileInstance("bullet") {}

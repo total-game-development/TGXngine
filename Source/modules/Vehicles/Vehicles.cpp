@@ -900,6 +900,9 @@ void Fire(VehicleState *itemInstance)
 	auto it = world.projectileRegistry.find(projectileName);
 	if (it == world.projectileRegistry.end())
 	{
+		Log::Warning("Fire: no projectile registered for weapon '" + projectileName + "'");
+		itemInstance->SetOrders(Orders::Order::Standing);
+
 		return;
 	}
 

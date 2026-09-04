@@ -512,6 +512,9 @@ void Fire(InfantryState *itemInstance)
 	auto it = world.projectileRegistry.find(projectileName);
 	if (it == world.projectileRegistry.end())
 	{
+		Log::Warning("Fire: no projectile registered for weapon '" + projectileName + "'");
+		itemInstance->SetOrders(Orders::Order::Standing);
+
 		return;
 	}
 
@@ -645,7 +648,7 @@ void Attacked(InfantryState *itemInstance)
 		return;
 	}
 
-	if (itemInstance->GetState() != ItemStates::Attacking)
+	if (itemInstance->GetState() != ItemStates::Attacking && itemInstance->CanAttack())
 	{
 		itemInstance->SetState(ItemStates::Attacking);
 
@@ -661,17 +664,19 @@ void Attacked(InfantryState *itemInstance)
 			{
 				itemInstance->SetTargetUid(targetState->GetUid());
 				itemInstance->SetOrders(Orders::Order::MoveTo);
+
+				return;
 			}
-			else
-			{
-				Log::Warning("Attacked: targetState is null for UID: " + std::to_string(targetUid));
-			}
+
+			Log::Warning("Attacked: targetState is null for UID: " + std::to_string(targetUid));
 		}
 		else
 		{
 			Log::Warning("Attacked: Invalid target index for UID: " + std::to_string(targetUid));
 		}
 	}
+
+	itemInstance->SetOrders(Orders::Order::Standing);
 }
 
 void Search(InfantryState *itemInstance)
@@ -733,7 +738,7 @@ void Standing(InfantryState *itemInstance)
 		world.currentTerrainMapPassableGrid,
 		physics.GetGridTracker());
 
-	if (itemInstance->GetState() == ItemStates::Attacking)
+	if (itemInstance->GetState() == ItemStates::Attacking && itemInstance->CanAttack())
 	{
 		itemInstance->SetOrders(Orders::Order::TurnToFire);
 	}
