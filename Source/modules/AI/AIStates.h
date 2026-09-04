@@ -10,6 +10,7 @@ namespace TGX
 struct BuildNode
 {
 	String name;
+	String type;
 	String role;
 	int cost = 0;
 	int powerUsage = 0;
@@ -73,6 +74,30 @@ public:
 	// Default fallback interface implementation allows any state
 	// block to gracefully ignore or intercept config data on initialization loop.
 	virtual void InitialiseMapTechTree(const nlohmann::json &aiOpponentData) {}
+
+	void SetTeam(const String &inTeam)
+	{
+		team = inTeam;
+	}
+
+	const String &GetTeam() const
+	{
+		return team;
+	}
+
+	void SetCash(int inCash)
+	{
+		cash = inCash;
+	}
+
+	int GetCash() const
+	{
+		return cash;
+	}
+
+protected:
+	String team;
+	int cash = 0;
 };
 
 class BuilderAIState : public AIState
@@ -90,6 +115,29 @@ public:
 private:
 	// Recursive internal walker helper
 	void PrintNodeRecursive(const Ref<BuildNode> &node, int depth) const;
+
+	void OrderNodesBreadthFirst();
+
+	int Owned(const String &name) const;
+	int OwnedStructures() const;
+
+	Ref<BuildNode> NextBuild();
+	bool IsPlotClear(int x, int y) const;
+	bool FindPlot(int &outX, int &outY) const;
+	void Issue(const Ref<BuildNode> &node, int x, int y) const;
+	void CommandArmy();
+
+	Map<String, Ref<BuildNode>> buildTemplates;
+	Vector<Ref<BuildNode>> rootNodes;
+	Vector<Ref<BuildNode>> orderedNodes;
+
+	Ref<BuildNode> pending = nullptr;
+	int pendingX = -1;
+	int pendingY = -1;
+	int buildCounter = 0;
+	int buildLimit = 6;
+	std::size_t trainCursor = 0;
+	int commandCounter = 0;
 };
 
 class PlexAIState : public AIState

@@ -1,19 +1,29 @@
+#include <algorithm>
+#include <cmath>
 #include "AI.h"
 #include "AIStates.h"
 #include "Core.h"
 #include "Enums.h"
+#include "Flags.h"
+#include "Globals.h"
+#include "ItemStates.h"
 #include "Logs.h"
+#include "Lookup.h"
+#include "Orders.h"
 #include "StringUtils.hpp"
 #include "Utils.hpp"
 #include "WorldState.h"
 
 namespace TGX
 {
-
-// Module-local storage structures for this state instance cleanly declared at namespace level
-static Map<String, Ref<BuildNode>> masterBuildTemplates;
-static Vector<Ref<BuildNode>> rootTechNodes;
-static int globalBuildLimit = 6;
+namespace
+{
+constexpr int plotWidth = 16;
+constexpr int plotHeight = 15;
+constexpr int plotSearchRings = 40;
+constexpr int commandInterval = 60;
+constexpr int musterSize = 5;
+} // namespace
 
 void BuilderAIState::Awake()
 {
@@ -21,50 +31,323 @@ void BuilderAIState::Awake()
 
 void BuilderAIState::Start()
 {
-	WorldState &world = WorldState::GetInstance();
-
-	for (size_t i = 0; i < world.items.size(); i++)
-	{
-		if (!world.items[i])
-		{
-			continue;
-		}
-
-		// FIXED: Changed '!=' to '==' so the AI issues commands to its OWN buildings
-		if (world.items[i]->GetTeam() == world.GetTeam() && world.items[i]->GetName() == "construction_facility")
-		{
-			Log::Print("AI construction_facility selected successfully.");
-
-			// FIXED: Standardize entirely on your native String utilities to prevent cross-casting compilation errors
-			String command = StringConcat("command:", "build");
-			command += ",";
-
-			String name = StringConcat("name:", "powerplant");
-			command += name + ",";
-
-			String type = StringConcat("type:", "buildings");
-			command += type + ",";
-
-			// Ensure world.items[i]->GetTeam() matches the expected type parameter of StringConcat
-			String team = StringConcat("team:", world.items[i]->GetTeam());
-			command += team + ",";
-
-			String x = StringConcat("x:", std::to_string(RoundGridDown(75 * 20, 0, 20)));
-			command += x + ",";
-
-			String y = StringConcat("y:", std::to_string(RoundGridDown(60 * 20, -80, 20)));
-			command += y;
-
-			Log::Print(StringConcat("AI Command Generated: ", command));
-
-			// Queue up the event frame natively
-			world.gameEvents.emplace_back(UIAction::AddGameItem, command);
-		}
-	}
+	Log::Print(StringConcat("BuilderAI commanding ", team, " with $", std::to_string(cash)));
 }
 
 void BuilderAIState::Update()
 {
+	if (team.empty())
+	{
+		return;
+	}
+
+	if (pending)
+	{
+		buildCounter++;
+
+		if (buildCounter >= pending->buildTime)
+		{
+			Issue(pending, pendingX, pendingY);
+
+			cash -= pending->cost;
+			pending = nullptr;
+			buildCounter = 0;
+		}
+	}
+	else
+	{
+		Ref<BuildNode> next = NextBuild();
+
+		if (next)
+		{
+			if (next->type == "buildings" || next->type == "turrets")
+			{
+				if (FindPlot(pendingX, pendingY))
+				{
+					pending = next;
+				}
+			}
+			else
+			{
+				pendingX = -1;
+				pendingY = -1;
+				pending = next;
+			}
+
+			buildCounter = 0;
+		}
+	}
+
+	CommandArmy();
+}
+
+int BuilderAIState::Owned(const String &name) const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	int count = 0;
+
+	for (const auto &item : world.items)
+	{
+		if (item && item->GetTeam() == team && item->GetName() == name)
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+
+int BuilderAIState::OwnedStructures() const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	int count = 0;
+
+	for (const auto &item : world.items)
+	{
+		if (item && item->GetTeam() == team && item->GetType() == "buildings")
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+
+Ref<BuildNode> BuilderAIState::NextBuild()
+{
+	if (OwnedStructures() < buildLimit)
+	{
+		for (const auto &node : orderedNodes)
+		{
+			if (node->type != "buildings" && node->type != "turrets")
+			{
+				continue;
+			}
+
+			if (Owned(node->name) > 0 || cash < node->cost)
+			{
+				continue;
+			}
+
+			if (node->parent && Owned(node->parent->name) == 0)
+			{
+				continue;
+			}
+
+			return node;
+		}
+	}
+
+	if (orderedNodes.empty())
+	{
+		return nullptr;
+	}
+
+	for (std::size_t i = 0; i < orderedNodes.size(); i++)
+	{
+		const std::size_t at = (trainCursor + i) % orderedNodes.size();
+		const Ref<BuildNode> &node = orderedNodes[at];
+
+		if (node->type == "buildings" || node->type == "turrets")
+		{
+			continue;
+		}
+
+		if (!node->parent || Owned(node->parent->name) == 0 || cash < node->cost)
+		{
+			continue;
+		}
+
+		trainCursor = (at + 1) % orderedNodes.size();
+
+		return node;
+	}
+
+	return nullptr;
+}
+
+bool BuilderAIState::IsPlotClear(int x, int y) const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	if (x < 0 || y < 0 ||
+		x + plotWidth > Globals::mapGridWidth ||
+		y + plotHeight > Globals::mapGridHeight)
+	{
+		return false;
+	}
+
+	for (int cellY = y; cellY < y + plotHeight; cellY++)
+	{
+		for (int cellX = x; cellX < x + plotWidth; cellX++)
+		{
+			if (world.currentTerrainMapPassableGrid[cellY][cellX] >= Flags::CELL_COLLISION_MODE_HARD)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool BuilderAIState::FindPlot(int &outX, int &outY) const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	float sumX = 0.0f;
+	float sumY = 0.0f;
+	int structures = 0;
+
+	for (const auto &item : world.items)
+	{
+		if (item && item->GetTeam() == team && item->GetType() == "buildings")
+		{
+			sumX += item->GetX();
+			sumY += item->GetY();
+			structures++;
+		}
+	}
+
+	if (structures == 0)
+	{
+		return false;
+	}
+
+	const int centreX = static_cast<int>(sumX / static_cast<float>(structures));
+	const int centreY = static_cast<int>(sumY / static_cast<float>(structures));
+
+	for (int ring = 2; ring <= plotSearchRings; ring++)
+	{
+		for (int offsetY = -ring; offsetY <= ring; offsetY++)
+		{
+			for (int offsetX = -ring; offsetX <= ring; offsetX++)
+			{
+				if (std::abs(offsetX) != ring && std::abs(offsetY) != ring)
+				{
+					continue;
+				}
+
+				if (IsPlotClear(centreX + offsetX, centreY + offsetY))
+				{
+					outX = centreX + offsetX;
+					outY = centreY + offsetY;
+
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+void BuilderAIState::Issue(const Ref<BuildNode> &node, int x, int y) const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	String command = StringConcat("command:", "build");
+	command += "," + StringConcat("name:", node->name);
+	command += "," + StringConcat("type:", node->type);
+	command += "," + StringConcat("team:", team);
+
+	if (x >= 0 && y >= 0)
+	{
+		command += "," + StringConcat("x:", std::to_string(x));
+		command += "," + StringConcat("y:", std::to_string(y));
+	}
+
+	Log::Print(StringConcat("AI Command Generated: ", command));
+
+	world.gameEvents.emplace_back(UIAction::AddGameItem, command);
+}
+
+void BuilderAIState::CommandArmy()
+{
+	commandCounter++;
+
+	if (commandCounter < commandInterval)
+	{
+		return;
+	}
+
+	commandCounter = 0;
+
+	WorldState &world = WorldState::GetInstance();
+
+	float musterX = 0.0f;
+	float musterY = 0.0f;
+	int soldiers = 0;
+
+	for (const auto &item : world.items)
+	{
+		if (item && item->GetTeam() == team && item->CanAttack())
+		{
+			musterX += item->GetX();
+			musterY += item->GetY();
+			soldiers++;
+		}
+	}
+
+	if (soldiers < musterSize)
+	{
+		return;
+	}
+
+	musterX /= static_cast<float>(soldiers);
+	musterY /= static_cast<float>(soldiers);
+
+	int targetUid = -1;
+	float targetDistance = 0.0f;
+
+	for (const auto &item : world.items)
+	{
+		if (!item || item->GetTeam() == team || item->GetLife() <= 0.0f || !item->IsAttackable())
+		{
+			continue;
+		}
+
+		const float deltaX = item->GetX() - musterX;
+		const float deltaY = item->GetY() - musterY;
+		const float distance = (deltaX * deltaX) + (deltaY * deltaY);
+
+		if (targetUid == -1 || distance < targetDistance)
+		{
+			targetUid = item->GetUid();
+			targetDistance = distance;
+		}
+	}
+
+	if (targetUid == -1)
+	{
+		return;
+	}
+
+	for (const auto &item : world.items)
+	{
+		if (!item || item->GetTeam() != team || !item->CanAttack())
+		{
+			continue;
+		}
+
+		const Orders::Order order = item->GetOrders()->order;
+
+		if (order != Orders::Order::Stand && order != Orders::Order::Standing)
+		{
+			continue;
+		}
+
+		if (item->GetState() == ItemStates::Attacking && LookUp::Get(item->GetTargetUid()) != -1)
+		{
+			continue;
+		}
+
+		item->SetState(ItemStates::Attacking);
+		item->SetTargetUid(targetUid);
+		item->SetOrders(Orders::Order::MoveTo);
+	}
 }
 
 void BuilderAIState::InitialiseMapTechTree(const nlohmann::json &aiOpponentData)
@@ -72,13 +355,14 @@ void BuilderAIState::InitialiseMapTechTree(const nlohmann::json &aiOpponentData)
 	Log::Print("BuilderAIState parsing map tech tree...");
 
 	// 1. Clear out any residual data if re-entering a level
-	masterBuildTemplates.clear();
-	rootTechNodes.clear();
+	buildTemplates.clear();
+	rootNodes.clear();
+	orderedNodes.clear();
 
 	// 2. Extract global configuration limits cleanly
 	if (aiOpponentData.contains("buildLimit"))
 	{
-		globalBuildLimit = aiOpponentData["buildLimit"].get<int>();
+		buildLimit = aiOpponentData["buildLimit"].get<int>();
 	}
 
 	if (!aiOpponentData.contains("techTree") || !aiOpponentData["techTree"].contains("nodes"))
@@ -100,6 +384,7 @@ void BuilderAIState::InitialiseMapTechTree(const nlohmann::json &aiOpponentData)
 
 		auto node = std::make_shared<BuildNode>();
 		node->name = nodeJson["name"].get<String>();
+		node->type = nodeJson.value("type", "buildings");
 		node->role = nodeJson.value("role", "");
 		node->cost = nodeJson.value("cost", 0);
 		node->powerUsage = nodeJson.value("powerUsage", 0);
@@ -116,24 +401,24 @@ void BuilderAIState::InitialiseMapTechTree(const nlohmann::json &aiOpponentData)
 		}
 
 		// Cache the node in our master map registry
-		masterBuildTemplates[node->name] = node;
+		buildTemplates[node->name] = node;
 
 		// Keep track of base starting points for immediate traversal
 		if (node->isRoot)
 		{
-			rootTechNodes.push_back(node);
+			rootNodes.push_back(node);
 		}
 	}
 
 	// SECOND PASS: Reconstruct hierarchy by resolving string identifiers to direct references
 	int linkedEdgesCount = 0;
-	for (auto &[name, parentNode] : masterBuildTemplates)
+	for (auto &[name, parentNode] : buildTemplates)
 	{
 		for (const String &childName : parentNode->childrenNames)
 		{
 			// Verify the referenced child node actually exists in our data mapping
-			auto it = masterBuildTemplates.find(childName);
-			if (it != masterBuildTemplates.end())
+			auto it = buildTemplates.find(childName);
+			if (it != buildTemplates.end())
 			{
 				Ref<BuildNode> &childNode = it->second;
 
@@ -150,10 +435,53 @@ void BuilderAIState::InitialiseMapTechTree(const nlohmann::json &aiOpponentData)
 	}
 
 	Log::Success("Tech Tree Generation Complete: Successfully compiled " +
-				 std::to_string(masterBuildTemplates.size()) + " nodes and mapped " +
+				 std::to_string(buildTemplates.size()) + " nodes and mapped " +
 				 std::to_string(linkedEdgesCount) + " structural pointer linkages.");
 
+	OrderNodesBreadthFirst();
 	DisplayTechTree();
+}
+
+void BuilderAIState::OrderNodesBreadthFirst()
+{
+	orderedNodes.clear();
+
+	Vector<Ref<BuildNode>> frontier = rootNodes;
+
+	while (!frontier.empty())
+	{
+		Vector<Ref<BuildNode>> nextFrontier;
+
+		for (const auto &node : frontier)
+		{
+			if (std::ranges::find(orderedNodes, node) != orderedNodes.end())
+			{
+				continue;
+			}
+
+			orderedNodes.push_back(node);
+
+			for (const String &childName : node->childrenNames)
+			{
+				auto it = buildTemplates.find(childName);
+
+				if (it != buildTemplates.end())
+				{
+					nextFrontier.push_back(it->second);
+				}
+			}
+		}
+
+		frontier = std::move(nextFrontier);
+	}
+
+	for (const auto &[name, node] : buildTemplates)
+	{
+		if (std::ranges::find(orderedNodes, node) == orderedNodes.end())
+		{
+			orderedNodes.push_back(node);
+		}
+	}
 }
 
 void BuilderAIState::DisplayTechTree() const
@@ -162,14 +490,14 @@ void BuilderAIState::DisplayTechTree() const
 	Log::Print("         LIVE AI TECH TREE VISUALIZATION          ");
 	Log::Print("--------------------------------------------------");
 
-	if (rootTechNodes.empty())
+	if (rootNodes.empty())
 	{
 		Log::Warning("Cannot display tech tree: No root nodes have been registered.");
 		return;
 	}
 
 	// Process every independent tree root found in the configuration payload
-	for (const auto &root : rootTechNodes)
+	for (const auto &root : rootNodes)
 	{
 		PrintNodeRecursive(root, 0);
 	}
@@ -198,7 +526,7 @@ void BuilderAIState::PrintNodeRecursive(const Ref<BuildNode> &node, int depth) c
 	Log::Print(nodeInfo);
 
 	// 3. Traverse using our direct pointer layout map!
-	for (const auto &[name, potentialChild] : masterBuildTemplates)
+	for (const auto &[name, potentialChild] : buildTemplates)
 	{
 		// FIXED: Direct evaluation check comparing the parent shared_ptr with the current node shared_ptr
 		if (potentialChild && potentialChild->parent == node)

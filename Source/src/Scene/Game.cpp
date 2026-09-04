@@ -168,6 +168,9 @@ void Game::Init()
 		gameEconomies = std::move(loader->GetEconomies());
 	}
 
+	loader->AssignAI(level);
+	gameAis = std::move(loader->GetAIs());
+
 	fogOfWarModule = std::move(loader->GetFogOfWar());
 
 	font.loadFromFile("Resources/courier.ttf");
@@ -216,6 +219,11 @@ void Game::Update()
 	for (const auto &gameEconomy : gameEconomies)
 	{
 		gameEconomy->Update();
+	}
+
+	for (const auto &gameAi : gameAis)
+	{
+		gameAi->Update();
 	}
 
 	for (const auto &gameProjectile : gameProjectiles)
@@ -673,6 +681,13 @@ void Game::Close()
 		trigger.reset();
 	}
 	gameTriggers.clear();
+
+	for (auto &gameAi : gameAis)
+	{
+		gameAi->Clear();
+		gameAi.reset();
+	}
+	gameAis.clear();
 
 	fogOfWarModule.reset();
 

@@ -463,37 +463,33 @@ void Loader::AssignAI(json &level)
 {
 	Log::Info("Assign AI");
 
-	json &ai = level["ai"];
-
-	if (ai.empty() || !ai.is_array())
+	if (!level.contains("ai") || !level["ai"].is_array() || level["ai"].empty())
 	{
 		return;
 	}
 
-	for (std::size_t i = 0; i < ai.size(); i++)
+	json &ai = level["ai"];
+
+	std::string moduleType = ai[0].contains("type") ? ai[0]["type"].get<std::string>() : "ai";
+
+	if (!dlls.contains(moduleType) || !dlls[moduleType])
 	{
-		json &jsonAIItem = ai[i];
-
-		std::string moduleType = jsonAIItem.contains("type") ? jsonAIItem["type"].get<std::string>() : "ai";
-
-		gameAis.push_back(
-			std::make_unique<AI>(
-				(FNPTR_AI_AWAKE)GET_PROC(dlls[moduleType], "Awake"),
-				(FNPTR_AI_START)GET_PROC(dlls[moduleType], "Start"),
-				(FNPTR_AI_UPDATE)GET_PROC(dlls[moduleType], "Update"),
-				(FNPTR_AI_CLEAR)GET_PROC(dlls[moduleType], "Clear"),
-				(FNPTR_AI_DELETE)GET_PROC(dlls[moduleType], "Delete")));
-
-		gameAis.back()->Awake(jsonAIItem["name"]);
+		Log::Error("Missing DLL for AI module type: " + moduleType);
+		return;
 	}
 
-	for (auto &activeAi : gameAis)
-	{
-		if (activeAi)
-		{
-			activeAi->Start();
-		}
-	}
+	auto *dllHandle = dlls[moduleType];
+
+	gameAis.push_back(
+		std::make_unique<AI>(
+			(FNPTR_AI_AWAKE)GET_PROC(dllHandle, "Awake"),
+			(FNPTR_AI_START)GET_PROC(dllHandle, "Start"),
+			(FNPTR_AI_UPDATE)GET_PROC(dllHandle, "Update"),
+			(FNPTR_AI_CLEAR)GET_PROC(dllHandle, "Clear"),
+			(FNPTR_AI_DELETE)GET_PROC(dllHandle, "Delete")));
+
+	gameAis.back()->Awake(ai[0].value("name", String{"builder"}));
+	gameAis.back()->Start();
 }
 
 void Loader::AddGameItem(int inUid, json &item)
@@ -582,6 +578,11 @@ void Loader::ResetUIDCounter()
 Vector<Unique<Item>> &Loader::GetGameItems()
 {
 	return gameItems;
+}
+
+Vector<Unique<AI>> &Loader::GetAIs()
+{
+	return gameAis;
 }
 
 Vector<Unique<Asset>> &Loader::GetGameAssets()

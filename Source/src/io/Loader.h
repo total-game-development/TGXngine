@@ -76,6 +76,7 @@ public:
 	Vector<Unique<Interface>> &GetGameInterfaces();
 	Vector<Unique<Economy>> &GetEconomies();
 	Vector<Unique<Triggers>> &GetGameTriggers();
+	Vector<Unique<AI>> &GetAIs();
 	Unique<FogOfWar> &GetFogOfWar();
 };
 } // namespace TGX

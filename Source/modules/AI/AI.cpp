@@ -1,4 +1,5 @@
 #include "AI.h"
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include "Core.h"
@@ -54,16 +55,26 @@ extern "C"
 			return;
 		}
 
-		// Loop through all defined AI players dynamically
-		for (const auto &aiOpponent : levelData["ai"])
+		if (!levelData.contains("teams") || !levelData["teams"].is_array())
 		{
-			if (!aiOpponent.contains("name"))
+			Log::Error("AI Awake: level carries AI profiles but no team list to attach them to.");
+			return;
+		}
+
+		const auto &profiles = levelData["ai"];
+		std::size_t profileIndex = 0;
+
+		for (const auto &teamEntry : levelData["teams"])
+		{
+			if (teamEntry.value("type", String{}) != "ai")
 			{
-				Log::Warning("Found an AI node definition missing an explicit name identifier string.");
 				continue;
 			}
 
-			String aiTypeName = aiOpponent["name"].get<String>();
+			const auto &aiOpponent = profiles[std::min(profileIndex, profiles.size() - 1)];
+			profileIndex++;
+
+			String aiTypeName = aiOpponent.value("name", name.empty() ? String{"builder"} : name);
 
 			auto registryIterator = StateRegistry.find(aiTypeName);
 			if (registryIterator == StateRegistry.end())
@@ -75,13 +86,22 @@ extern "C"
 			// Allocate a dedicated instance for this distinct runtime commander profile
 			AIState *newOpponentState = registryIterator->second();
 
+			String opponentTeam = teamEntry.value("name", String{});
+			newOpponentState->SetTeam(opponentTeam);
+
+			if (levelData.contains("economy") && levelData["economy"].contains(opponentTeam))
+			{
+				newOpponentState->SetCash(levelData["economy"][opponentTeam].value("cash", 0));
+			}
+
 			// Setup state tree data polymorphically
 			newOpponentState->InitialiseMapTechTree(aiOpponent);
 			newOpponentState->Awake();
 
 			// Track this instance in our central vector state table
 			activeOpponentStates.push_back(newOpponentState);
-			Log::Success("Dynamically instantiated AI state object target type: " + aiTypeName);
+			Log::Success("Dynamically instantiated AI state object target type: " + aiTypeName +
+						 " commanding " + opponentTeam + " with $" + std::to_string(newOpponentState->GetCash()));
 		}
 
 		Log::Success("AI Awake routine completed successfully.");

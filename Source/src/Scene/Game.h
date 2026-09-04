@@ -43,6 +43,7 @@ protected:
 	Vector<Unique<Interface>> gameInterfaces;
 	Vector<Unique<Triggers>> gameTriggers;
 	Vector<Unique<Economy>> gameEconomies;
+	Vector<Unique<AI>> gameAis;
 	Unique<FogOfWar> fogOfWarModule;
 
 	int currentLevel = 0;

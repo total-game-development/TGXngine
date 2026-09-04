@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include "Collision/Collision.h"
+#include "DeployBerths.h"
 #include "Enums.h"
 #include "ImageLoader.h"
 #include "Logs.h"
@@ -132,6 +133,8 @@ extern "C"
 				if (deployIt != world.deployMap.end())
 				{
 					auto &deploys = deployIt->second;
+
+					DeployBerths::ReleaseVacated(world.items[index].get(), deploys);
 
 					size_t i = 0;
 
