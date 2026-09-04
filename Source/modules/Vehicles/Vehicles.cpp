@@ -123,7 +123,7 @@ extern "C"
 
 		if (globalItem->IsTraining())
 		{
-			int index = LookUp::Get(world.primaryItems["vehicle_assembly_tunnel"]);
+			int index = LookUp::Get(world.GetPrimaryItem(globalItem->GetTeam(), "vehicle_assembly_tunnel"));
 
 			if (index != -1)
 			{

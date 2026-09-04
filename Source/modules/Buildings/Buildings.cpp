@@ -148,7 +148,7 @@ extern "C"
 		}
 
 		globalItem->SetBuildable(true);
-		world.SetPrimaryItems(globalItem->GetName(), globalItem->GetUid());
+		world.SetPrimaryItems(globalItem->GetTeam(), globalItem->GetName(), globalItem->GetUid());
 
 		if (buildingState->GetPowerUsage() < 0)
 		{

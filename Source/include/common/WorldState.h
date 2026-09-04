@@ -595,14 +595,16 @@ public:
 		team = std::move(inTeam);
 	}
 
-	int GetPrimaryItem(const String &name)
+	int GetPrimaryItem(const String &inTeam, const String &name)
 	{
-		return primaryItems[name];
+		auto it = primaryItems.find(inTeam + "/" + name);
+
+		return (it == primaryItems.end()) ? 0 : it->second;
 	}
 
-	void SetPrimaryItems(const String &name, int index)
+	void SetPrimaryItems(const String &inTeam, const String &name, int uid)
 	{
-		this->primaryItems[name] = index;
+		this->primaryItems[inTeam + "/" + name] = uid;
 	}
 
 	Map<int, int> &GetLookup()

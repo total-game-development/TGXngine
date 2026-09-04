@@ -307,7 +307,7 @@ bool SidebarButton::HasFreeDeployBerth() const
 
 	WorldState &world = WorldState::GetInstance();
 
-	auto berths = world.deployMap.find(world.primaryItems[attached]);
+	auto berths = world.deployMap.find(world.GetPrimaryItem(world.GetTeam(), attached));
 
 	if (berths == world.deployMap.end())
 	{
@@ -331,9 +331,7 @@ void SidebarButton::BuildImmediately()
 
 	WorldState &world = WorldState::GetInstance();
 
-	world.primaryItems[attached];
-
-	Log::Print(std::to_string(world.primaryItems[attached]));
+	Log::Print(std::to_string(world.GetPrimaryItem(world.GetTeam(), attached)));
 
 	Log::Print(world.pendingQueue);
 

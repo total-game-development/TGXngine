@@ -411,7 +411,7 @@ extern "C"
 		globalItem->SetBuildable(true);
 		globalItem->SetOrders(Orders::Order::Standing);
 
-		world.SetPrimaryItems(globalItem->GetName(), globalItem->GetUid());
+		world.SetPrimaryItems(globalItem->GetTeam(), globalItem->GetName(), globalItem->GetUid());
 
 		if (turretState->GetPowerUsage() < 0)
 		{

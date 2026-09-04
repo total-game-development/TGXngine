@@ -149,7 +149,7 @@ extern "C"
 
 		if (globalItem->IsTraining())
 		{
-			AirportState *airport = GetAirport(world.primaryItems["airport"]);
+			AirportState *airport = GetAirport(world.GetPrimaryItem(globalItem->GetTeam(), "airport"));
 
 			if (airport != nullptr)
 			{

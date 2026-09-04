@@ -122,7 +122,7 @@ extern "C"
 
 		if (globalItem->IsTraining())
 		{
-			int index = LookUp::Get(world.primaryItems["shipyard"]);
+			int index = LookUp::Get(world.GetPrimaryItem(globalItem->GetTeam(), "shipyard"));
 
 			if (index != -1)
 			{
