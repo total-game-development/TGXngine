@@ -661,9 +661,9 @@ public:
 
 	RadarState()
 	{
-		passableGrid = Vector<Vector<int>>(5, Vector<int>(5, 1));
-		baseWidth = 85;
-		baseHeight = 100;
+		passableGrid = Vector<Vector<int>>(14, Vector<int>(18, 1));
+		baseWidth = 360;
+		baseHeight = 280;
 		canBePrimary = false;
 
 		hitPoints = 500.0f;

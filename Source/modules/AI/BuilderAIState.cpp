@@ -18,8 +18,8 @@ namespace TGX
 {
 namespace
 {
-constexpr int plotWidth = 16;
-constexpr int plotHeight = 15;
+constexpr int plotWidth = 24;
+constexpr int plotHeight = 24;
 constexpr int plotSearchRings = 40;
 constexpr int commandInterval = 60;
 constexpr int musterSize = 5;
