@@ -904,8 +904,26 @@ void Steering(ItemInstance *itemInstance)
 				collidedItem->GetTeam() == itemInstance->GetTeam() &&
 				collidedItem->GetTargetUid() == itemInstance->GetTargetUid())
 			{
-				itemInstance->SetOrders(Orders::Order::Standing);
-				return;
+				// Only if this one can shoot from where it is standing. Each weapon
+				// has its own reach, so a wave arrives as rings: a tank halts a dozen
+				// cells further out than a soldier needs to be. Standing the soldier
+				// down where it met the tank leaves it short of the wall for good.
+				const int index = LookUp::Get(itemInstance->GetTargetUid());
+
+				if (index != -1)
+				{
+					const float reach = static_cast<float>(itemInstance->GetSight()) +
+										world.items[index]->GetOuterSight();
+
+					const float offsetX = world.items[index]->GetCenterX() - itemInstance->GetX();
+					const float offsetY = world.items[index]->GetCenterY() - itemInstance->GetY();
+
+					if (((offsetX * offsetX) + (offsetY * offsetY)) < (reach * reach))
+					{
+						itemInstance->SetOrders(Orders::Order::Standing);
+						return;
+					}
+				}
 			}
 
 			// Both have to actually be in the same commanded group. An order id of 0
