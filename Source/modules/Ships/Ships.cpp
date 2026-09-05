@@ -147,12 +147,14 @@ extern "C"
 						}
 					}
 
-					if (i < deploys.size())
-					{
-						globalItem->SetX(world.items[index]->GetX() + std::get<0>(deploys[i]));
-						globalItem->SetY(world.items[index]->GetY() + std::get<1>(deploys[i]));
-						globalItem->SetDirection(6);
-					}
+					// Every berth taken still has to put the unit somewhere. At the
+					// last berth it is at least at the building, where steering can push
+					// it clear; with no position at all it appears in the map corner.
+					const size_t berth = (i < deploys.size()) ? i : deploys.size() - 1;
+
+					globalItem->SetX(world.items[index]->GetX() + std::get<0>(deploys[berth]));
+					globalItem->SetY(world.items[index]->GetY() + std::get<1>(deploys[berth]));
+					globalItem->SetDirection(6);
 				}
 			}
 			else

@@ -981,6 +981,186 @@
 				{"type":"resources", "name":"oil", "x":131, "y":148, "uid":-1006},
 				{"type":"resources", "name":"water", "x":72, "y":56, "uid":-1007}
 			]
+		},
+		{
+			"name": "skirmish-water",
+			"type": "skirmish",
+			"briefing": "An archipelago, and neither camp can walk to the other. Both sides hold a shipyard on open water and the battleships already at anchor are the whole front line until another comes off the slip. Technology has the airfield in the north; social-earth has the towers, the prospectors and the numbers at sea. Take the water first -- nothing crosses it without you.",
+			"mapImage": "Resources/images/maps/singleplayer/skirmish-water/",
+			"mapPreview": "Resources/images/preview/skirmish/skirmish-water/preview.png",
+			"numberOfHorizontalTiles": 6,
+			"numberOfVerticalTiles": 7,
+			"backgroundOffsetX": 0,
+			"backgroundOffsetY": 80,
+			"backgroundOffsetWidth": 160,
+			"backgroundOffsetHeight": 0,
+			"positions": [
+				{"x":29, "y":28}
+			],
+			"mapGridWidth": 300,
+			"mapGridHeight": 150,
+			"teams": [
+				{"name":"technology", "type":"ai"},
+				{"name":"social-earth", "type":"player"}
+			],
+			"cash": {"technology":25000, "social-earth":12500},
+			"water": {"technology":0, "social-earth":0},
+			"oil": {"technology":0, "social-earth":0},
+			"additional_requirements": [
+				{"type":"buildings", "name":"powerplant", "team":"technology"},
+				{"type":"buildings", "name":"shipyard", "team":"technology"},
+				{"type":"buildings", "name":"airport", "team":"technology"},
+				{"type":"ships", "name":"battleship", "team":"technology"},
+				{"type":"ships", "name":"submarine", "team":"technology"},
+				{"type":"aircrafts", "name":"jet", "team":"technology"},
+				{"type":"aircrafts", "name":"bomber", "team":"technology"},
+				{"type":"aircrafts", "name":"apache", "team":"technology"},
+				{"type":"turrets", "name":"missile-turret", "team":"technology"},
+				{"type":"buildings", "name":"powerplant", "team":"social-earth"},
+				{"type":"buildings", "name":"shipyard", "team":"social-earth"},
+				{"type":"buildings", "name":"water_extractor", "team":"social-earth"},
+				{"type":"buildings", "name":"oil_extractor", "team":"social-earth"},
+				{"type":"ships", "name":"battleship", "team":"social-earth"},
+				{"type":"ships", "name":"submarine", "team":"social-earth"},
+				{"type":"vehicles", "name":"prospector", "team":"social-earth"},
+				{"type":"turrets", "name":"missile-turret", "team":"social-earth"},
+				{"type":"turrets", "name":"laser-tower", "team":"social-earth"}
+			],
+			"projectiles": [
+				{"type":"projectiles", "name":"bullet"},
+				{"type":"projectiles", "name":"shell"},
+				{"type":"projectiles", "name":"missile"},
+				{"type":"projectiles", "name":"bomb"},
+				{"type":"projectiles", "name":"laser"}
+			],
+			"interface": [
+				{"type":"interface", "name":"sidebar"}
+			],
+			"triggers": [
+				{"type":"triggers", "name":"log"}
+			],
+			"economy": {
+				"technology": {"cash":25000},
+				"social-earth": {"cash":12500}
+			},
+			"fog_of_war": [
+				{"type":"fog_of_war"},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFFFF"},
+						[
+							2,
+							3,
+							4,
+							5,
+							6,
+							7,
+							8,
+							9
+						]
+					]
+				},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFF33"},
+						[
+							10,
+							11,
+							12,
+							13,
+							14,
+							15,
+							16,
+							17
+						]
+					]
+				}
+			],
+			"ai": [
+				{
+					"name": "builder",
+					"buildLimit": 8,
+					"techTree": {
+						"nodes": [
+							{
+								"name": "powerplant",
+								"type": "buildings",
+								"role": "power_generator",
+								"buildTime": 144,
+								"cost": 250,
+								"powerUsage": 0,
+								"powerOutput": 400,
+								"isRoot": true,
+								"children": [
+									"shipyard",
+									"airport"
+								]
+							},
+							{
+								"name": "shipyard",
+								"type": "buildings",
+								"role": "naval_generator",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 250,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"battleship",
+									"submarine"
+								]
+							},
+							{"name":"battleship", "type":"ships", "role":"naval_offensive", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"submarine", "type":"ships", "role":"naval_offensive", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{
+								"name": "airport",
+								"type": "buildings",
+								"role": "air_generator",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 250,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"jet",
+									"bomber"
+								]
+							},
+							{"name":"jet", "type":"aircrafts", "role":"air_offensive", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"bomber", "type":"aircrafts", "role":"air_offensive", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
+						]
+					}
+				}
+			],
+			"items": [
+				{"type":"buildings", "name":"airport", "x":29, "y":28, "direction":0, "team":"technology", "uid":-100},
+				{"type":"buildings", "name":"powerplant", "x":52, "y":18, "direction":0, "team":"technology", "uid":-101},
+				{"type":"buildings", "name":"shipyard", "x":52, "y":72, "direction":0, "team":"technology", "uid":-102},
+				{"type":"turrets", "name":"missile-turret", "x":85, "y":18, "direction":0, "team":"technology", "uid":-103},
+				{"type":"turrets", "name":"missile-turret", "x":34, "y":56, "direction":0, "team":"technology", "uid":-104},
+				{"type":"ships", "name":"battleship", "x":82, "y":62, "direction":2, "team":"technology", "uid":-108},
+				{"type":"ships", "name":"battleship", "x":82, "y":72, "direction":2, "team":"technology", "uid":-109},
+				{"type":"turrets", "name":"missile-turret", "x":232, "y":108, "direction":0, "team":"social-earth", "uid":-504},
+				{"type":"turrets", "name":"missile-turret", "x":260, "y":86, "direction":0, "team":"social-earth", "uid":-505},
+				{"type":"turrets", "name":"laser-tower", "x":231, "y":94, "direction":0, "team":"social-earth", "uid":-506},
+				{"type":"turrets", "name":"laser-tower", "x":234, "y":114, "direction":0, "team":"social-earth", "uid":-507},
+				{"type":"buildings", "name":"powerplant", "x":272, "y":96, "direction":0, "team":"social-earth", "uid":-508},
+				{"type":"buildings", "name":"shipyard", "x":180, "y":64, "direction":0, "team":"social-earth", "uid":-511},
+				{"type":"vehicles", "name":"prospector", "x":255, "y":52, "direction":0, "team":"social-earth", "uid":-512},
+				{"type":"vehicles", "name":"prospector", "x":277, "y":52, "direction":0, "team":"social-earth", "uid":-513},
+				{"type":"ships", "name":"battleship", "x":227, "y":62, "direction":0, "team":"social-earth", "uid":-514},
+				{"type":"ships", "name":"battleship", "x":227, "y":72, "direction":0, "team":"social-earth", "uid":-515},
+				{"type":"ships", "name":"battleship", "x":217, "y":102, "direction":0, "team":"social-earth", "uid":-516},
+				{"type":"ships", "name":"battleship", "x":247, "y":142, "direction":0, "team":"social-earth", "uid":-517}
+			],
+			"resources": [
+				{"type":"resources", "name":"oil", "x":16, "y":132, "uid":-1000},
+				{"type":"resources", "name":"water", "x":116, "y":54, "uid":-1001},
+				{"type":"resources", "name":"oil", "x":261, "y":44, "uid":-1002},
+				{"type":"resources", "name":"water", "x":278, "y":48, "uid":-1003}
+			]
 		}
 	]	
 }
