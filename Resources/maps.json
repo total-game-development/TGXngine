@@ -382,15 +382,24 @@
 			"additional_requirements": [
 				{"type":"buildings", "name":"powerplant", "team":"technology"},
 				{"type":"buildings", "name":"barracks", "team":"technology"},
-				{"type":"buildings", "name":"factory", "team":"technology"},
-				{"type":"buildings", "name":"radar", "team":"technology"},
-				{"type":"buildings", "name":"extractor", "team":"technology"},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "team":"technology"},
+				{"type":"buildings", "name":"water_extractor", "team":"technology"},
+				{"type":"buildings", "name":"oil_extractor", "team":"technology"},
 				{"type":"infantry", "name":"soldier", "team":"technology"},
 				{"type":"infantry", "name":"rocketeer", "team":"technology"},
 				{"type":"infantry", "name":"grenadier", "team":"technology"},
-				{"type":"infantry", "name":"engineer", "team":"technology"},
+				{"type":"vehicles", "name":"prospector", "team":"technology"},
 				{"type":"turrets", "name":"laser-tower", "team":"technology"},
-				{"type":"turrets", "name":"missile-turret", "team":"technology"}
+				{"type":"turrets", "name":"missile-turret", "team":"technology"},
+				{"type":"buildings", "name":"powerplant", "team":"social-earth"},
+				{"type":"buildings", "name":"barracks", "team":"social-earth"},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "team":"social-earth"},
+				{"type":"buildings", "name":"water_extractor", "team":"social-earth"},
+				{"type":"buildings", "name":"oil_extractor", "team":"social-earth"},
+				{"type":"infantry", "name":"soldier", "team":"social-earth"},
+				{"type":"infantry", "name":"rocketeer", "team":"social-earth"},
+				{"type":"infantry", "name":"grenadier", "team":"social-earth"},
+				{"type":"vehicles", "name":"prospector", "team":"social-earth"}
 			],
 			"projectiles": [
 				{"type":"projectiles", "name":"bullet"},
@@ -517,19 +526,7 @@
 			],
 			"items": [
 				{"type":"buildings", "name":"construction_facility", "x":50, "y":50, "direction":0, "team":"technology", "uid":-600},
-				{"type":"buildings", "name":"powerplant", "x":85, "y":50, "direction":0, "team":"technology", "uid":-601},
-				{"type":"buildings", "name":"barracks", "x":50, "y":85, "direction":0, "team":"technology", "uid":-602},
-				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":80, "y":85, "direction":0, "team":"technology", "uid":-603},
-				{"type":"infantry", "name":"soldier", "x":60, "y":78, "direction":0, "team":"technology", "uid":-604},
-				{"type":"infantry", "name":"soldier", "x":63, "y":78, "direction":0, "team":"technology", "uid":-605},
-				{"type":"infantry", "name":"rocketeer", "x":66, "y":78, "direction":0, "team":"technology", "uid":-606},
-				{"type":"buildings", "name":"construction_facility", "x":150, "y":150, "direction":0, "team":"social-earth", "uid":-700},
-				{"type":"buildings", "name":"powerplant", "x":185, "y":150, "direction":0, "team":"social-earth", "uid":-701},
-				{"type":"buildings", "name":"barracks", "x":150, "y":185, "direction":0, "team":"social-earth", "uid":-702},
-				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":180, "y":185, "direction":0, "team":"social-earth", "uid":-703},
-				{"type":"infantry", "name":"soldier", "x":160, "y":178, "direction":0, "team":"social-earth", "uid":-704},
-				{"type":"infantry", "name":"soldier", "x":163, "y":178, "direction":0, "team":"social-earth", "uid":-705},
-				{"type":"infantry", "name":"rocketeer", "x":166, "y":178, "direction":0, "team":"social-earth", "uid":-706}
+				{"type":"buildings", "name":"construction_facility", "x":150, "y":150, "direction":0, "team":"social-earth", "uid":-700}
 			],
 			"resources": [
 				{"type":"resources", "name":"water", "x":100, "y":60, "uid":-1100},
