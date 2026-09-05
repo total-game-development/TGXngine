@@ -848,6 +848,142 @@
 				{"type":"infantry", "name":"soldier", "x":38, "y":68, "direction":0, "team":"social-earth", "uid":-501}
 			],
 			"resources": []
+		},
+		{
+			"name": "skirmish-desert",
+			"type": "skirmish",
+			"briefing": "Open sand end to end, and no construction facility on either side. Each camp holds two assembly tunnels and the powerplant that runs them, so every unit in this war comes off the same line. Send prospectors to the water and oil scattered across the flats -- they raise the extractor where they stop -- and keep enough armour back to hold the pans and rock outcrops that are the only cover on the map.",
+			"mapImage": "Resources/images/maps/singleplayer/skirmish-desert/",
+			"mapPreview": "Resources/images/preview/skirmish/skirmish-desert/preview.png",
+			"numberOfHorizontalTiles": 9,
+			"numberOfVerticalTiles": 4,
+			"backgroundOffsetX": 0,
+			"backgroundOffsetY": 80,
+			"backgroundOffsetWidth": 160,
+			"backgroundOffsetHeight": 0,
+			"positions": [
+				{"x":80, "y":4}
+			],
+			"mapGridWidth": 136,
+			"mapGridHeight": 204,
+			"teams": [
+				{"name":"technology", "type":"player"},
+				{"name":"social-earth", "type":"ai"}
+			],
+			"cash": {"technology":22000, "social-earth":12500},
+			"water": {"technology":0, "social-earth":0},
+			"oil": {"technology":0, "social-earth":0},
+			"additional_requirements": [
+				{"type":"buildings", "name":"powerplant", "team":"technology"},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "team":"technology"},
+				{"type":"buildings", "name":"water_extractor", "team":"technology"},
+				{"type":"buildings", "name":"oil_extractor", "team":"technology"},
+				{"type":"vehicles", "name":"prospector", "team":"technology"},
+				{"type":"vehicles", "name":"truck", "team":"technology"},
+				{"type":"vehicles", "name":"tank", "team":"technology"},
+				{"type":"buildings", "name":"powerplant", "team":"social-earth"},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "team":"social-earth"},
+				{"type":"buildings", "name":"water_extractor", "team":"social-earth"},
+				{"type":"buildings", "name":"oil_extractor", "team":"social-earth"},
+				{"type":"vehicles", "name":"prospector", "team":"social-earth"},
+				{"type":"vehicles", "name":"truck", "team":"social-earth"},
+				{"type":"vehicles", "name":"tank", "team":"social-earth"}
+			],
+			"projectiles": [
+				{"type":"projectiles", "name":"bullet"},
+				{"type":"projectiles", "name":"shell"}
+			],
+			"interface": [
+				{"type":"interface", "name":"sidebar"}
+			],
+			"triggers": [
+				{"type":"triggers", "name":"log"}
+			],
+			"economy": {
+				"technology": {"cash":22000},
+				"social-earth": {"cash":12500}
+			},
+			"fog_of_war": [
+				{"type":"fog_of_war"},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFFFF"},
+						[
+							2,
+							3,
+							4,
+							5,
+							6,
+							7,
+							8,
+							9
+						]
+					]
+				},
+				{
+					"layer": [
+						{"FOG_X":0, "color":"none"},
+						{"FOG_O":1, "color":"0xFFFFFF33"},
+						[
+							10,
+							11,
+							12,
+							13,
+							14,
+							15,
+							16,
+							17
+						]
+					]
+				}
+			],
+			"ai": [
+				{
+					"name": "builder",
+					"buildLimit": 8,
+					"techTree": {
+						"nodes": [
+							{
+								"name": "vehicle_assembly_tunnel",
+								"type": "buildings",
+								"role": "heavy_land_generator",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 250,
+								"powerOutput": 0,
+								"isRoot": true,
+								"children": [
+									"prospector",
+									"truck",
+									"tank"
+								]
+							},
+							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"truck", "type":"vehicles", "role":"light_land_offensive", "buildTime":480, "cost":500, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"tank", "type":"vehicles", "role":"heavy_land_offensive", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
+						]
+					}
+				}
+			],
+			"items": [
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":80, "y":4, "direction":0, "team":"technology", "uid":-100},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":60, "y":20, "direction":0, "team":"technology", "uid":-101},
+				{"type":"buildings", "name":"powerplant", "x":100, "y":30, "direction":0, "team":"technology", "uid":-102},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":30, "y":160, "direction":0, "team":"social-earth", "uid":-500},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":60, "y":176, "direction":0, "team":"social-earth", "uid":-501},
+				{"type":"buildings", "name":"powerplant", "x":35, "y":190, "direction":0, "team":"social-earth", "uid":-502}
+			],
+			"resources": [
+				{"type":"resources", "name":"oil", "x":32, "y":29, "uid":-1000},
+				{"type":"resources", "name":"water", "x":16, "y":102, "uid":-1001},
+				{"type":"resources", "name":"oil", "x":34, "y":48, "uid":-1002},
+				{"type":"resources", "name":"water", "x":22, "y":86, "uid":-1003},
+				{"type":"resources", "name":"oil", "x":131, "y":38, "uid":-1004},
+				{"type":"resources", "name":"water", "x":56, "y":102, "uid":-1005},
+				{"type":"resources", "name":"oil", "x":131, "y":148, "uid":-1006},
+				{"type":"resources", "name":"water", "x":72, "y":56, "uid":-1007}
+			]
 		}
 	]	
 }
