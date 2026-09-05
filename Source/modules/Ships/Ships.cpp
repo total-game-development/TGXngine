@@ -391,6 +391,7 @@ void Move(ItemInstance *itemInstance)
 	Physics &physics = Physics::GetInstance();
 
 	itemInstance->RemoveFromGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+	static_cast<ShipState *>(itemInstance)->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
 	itemInstance->SetOrders(Orders::Order::MoveTo);
 }
@@ -662,6 +663,7 @@ void Standing(ShipState *itemInstance)
 	Physics &physics = Physics::GetInstance();
 
 	itemInstance->AddToGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+	itemInstance->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
 	if (itemInstance->GetState() == ItemStates::Attacking)
 	{
@@ -1074,6 +1076,11 @@ void Destroyed(ItemInstance *itemInstance)
 	world.gameEvents.emplace_back(UIAction::RemoveGameItem, removeItem);
 
 	itemInstance->RemoveFromGrid(
+		world.currentTerrainMapPassableGrid,
+		physics.GetGridTracker());
+
+	static_cast<ShipState *>(itemInstance)->RemoveTacticalGrid(
+		itemInstance->GetUid(),
 		world.currentTerrainMapPassableGrid,
 		physics.GetGridTracker());
 }

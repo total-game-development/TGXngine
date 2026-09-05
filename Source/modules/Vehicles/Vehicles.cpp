@@ -391,6 +391,7 @@ void Move(ItemInstance *itemInstance)
 	Physics &physics = Physics::GetInstance();
 
 	itemInstance->RemoveFromGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+	static_cast<VehicleState *>(itemInstance)->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
 	itemInstance->SetOrders(Orders::Order::MoveTo);
 }
@@ -414,7 +415,7 @@ void MoveTo(ItemInstance *itemInstance)
 				world.currentTerrainMapPassableGrid,
 				physics.GetGridTracker());
 
-			SetPath(vehicleState, world.items[targetIndex]->GetX(), world.items[targetIndex]->GetY());
+			SetPath(vehicleState, world.items[targetIndex]->GetCenterX(), world.items[targetIndex]->GetCenterY());
 
 			Log::Debug("(Re)AddToGrid for Target");
 			world.items[targetIndex]->AddToGrid(
@@ -440,8 +441,8 @@ void MoveTo(ItemInstance *itemInstance)
 				SetTacticalCoordinates(
 					itemInstance,
 					vehicleState->path,
-					world.items[targetIndex]->GetX(),
-					world.items[targetIndex]->GetY(),
+					world.items[targetIndex]->GetCenterX(),
+					world.items[targetIndex]->GetCenterY(),
 					vehicleState->GetSight());
 			}
 		}
@@ -505,8 +506,8 @@ void Moving(VehicleState *itemInstance)
 
 		if (targetIndex != -1)
 		{
-			if (std::pow(world.items[targetIndex]->GetX() - itemInstance->GetX(), 2) +
-					std::pow(world.items[targetIndex]->GetY() - itemInstance->GetY(), 2) <
+			if (std::pow(world.items[targetIndex]->GetCenterX() - itemInstance->GetX(), 2) +
+					std::pow(world.items[targetIndex]->GetCenterY() - itemInstance->GetY(), 2) <
 				std::pow(itemInstance->GetSight(), 2))
 			{
 				itemInstance->hasNextStep = false;
@@ -649,6 +650,7 @@ void Standing(VehicleState *itemInstance)
 	Physics &physics = Physics::GetInstance();
 
 	itemInstance->AddToGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+	itemInstance->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
 	if (itemInstance->GetState() == ItemStates::Attacking)
 	{
@@ -905,8 +907,8 @@ void Firing(VehicleState *itemInstance)
 			return;
 		}
 
-		float dx = world.items[targetIndex]->GetX() - itemInstance->GetX();
-		float dy = world.items[targetIndex]->GetY() - itemInstance->GetY();
+		float dx = world.items[targetIndex]->GetCenterX() - itemInstance->GetX();
+		float dy = world.items[targetIndex]->GetCenterY() - itemInstance->GetY();
 
 		if (((dx * dx) + (dy * dy)) < static_cast<float>(itemInstance->GetSight() * itemInstance->GetSight()))
 		{
@@ -951,8 +953,8 @@ void Fire(VehicleState *itemInstance)
 
 	if (targetIndex != -1)
 	{
-		bullet->targetX = world.items[targetIndex]->GetX();
-		bullet->targetY = world.items[targetIndex]->GetY();
+		bullet->targetX = world.items[targetIndex]->GetCenterX();
+		bullet->targetY = world.items[targetIndex]->GetCenterY();
 		bullet->targetUid = world.items[targetIndex]->GetUid();
 	}
 
@@ -1100,6 +1102,11 @@ void Destroyed(ItemInstance *itemInstance)
 	world.gameEvents.emplace_back(UIAction::RemoveGameItem, removeItem);
 
 	itemInstance->RemoveFromGrid(
+		world.currentTerrainMapPassableGrid,
+		physics.GetGridTracker());
+
+	static_cast<VehicleState *>(itemInstance)->RemoveTacticalGrid(
+		itemInstance->GetUid(),
 		world.currentTerrainMapPassableGrid,
 		physics.GetGridTracker());
 }
