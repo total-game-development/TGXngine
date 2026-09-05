@@ -475,13 +475,25 @@ extern "C"
 
 		if (HoverFromCorner(itemInstance))
 		{
-			world.SetItemUnderCursor(true);
 			world.SetItemUidThatIsUnderCursor(itemInstance->GetUid());
 
-			if (world.IsLeftClicked())
+			// This asked nothing about whose turret it was, so an enemy tower
+			// went into the player's own selection on a left click and never
+			// raised the enemy flag a right click reads -- the one thing on the
+			// board that could not be ordered an attack on.
+			if (world.GetTeam() == itemInstance->GetTeam())
 			{
-				itemInstance->SetSelected(true);
-				world.selected.emplace_back(itemInstance->GetUid());
+				world.SetItemUnderCursor(true);
+
+				if (world.IsLeftClicked())
+				{
+					itemInstance->SetSelected(true);
+					world.selected.emplace_back(itemInstance->GetUid());
+				}
+			}
+			else
+			{
+				world.SetEnemyItemUnderCursor(true);
 			}
 		}
 

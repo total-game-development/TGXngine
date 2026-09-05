@@ -54,6 +54,9 @@ extern "C"
 				{Orders::Order::Attack, [](ItemInstance *state) {
 					 Attack(state);
 				 }},
+				{Orders::Order::Attacked, [](ItemInstance *state) {
+					 Attacked(state);
+				 }},
 				{Orders::Order::TurnToFire, [](ItemInstance *state) {
 					 TurnToFire(static_cast<VehicleState *>(state));
 				 }},
@@ -267,35 +270,47 @@ extern "C"
 
 				if (!world.selected.empty())
 				{
-					int index = LookUp::Get(world.selected[0]);
-					if (index != -1)
+					// Any one of the selection being able to shoot is enough. This asked
+					// only the first, so a box that happened to pick up a prospector or a
+					// scientist first offered no attack cursor at all and none of the
+					// soldiers behind it could be ordered onto anything.
+					bool anyCanAttack = false;
+
+					for (int selectedUid : world.selected)
 					{
-						ItemInstance *selectedItem = world.items[index].get();
+						const int selectedIndex = LookUp::Get(selectedUid);
 
-						if (selectedItem && selectedItem->CanAttack())
+						if (selectedIndex != -1 && world.items[selectedIndex] &&
+							world.items[selectedIndex]->CanAttack())
 						{
-							world.SetEnemyItemUnderCursor(true);
+							anyCanAttack = true;
+							break;
+						}
+					}
 
-							if (world.IsRightClicked())
+					if (anyCanAttack)
+					{
+						world.SetEnemyItemUnderCursor(true);
+
+						if (world.IsRightClicked())
+						{
+							for (int uid : world.selected)
 							{
-								for (int uid : world.selected)
+								int targetIndex = LookUp::Get(uid);
+								if (targetIndex != -1)
 								{
-									int targetIndex = LookUp::Get(uid);
-									if (targetIndex != -1)
-									{
-										ItemInstance *targetInstance = world.items[targetIndex].get();
+									ItemInstance *targetInstance = world.items[targetIndex].get();
 
-										if (targetInstance)
-										{
-											targetInstance->SetTargetUid(itemInstance->GetUid());
-										}
+									if (targetInstance)
+									{
+										targetInstance->SetTargetUid(itemInstance->GetUid());
 									}
 								}
-
-								Log::Info("Enemy Infantry has been right clicked");
-								Log::Info("Enemy Uid: " + std::to_string(itemInstance->GetUid()));
-								Log::Info("Enemy GetTeam: " + itemInstance->GetTeam());
 							}
+
+							Log::Info("Enemy Infantry has been right clicked");
+							Log::Info("Enemy Uid: " + std::to_string(itemInstance->GetUid()));
+							Log::Info("Enemy GetTeam: " + itemInstance->GetTeam());
 						}
 					}
 				}
@@ -887,6 +902,43 @@ void Velocity(ItemInstance *itemInstance)
 	{
 		static_cast<VehicleState *>(itemInstance)->accelerationIndex--;
 	}
+}
+
+// A round landing sets its target's order to Attacked and hands it the
+// shooter's uid. Infantry, ships, turrets and aircraft all had a handler for
+// that; vehicles had none, so the order matched nothing in the map, nothing
+// ran, and the order stayed Attacked for good. A tank being shot at simply
+// stopped taking part.
+void Attacked(ItemInstance *itemInstance)
+{
+	if (itemInstance == nullptr)
+	{
+		Log::Warning("Attacked() called with null item instance.");
+		return;
+	}
+
+	if (itemInstance->GetState() != ItemStates::Attacking && itemInstance->CanAttack())
+	{
+		WorldState &world = WorldState::GetInstance();
+
+		const int shooterIndex = LookUp::Get(itemInstance->GetOrders()->target_uid);
+
+		if (shooterIndex >= 0 && shooterIndex < static_cast<int>(world.items.size()) &&
+			world.items[shooterIndex])
+		{
+			itemInstance->SetState(ItemStates::Attacking);
+			itemInstance->SetTargetUid(world.items[shooterIndex]->GetUid());
+
+			// Move rather than MoveTo: it hands the grid and the booked cell back
+			// first, and a search that starts on a cell the unit still occupies
+			// finds nothing.
+			itemInstance->SetOrders(Orders::Order::Move);
+
+			return;
+		}
+	}
+
+	itemInstance->SetOrders(Orders::Order::Standing);
 }
 
 void Attack(ItemInstance *itemInstance)

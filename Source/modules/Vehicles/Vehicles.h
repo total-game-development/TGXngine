@@ -217,6 +217,7 @@ void SetPath(VehicleState *itemInstance, float toX, float toY);
 void Stop(ItemInstance *item);
 void Velocity(ItemInstance *item);
 
+void Attacked(ItemInstance *itemInstance);
 void Attack(ItemInstance *itemInstance);
 void TurnToFire(VehicleState *itemInstance);
 void Firing(VehicleState *itemInstance);

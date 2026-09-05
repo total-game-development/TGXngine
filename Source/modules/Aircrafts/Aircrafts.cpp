@@ -299,30 +299,41 @@ extern "C"
 			{
 				if (!world.selected.empty())
 				{
-					int index = LookUp::Get(world.selected[0]);
+					// Any one of the selection being able to shoot is enough. This asked
+					// only the first, so a box that happened to pick up a prospector or a
+					// scientist first offered no attack cursor at all and none of the
+					// soldiers behind it could be ordered onto anything.
+					bool anyCanAttack = false;
 
-					if (index != -1)
+					for (int selectedUid : world.selected)
 					{
-						ItemInstance *selectedItem = world.items[index].get();
+						const int selectedIndex = LookUp::Get(selectedUid);
 
-						if (selectedItem && selectedItem->CanAttack())
+						if (selectedIndex != -1 && world.items[selectedIndex] &&
+							world.items[selectedIndex]->CanAttack())
 						{
-							world.SetEnemyItemUnderCursor(true);
+							anyCanAttack = true;
+							break;
+						}
+					}
 
-							if (world.IsRightClicked())
+					if (anyCanAttack)
+					{
+						world.SetEnemyItemUnderCursor(true);
+
+						if (world.IsRightClicked())
+						{
+							for (int uid : world.selected)
 							{
-								for (int uid : world.selected)
+								int targetIndex = LookUp::Get(uid);
+
+								if (targetIndex != -1)
 								{
-									int targetIndex = LookUp::Get(uid);
+									ItemInstance *targetInstance = world.items[targetIndex].get();
 
-									if (targetIndex != -1)
+									if (targetInstance)
 									{
-										ItemInstance *targetInstance = world.items[targetIndex].get();
-
-										if (targetInstance)
-										{
-											targetInstance->SetTargetUid(itemInstance->GetUid());
-										}
+										targetInstance->SetTargetUid(itemInstance->GetUid());
 									}
 								}
 							}

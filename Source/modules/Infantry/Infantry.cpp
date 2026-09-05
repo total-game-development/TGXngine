@@ -246,35 +246,47 @@ extern "C"
 			{
 				if (!world.selected.empty())
 				{
-					int index = LookUp::Get(world.selected[0]);
-					if (index != -1)
+					// Any one of the selection being able to shoot is enough. This asked
+					// only the first, so a box that happened to pick up a prospector or a
+					// scientist first offered no attack cursor at all and none of the
+					// soldiers behind it could be ordered onto anything.
+					bool anyCanAttack = false;
+
+					for (int selectedUid : world.selected)
 					{
-						ItemInstance *selectedItem = world.items[index].get();
+						const int selectedIndex = LookUp::Get(selectedUid);
 
-						if (selectedItem && selectedItem->CanAttack())
+						if (selectedIndex != -1 && world.items[selectedIndex] &&
+							world.items[selectedIndex]->CanAttack())
 						{
-							world.SetEnemyItemUnderCursor(true);
+							anyCanAttack = true;
+							break;
+						}
+					}
 
-							if (world.IsRightClicked())
+					if (anyCanAttack)
+					{
+						world.SetEnemyItemUnderCursor(true);
+
+						if (world.IsRightClicked())
+						{
+							for (int uid : world.selected)
 							{
-								for (int uid : world.selected)
+								int targetIndex = LookUp::Get(uid);
+								if (targetIndex != -1)
 								{
-									int targetIndex = LookUp::Get(uid);
-									if (targetIndex != -1)
-									{
-										ItemInstance *targetInstance = world.items[targetIndex].get();
+									ItemInstance *targetInstance = world.items[targetIndex].get();
 
-										if (targetInstance)
-										{
-											targetInstance->SetTargetUid(itemInstance->GetUid());
-										}
+									if (targetInstance)
+									{
+										targetInstance->SetTargetUid(itemInstance->GetUid());
 									}
 								}
-
-								Log::Info("Enemy Infantry has been right clicked");
-								Log::Info("Enemy Uid: " + std::to_string(itemInstance->GetUid()));
-								Log::Info("Enemy GetTeam: " + itemInstance->GetTeam());
 							}
+
+							Log::Info("Enemy Infantry has been right clicked");
+							Log::Info("Enemy Uid: " + std::to_string(itemInstance->GetUid()));
+							Log::Info("Enemy GetTeam: " + itemInstance->GetTeam());
 						}
 					}
 				}
