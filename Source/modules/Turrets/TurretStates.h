@@ -24,6 +24,19 @@ public:
 		return cellCollisionMode;
 	}
 
+	// The footprint is the body: half of the longer side is how far it reaches.
+	float GetOuterSight() const override
+	{
+		if (passableGrid.empty() || passableGrid[0].empty())
+		{
+			return GetRadius() / static_cast<float>(Globals::grid_size);
+		}
+
+		return std::max(
+			static_cast<float>(passableGrid[0].size()) / 2.0f,
+			static_cast<float>(passableGrid.size()) / 2.0f);
+	}
+
 	float GetCenterX() const override
 	{
 		if (passableGrid.empty() || passableGrid[0].empty()) { return GetX(); }

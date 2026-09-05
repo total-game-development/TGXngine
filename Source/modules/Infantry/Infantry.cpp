@@ -492,7 +492,13 @@ void Firing(InfantryState *itemInstance)
 		float dx = world.items[targetIndex]->GetCenterX() - itemInstance->GetX();
 		float dy = world.items[targetIndex]->GetCenterY() - itemInstance->GetY();
 
-		if (((dx * dx) + (dy * dy)) < static_cast<float>(itemInstance->GetSight() * itemInstance->GetSight()))
+		// Sight plus the target's own reach, the way getTargetOuterSight does it
+		// in the client. Without the second term a unit at the wall of anything
+		// bigger than its sight is forever out of range and stands there.
+		const float range = static_cast<float>(itemInstance->GetSight()) +
+							world.items[targetIndex]->GetOuterSight();
+
+		if (((dx * dx) + (dy * dy)) < (range * range))
 		{
 			itemInstance->SetOrders(Orders::Order::Fire);
 		}
@@ -571,9 +577,12 @@ void Moving(InfantryState *itemInstance)
 
 		if (targetIndex != -1)
 		{
+			const float stopAt = static_cast<float>(itemInstance->GetSight()) +
+								 world.items[targetIndex]->GetOuterSight();
+
 			if (std::pow(world.items[targetIndex]->GetCenterX() - itemInstance->GetX(), 2) +
 					std::pow(world.items[targetIndex]->GetCenterY() - itemInstance->GetY(), 2) <
-				std::pow(itemInstance->GetSight(), 2))
+				(stopAt * stopAt))
 			{
 				itemInstance->hasNextStep = false;
 				itemInstance->SetOrders(Orders::Order::Standing);

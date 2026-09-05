@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Globals.h"
 #include "GridTracker.h"
 #include "Instance.h"
 #include "ItemStates.h"
@@ -392,6 +393,16 @@ public:
 	virtual int GetSight() const
 	{
 		return 4;
+	}
+
+	// How far this thing's own body reaches from its centre. A shooter's range
+	// is its sight plus the target's outer sight, because range is measured
+	// centre to centre and the shooter can only ever reach the target's wall.
+	// A construction facility is 23 cells across, so its centre sits 11.5 from
+	// its own wall and no ground unit alive can see that far.
+	virtual float GetOuterSight() const
+	{
+		return GetRadius() / static_cast<float>(Globals::grid_size);
 	}
 
 	virtual float GetCenterX() const

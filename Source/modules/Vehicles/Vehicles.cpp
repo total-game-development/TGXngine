@@ -443,7 +443,8 @@ void MoveTo(ItemInstance *itemInstance)
 					vehicleState->path,
 					world.items[targetIndex]->GetCenterX(),
 					world.items[targetIndex]->GetCenterY(),
-					vehicleState->GetSight());
+					vehicleState->GetSight() +
+						static_cast<int>(world.items[targetIndex]->GetOuterSight()));
 			}
 		}
 
@@ -506,9 +507,12 @@ void Moving(VehicleState *itemInstance)
 
 		if (targetIndex != -1)
 		{
+			const float stopAt = static_cast<float>(itemInstance->GetSight()) +
+								 world.items[targetIndex]->GetOuterSight();
+
 			if (std::pow(world.items[targetIndex]->GetCenterX() - itemInstance->GetX(), 2) +
 					std::pow(world.items[targetIndex]->GetCenterY() - itemInstance->GetY(), 2) <
-				std::pow(itemInstance->GetSight(), 2))
+				(stopAt * stopAt))
 			{
 				itemInstance->hasNextStep = false;
 				itemInstance->SetOrders(Orders::Order::Standing);
@@ -699,10 +703,11 @@ void SetTacticalCoordinates(ItemInstance *itemInstance, Vector<Point> path, floa
 {
 	size_t pathIndex = 0;
 
-	// TODO: Outersight needs to be a property of Buildings
-	int outerSight = 0;
+	// The booked cell is where the unit means to stop, so it has to be the
+	// same distance the range test uses -- the caller folds the target's
+	// outer sight into what it passes.
 
-	while (pow(toX - static_cast<float>(path[pathIndex].x), 2) + pow(toY - static_cast<float>(path[pathIndex].y), 2) < pow(sight + outerSight, 2))
+	while (pow(toX - static_cast<float>(path[pathIndex].x), 2) + pow(toY - static_cast<float>(path[pathIndex].y), 2) < pow(sight, 2))
 	{
 		pathIndex++;
 
@@ -910,7 +915,13 @@ void Firing(VehicleState *itemInstance)
 		float dx = world.items[targetIndex]->GetCenterX() - itemInstance->GetX();
 		float dy = world.items[targetIndex]->GetCenterY() - itemInstance->GetY();
 
-		if (((dx * dx) + (dy * dy)) < static_cast<float>(itemInstance->GetSight() * itemInstance->GetSight()))
+		// Sight plus the target's own reach, the way getTargetOuterSight does it
+		// in the client. Without the second term a unit at the wall of anything
+		// bigger than its sight is forever out of range and stands there.
+		const float range = static_cast<float>(itemInstance->GetSight()) +
+							world.items[targetIndex]->GetOuterSight();
+
+		if (((dx * dx) + (dy * dy)) < (range * range))
 		{
 			itemInstance->SetOrders(Orders::Order::Fire);
 		}
