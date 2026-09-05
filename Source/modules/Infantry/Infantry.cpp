@@ -393,6 +393,8 @@ void Move(ItemInstance *itemInstance)
 	Physics &physics = Physics::GetInstance();
 
 	itemInstance->RemoveFromGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+	static_cast<InfantryState *>(itemInstance)->RemoveTacticalGrid(
+		itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
 	itemInstance->SetOrders(Orders::Order::MoveTo);
 }
@@ -446,6 +448,29 @@ void MoveTo(ItemInstance *itemInstance)
 	if (!pathEmpty)
 	{
 		infantry->hasNextStep = false;
+
+		// Claim the cell this one will stop on. Vehicles have always done it;
+		// infantry never did, so a whole wave walked to the same spot and stood
+		// in it -- and a grenadier and a truck share a reach, which put them on
+		// the same ring, on the same approach, at the same point. The traversal
+		// rule passes a cell only when it is completely clear, so one booking is
+		// enough to bend the next unit's path around it.
+		if (itemInstance->GetState() == ItemStates::Attacking)
+		{
+			const int targetIndex = LookUp::Get(itemInstance->GetTargetUid());
+
+			if (targetIndex != -1)
+			{
+				SetTacticalCoordinates(
+					itemInstance,
+					infantry->path,
+					world.items[targetIndex]->GetCenterX(),
+					world.items[targetIndex]->GetCenterY(),
+					infantry->GetSight() +
+						static_cast<int>(world.items[targetIndex]->GetOuterSight()));
+			}
+		}
+
 		itemInstance->SetOrders(Orders::Order::Turning);
 	}
 	else
@@ -749,6 +774,11 @@ void Standing(InfantryState *itemInstance)
 		world.currentTerrainMapPassableGrid,
 		physics.GetGridTracker());
 
+	itemInstance->RemoveTacticalGrid(
+		itemInstance->GetUid(),
+		world.currentTerrainMapPassableGrid,
+		physics.GetGridTracker());
+
 	if (itemInstance->GetState() == ItemStates::Attacking && itemInstance->CanAttack())
 	{
 		itemInstance->SetOrders(Orders::Order::TurnToFire);
@@ -772,6 +802,11 @@ void Destroyed(ItemInstance *itemInstance)
 	world.gameEvents.emplace_back(UIAction::RemoveGameItem, removeItem);
 
 	itemInstance->RemoveFromGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+
+	static_cast<InfantryState *>(itemInstance)->RemoveTacticalGrid(
+		itemInstance->GetUid(),
+		world.currentTerrainMapPassableGrid,
+		physics.GetGridTracker());
 }
 
 void Animate(InfantryState *itemInstance)
@@ -853,6 +888,32 @@ void AnimatePolygons(ItemInstance *itemInstance)
 	Log::Info("Near X: " + std::to_string(near->x) + ", Near Y : " + std::to_string(near->y) +
 				  ", Near W: " + std::to_string(near->w) + ", Near H : " + std::to_string(near->h),
 			  false);
+}
+
+void SetTacticalCoordinates(ItemInstance *itemInstance, Vector<Point> path, float toX, float toY, int sight)
+{
+	size_t pathIndex = 0;
+
+	// The booked cell is where the unit means to stop, so it has to be the
+	// same distance the range test uses -- the caller folds the target's
+	// outer sight into what it passes.
+
+	while (pow(toX - static_cast<float>(path[pathIndex].x), 2) + pow(toY - static_cast<float>(path[pathIndex].y), 2) < pow(sight, 2))
+	{
+		pathIndex++;
+
+		if (pathIndex == path.size())
+		{
+			return;
+		}
+	}
+
+	WorldState &world = WorldState::GetInstance();
+	Physics &physics = Physics::GetInstance();
+
+	static_cast<InfantryState *>(itemInstance)->AddTacticalGrid(itemInstance->GetUid(), static_cast<int>(pathIndex), path, static_cast<int>(itemInstance->GetRadius()) / 20, world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+
+	std::ranges::reverse(path);
 }
 
 void Steering(ItemInstance *itemInstance)

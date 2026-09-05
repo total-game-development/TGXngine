@@ -147,6 +147,109 @@ public:
 
 		gridTracker.uids_grid.erase(uid);
 	}
+
+	void AddTacticalGrid(int inUid, int pathIndex, Vector<Point> inPath, int radius, Vector<Vector<int>> &grid, GridTracker &gridTracker) const
+	{
+		RemoveTacticalGrid(inUid, grid, gridTracker);
+
+		int mapGridHeight = static_cast<int>(grid.size());
+		int mapGridWidth = static_cast<int>(grid[0].size());
+
+		int x1 = std::max(static_cast<int>(std::floor(inPath[pathIndex].x - radius)), 0);
+		int x2 = std::min(static_cast<int>(std::floor(inPath[pathIndex].x + radius)), mapGridWidth - 1);
+		int y1 = std::max(static_cast<int>(std::floor(inPath[pathIndex].y - radius)), 0);
+		int y2 = std::min(static_cast<int>(std::floor(inPath[pathIndex].y + radius)), mapGridHeight - 1);
+
+		for (int gridX = x1; gridX <= x2; ++gridX)
+		{
+			for (int gridY = y1; gridY <= y2; ++gridY)
+			{
+				if (grid[gridY][gridX] < Flags::CELL_COLLISION_MODE_HARD)
+				{
+					std::string cellKey = std::to_string(gridX) + " " + std::to_string(gridY);
+
+					if (gridTracker.cells_grid.find(cellKey) != gridTracker.cells_grid.end())
+					{
+						int cellStack = gridTracker.cells_grid[cellKey];
+						cellStack += cellCollisionMode;
+						gridTracker.cells_grid[cellKey] = cellStack;
+					}
+					else
+					{
+						gridTracker.cells_grid[cellKey] = cellCollisionMode;
+					}
+
+					int cellStack = gridTracker.cells_grid[cellKey];
+					if (cellStack >= Flags::CELL_COLLISION_MODE_MEDIUM && cellStack < Flags::CELL_COLLISION_MODE_HARD)
+					{
+						grid[gridY][gridX] = Flags::CELL_COLLISION_MODE_MEDIUM;
+					}
+					else if (cellStack > Flags::CELL_COLLISION_MODE_OFF)
+					{
+						grid[gridY][gridX] = Flags::CELL_COLLISION_MODE_SOFT;
+					}
+				}
+			}
+		}
+
+		gridTracker.tactical_uids_grid[inUid] = {x1, y1, x2, y2, cellCollisionMode};
+	}
+
+	// Hands the booked cell back. The body is stamped first by the caller, so the
+	// stack never dips through zero on a cell the unit is standing on.
+	void RemoveTacticalGrid(int inUid, Vector<Vector<int>> &grid, GridTracker &gridTracker) const
+	{
+		auto it = gridTracker.tactical_uids_grid.find(inUid);
+
+		if (it == gridTracker.tactical_uids_grid.end())
+		{
+			return;
+		}
+
+		const TacticalReservation reservation = it->second;
+
+		for (int gridX = reservation.x1; gridX <= reservation.x2; ++gridX)
+		{
+			for (int gridY = reservation.y1; gridY <= reservation.y2; ++gridY)
+			{
+				String cellKey = std::to_string(gridX) + " " + std::to_string(gridY);
+
+				auto cellIt = gridTracker.cells_grid.find(cellKey);
+
+				// The booking only painted cells that were below HARD, so a wall
+				// inside these bounds never got an entry. No entry means this uid
+				// never owned the cell, and clearing it would erase the terrain.
+				if (cellIt == gridTracker.cells_grid.end())
+				{
+					continue;
+				}
+
+				const int cellStack = std::max(cellIt->second - reservation.cellMode, 0);
+
+				gridTracker.cells_grid[cellKey] = cellStack;
+
+				if (grid[gridY][gridX] >= Flags::CELL_COLLISION_MODE_HARD)
+				{
+					continue;
+				}
+
+				if (cellStack == Flags::CELL_COLLISION_MODE_OFF)
+				{
+					grid[gridY][gridX] = Flags::CELL_COLLISION_MODE_OFF;
+				}
+				else if (cellStack < Flags::CELL_COLLISION_MODE_MEDIUM)
+				{
+					grid[gridY][gridX] = Flags::CELL_COLLISION_MODE_SOFT;
+				}
+				else
+				{
+					grid[gridY][gridX] = Flags::CELL_COLLISION_MODE_MEDIUM;
+				}
+			}
+		}
+
+		gridTracker.tactical_uids_grid.erase(inUid);
+	}
 };
 
 class SoldierState : public InfantryState

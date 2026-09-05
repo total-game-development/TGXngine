@@ -186,6 +186,7 @@ void CreatePolygons();
 void RegisterToQuadTree(const Set<String> &groups);
 void AnimatePolygons(ItemInstance *itemInstance);
 void SetPath(InfantryState *, float, float);
+void SetTacticalCoordinates(ItemInstance *itemInstance, Vector<Point> path, float toX, float toY, int sight);
 void Steering(ItemInstance *itemInstance);
 void SpreadDestination(float &, float &);
 void TestSearch();
