@@ -154,20 +154,22 @@ void Sidebar::Click()
 				{
 					world.SetSkipSelectionRemoval(true);
 
+					const String &owner = world.GetTeam();
+
 					if (button.GetPowerUsage() < 0)
 					{
-						Log::Debug(world.GetPowerTotal());
+						Log::Debug(world.GetPowerTotal(owner));
 						Log::Debug(-button.GetPowerUsage());
-						Log::Debug(world.GetPowerTotal() + -button.GetPowerUsage());
-						Log::Debug(world.GetPowerUsage());
-						Log::Debug(world.GetPowerTotal());
+						Log::Debug(world.GetPowerTotal(owner) + -button.GetPowerUsage());
+						Log::Debug(world.GetPowerUsage(owner));
+						Log::Debug(world.GetPowerTotal(owner));
 					}
 					else if (button.GetPowerUsage() > 0)
 					{
-						if (world.GetPowerUsage() + button.GetPowerUsage() < world.GetPowerTotal())
+						if (world.GetPowerUsage(owner) + button.GetPowerUsage() < world.GetPowerTotal(owner))
 						{
-							Log::Debug(world.GetPowerUsage());
-							Log::Debug(world.GetPowerTotal());
+							Log::Debug(world.GetPowerUsage(owner));
+							Log::Debug(world.GetPowerTotal(owner));
 						}
 						else
 						{

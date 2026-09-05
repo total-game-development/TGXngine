@@ -288,13 +288,15 @@ void Destroyed(TurretState *turret)
 		}
 	}
 
+	const String &owner = turret->GetTeam();
+
 	if (turret->GetPowerUsage() < 0)
 	{
-		world.SetPowerTotal(world.GetPowerTotal() + turret->GetPowerUsage());
+		world.SetPowerTotal(owner, world.GetPowerTotal(owner) + turret->GetPowerUsage());
 	}
 	else
 	{
-		world.SetPowerUsage(world.GetPowerUsage() - turret->GetPowerUsage());
+		world.SetPowerUsage(owner, world.GetPowerUsage(owner) - turret->GetPowerUsage());
 	}
 
 	String removeItem = StringConcat("uid:", turret->GetUid());
@@ -413,13 +415,15 @@ extern "C"
 
 		world.SetPrimaryItems(globalItem->GetTeam(), globalItem->GetName(), globalItem->GetUid());
 
+		const String &owner = globalItem->GetTeam();
+
 		if (turretState->GetPowerUsage() < 0)
 		{
-			world.SetPowerTotal(world.GetPowerTotal() - turretState->GetPowerUsage());
+			world.SetPowerTotal(owner, world.GetPowerTotal(owner) - turretState->GetPowerUsage());
 		}
 		else
 		{
-			world.SetPowerUsage(world.GetPowerUsage() + turretState->GetPowerUsage());
+			world.SetPowerUsage(owner, world.GetPowerUsage(owner) + turretState->GetPowerUsage());
 		}
 
 		Log::Success("Turret " + globalItem->GetName() + " created successfully");

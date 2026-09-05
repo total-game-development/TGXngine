@@ -272,8 +272,8 @@
 								"name": "powerplant",
 								"type": "buildings",
 								"role": "power_generator",
-								"buildTime": 240,
-								"cost": 100,
+								"buildTime": 144,
+								"cost": 250,
 								"powerUsage": 0,
 								"powerOutput": 400,
 								"isRoot": false,
@@ -283,9 +283,9 @@
 								"name": "barracks",
 								"type": "buildings",
 								"role": "light_land_generator",
-								"buildTime": 360,
+								"buildTime": 216,
 								"cost": 300,
-								"powerUsage": 150,
+								"powerUsage": 50,
 								"powerOutput": 0,
 								"isRoot": false,
 								"children": ["soldier", "grenadier", "rocketeer"]
@@ -294,8 +294,8 @@
 								"name": "soldier",
 								"type": "infantry",
 								"role": "light_land_offensive",
-								"buildTime": 108,
-								"cost": 300,
+								"buildTime": 12,
+								"cost": 100,
 								"powerUsage": 0,
 								"powerOutput": 0,
 								"isRoot": false
@@ -304,8 +304,8 @@
 								"name": "grenadier",
 								"type": "infantry",
 								"role": "light_land_offensive",
-								"buildTime": 108,
-								"cost": 300,
+								"buildTime": 180,
+								"cost": 150,
 								"powerUsage": 0,
 								"powerOutput": 0,
 								"isRoot": false
@@ -314,7 +314,7 @@
 								"name": "rocketeer",
 								"type": "infantry",
 								"role": "light_land_offensive",
-								"buildTime": 108,
+								"buildTime": 240,
 								"cost": 300,
 								"powerUsage": 0,
 								"powerOutput": 0,
@@ -335,9 +335,9 @@
 								"name": "prospector",
 								"type": "vehicles",
 								"role": "light_land_gatherer",
-								"buildTime": 480,
-								"cost": 500,
-								"powerUsage": 250,
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 0,
 								"powerOutput": 0,
 								"isRoot": false
 							}
@@ -478,8 +478,8 @@
 								"name": "powerplant",
 								"type": "buildings",
 								"role": "power_generator",
-								"buildTime": 240,
-								"cost": 100,
+								"buildTime": 144,
+								"cost": 250,
 								"powerUsage": 0,
 								"powerOutput": 400,
 								"isRoot": false,
@@ -492,9 +492,9 @@
 								"name": "barracks",
 								"type": "buildings",
 								"role": "light_land_generator",
-								"buildTime": 360,
+								"buildTime": 216,
 								"cost": 300,
-								"powerUsage": 150,
+								"powerUsage": 50,
 								"powerOutput": 0,
 								"isRoot": false,
 								"children": [
@@ -503,9 +503,9 @@
 									"rocketeer"
 								]
 							},
-							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":12, "cost":100, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":180, "cost":150, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":240, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
 							{
 								"name": "vehicle_assembly_tunnel",
 								"type": "buildings",
@@ -519,7 +519,7 @@
 									"prospector"
 								]
 							},
-							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":480, "cost":500, "powerUsage":250, "powerOutput":0, "isRoot":false}
+							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
 						]
 					}
 				}
@@ -648,8 +648,8 @@
 								"name": "powerplant",
 								"type": "buildings",
 								"role": "power_generator",
-								"buildTime": 240,
-								"cost": 100,
+								"buildTime": 144,
+								"cost": 250,
 								"powerUsage": 0,
 								"powerOutput": 400,
 								"isRoot": false,
@@ -662,9 +662,9 @@
 								"name": "barracks",
 								"type": "buildings",
 								"role": "light_land_generator",
-								"buildTime": 360,
+								"buildTime": 216,
 								"cost": 300,
-								"powerUsage": 150,
+								"powerUsage": 50,
 								"powerOutput": 0,
 								"isRoot": false,
 								"children": [
@@ -673,9 +673,9 @@
 									"rocketeer"
 								]
 							},
-							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":12, "cost":100, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":180, "cost":150, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":240, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
 							{
 								"name": "vehicle_assembly_tunnel",
 								"type": "buildings",
@@ -689,7 +689,7 @@
 									"prospector"
 								]
 							},
-							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":480, "cost":500, "powerUsage":250, "powerOutput":0, "isRoot":false}
+							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
 						]
 					}
 				}
@@ -810,9 +810,9 @@
 								"name": "barracks",
 								"type": "buildings",
 								"role": "light_land_generator",
-								"buildTime": 360,
+								"buildTime": 216,
 								"cost": 300,
-								"powerUsage": 150,
+								"powerUsage": 50,
 								"powerOutput": 0,
 								"isRoot": true,
 								"children": [
@@ -821,9 +821,9 @@
 									"rocketeer"
 								]
 							},
-							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false},
-							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":108, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false}
+							{"name":"soldier", "type":"infantry", "role":"light_land_offensive", "buildTime":12, "cost":100, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"grenadier", "type":"infantry", "role":"light_land_offensive", "buildTime":180, "cost":150, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"rocketeer", "type":"infantry", "role":"light_land_offensive", "buildTime":240, "cost":300, "powerUsage":0, "powerOutput":0, "isRoot":false}
 						]
 					}
 				}

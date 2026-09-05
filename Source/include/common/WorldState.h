@@ -61,8 +61,6 @@ private:
 	bool closed = false;
 	int itemThatIsUnderCursor = 0;
 	int cash = 0;
-	int powerUsage = 0;
-	int powerTotal = 0;
 	SceneType currentScene = SceneType::Intro;
 	String command;
 	String extendedPath = "/";
@@ -96,6 +94,11 @@ public:
 	Map<int, Vector<Tuple<float, float, int>>> deployMap;
 	Map<String, Vector<int>> static_cells;
 	Map<String, int> primaryItems;
+
+	// A side's power is its own. Keyed like extractors and primaryItems: a
+	// powerplant lights the buildings of whoever raised it and nobody else's.
+	Map<String, int> powerUsage;
+	Map<String, int> powerTotal;
 	Map<int, int> lookupMap;
 
 	float GetGameX() const
@@ -522,24 +525,28 @@ public:
 		cash = std::max(0, inCash);
 	}
 
-	int GetPowerUsage() const
+	int GetPowerUsage(const String &inTeam) const
 	{
-		return powerUsage;
+		auto it = powerUsage.find(inTeam);
+
+		return (it == powerUsage.end()) ? 0 : it->second;
 	}
 
-	void SetPowerUsage(int inPowerUsage)
+	void SetPowerUsage(const String &inTeam, int inPowerUsage)
 	{
-		powerUsage = std::max(0, inPowerUsage);
+		powerUsage[inTeam] = std::max(0, inPowerUsage);
 	}
 
-	int GetPowerTotal() const
+	int GetPowerTotal(const String &inTeam) const
 	{
-		return powerTotal;
+		auto it = powerTotal.find(inTeam);
+
+		return (it == powerTotal.end()) ? 0 : it->second;
 	}
 
-	void SetPowerTotal(int inPowerTotal)
+	void SetPowerTotal(const String &inTeam, int inPowerTotal)
 	{
-		powerTotal = std::max(0, inPowerTotal);
+		powerTotal[inTeam] = std::max(0, inPowerTotal);
 	}
 
 	String GetExtendedPath()
@@ -666,6 +673,8 @@ public:
 		commandQueue.clear();
 		projectileRegistry.clear();
 		deployMap.clear();
+		powerUsage.clear();
+		powerTotal.clear();
 
 		for (auto &row : currentMapTerrainGrid)
 		{

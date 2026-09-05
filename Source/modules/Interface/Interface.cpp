@@ -51,7 +51,8 @@ extern "C"
 		WorldState &worldState = WorldState::GetInstance();
 
 		String cashValue = std::to_string(worldState.GetCash());
-		String powerValue = std::to_string(worldState.GetPowerUsage()) + " / " + std::to_string(worldState.GetPowerTotal());
+		const String &viewing = worldState.GetTeam();
+		String powerValue = std::to_string(worldState.GetPowerUsage(viewing)) + " / " + std::to_string(worldState.GetPowerTotal(viewing));
 
 		window.DrawText("Power: " + powerValue, {static_cast<float>(worldState.GetCanvasWidth() + worldState.GetCanvasOffsetWidth() - 300), 33.f}, 14, sf::Color::Yellow);
 		window.DrawText("Cash: $" + cashValue, {static_cast<float>(worldState.GetCanvasWidth() + worldState.GetCanvasOffsetWidth() - 300), 51.5f}, 14, sf::Color::Yellow);

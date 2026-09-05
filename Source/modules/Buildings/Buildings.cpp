@@ -33,13 +33,15 @@ void Destroyed(BuildingState *building)
 		}
 	}
 
+	const String &owner = building->GetTeam();
+
 	if (building->GetPowerUsage() < 0)
 	{
-		world.SetPowerTotal(world.GetPowerTotal() + building->GetPowerUsage());
+		world.SetPowerTotal(owner, world.GetPowerTotal(owner) + building->GetPowerUsage());
 	}
 	else
 	{
-		world.SetPowerUsage(world.GetPowerUsage() - building->GetPowerUsage());
+		world.SetPowerUsage(owner, world.GetPowerUsage(owner) - building->GetPowerUsage());
 	}
 
 	world.deployMap.erase(building->GetUid());
@@ -191,13 +193,15 @@ extern "C"
 		globalItem->SetLife(globalItem->GetHitPoints());
 		world.SetPrimaryItems(globalItem->GetTeam(), globalItem->GetName(), globalItem->GetUid());
 
+		const String &owner = globalItem->GetTeam();
+
 		if (buildingState->GetPowerUsage() < 0)
 		{
-			world.SetPowerTotal(world.GetPowerTotal() - buildingState->GetPowerUsage());
+			world.SetPowerTotal(owner, world.GetPowerTotal(owner) - buildingState->GetPowerUsage());
 		}
 		else
 		{
-			world.SetPowerUsage(world.GetPowerUsage() + buildingState->GetPowerUsage());
+			world.SetPowerUsage(owner, world.GetPowerUsage(owner) + buildingState->GetPowerUsage());
 		}
 	}
 
