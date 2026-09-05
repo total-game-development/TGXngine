@@ -93,7 +93,7 @@
 			"required_jsons": [
 				{
 					"type": "obstruction",
-					"name": "ai-level-obstruction.json"
+					"name": "skirmish-plains-obstruction.json"
 				}
 			]
 		},
@@ -147,7 +147,7 @@
 			"required_jsons": [
 				{
 					"type": "obstruction",
-					"name": "ai-level-obstruction.json"
+					"name": "skirmish-island-obstruction.json"
 				}
 			]
 		},

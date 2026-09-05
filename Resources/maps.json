@@ -357,10 +357,11 @@
 			]
 		},
 		{
-			"name": "skirmish-crossing",
+			"name": "skirmish-plains",
 			"type": "skirmish",
-			"briefing": "Two construction facilities, one island, and four resource nodes between them. Secure water and oil with prospectors before the other side does, then push out from your base. Neither side starts with an advantage: whoever gets its economy running first fields the bigger army.",
-			"mapImage": "Resources/images/maps/singleplayer/ai-level/",
+			"briefing": "Grass from one lake to the other, and a construction facility apiece in opposite corners. Eight nodes of water and oil lie between you, most of them nearer the middle than either camp. Nothing here is defended and nothing here is finished: whoever raises a powerplant, gets prospectors onto the nodes and turns that into an army first decides how the rest of it goes.",
+			"mapImage": "Resources/images/maps/singleplayer/skirmish-plains/",
+			"mapPreview": "Resources/images/preview/skirmish/skirmish-plains/preview.png",
 			"numberOfHorizontalTiles": 10,
 			"numberOfVerticalTiles": 6,
 			"backgroundOffsetX": 0,
@@ -368,7 +369,7 @@
 			"backgroundOffsetWidth": 160,
 			"backgroundOffsetHeight": 0,
 			"positions": [
-				{"x":50, "y":50}
+				{"x":50, "y":30}
 			],
 			"mapGridWidth": 240,
 			"mapGridHeight": 240,
@@ -386,9 +387,11 @@
 				{"type":"buildings", "name":"water_extractor", "team":"technology"},
 				{"type":"buildings", "name":"oil_extractor", "team":"technology"},
 				{"type":"infantry", "name":"soldier", "team":"technology"},
-				{"type":"infantry", "name":"rocketeer", "team":"technology"},
 				{"type":"infantry", "name":"grenadier", "team":"technology"},
+				{"type":"infantry", "name":"rocketeer", "team":"technology"},
 				{"type":"vehicles", "name":"prospector", "team":"technology"},
+				{"type":"vehicles", "name":"truck", "team":"technology"},
+				{"type":"vehicles", "name":"tank", "team":"technology"},
 				{"type":"turrets", "name":"laser-tower", "team":"technology"},
 				{"type":"turrets", "name":"missile-turret", "team":"technology"},
 				{"type":"buildings", "name":"powerplant", "team":"social-earth"},
@@ -397,9 +400,13 @@
 				{"type":"buildings", "name":"water_extractor", "team":"social-earth"},
 				{"type":"buildings", "name":"oil_extractor", "team":"social-earth"},
 				{"type":"infantry", "name":"soldier", "team":"social-earth"},
-				{"type":"infantry", "name":"rocketeer", "team":"social-earth"},
 				{"type":"infantry", "name":"grenadier", "team":"social-earth"},
-				{"type":"vehicles", "name":"prospector", "team":"social-earth"}
+				{"type":"infantry", "name":"rocketeer", "team":"social-earth"},
+				{"type":"vehicles", "name":"prospector", "team":"social-earth"},
+				{"type":"vehicles", "name":"truck", "team":"social-earth"},
+				{"type":"vehicles", "name":"tank", "team":"social-earth"},
+				{"type":"turrets", "name":"laser-tower", "team":"social-earth"},
+				{"type":"turrets", "name":"missile-turret", "team":"social-earth"}
 			],
 			"projectiles": [
 				{"type":"projectiles", "name":"bullet"},
@@ -407,7 +414,6 @@
 				{"type":"projectiles", "name":"rocket"},
 				{"type":"projectiles", "name":"shell"},
 				{"type":"projectiles", "name":"missile"},
-				{"type":"projectiles", "name":"bomb"},
 				{"type":"projectiles", "name":"laser"}
 			],
 			"interface": [
@@ -516,60 +522,86 @@
 								"powerOutput": 0,
 								"isRoot": false,
 								"children": [
-									"prospector"
+									"prospector",
+									"truck",
+									"tank"
 								]
 							},
-							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
+							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"truck", "type":"vehicles", "role":"light_land_offensive", "buildTime":480, "cost":500, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"tank", "type":"vehicles", "role":"heavy_land_offensive", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
 						]
 					}
 				}
 			],
 			"items": [
-				{"type":"buildings", "name":"construction_facility", "x":50, "y":50, "direction":0, "team":"technology", "uid":-600},
-				{"type":"buildings", "name":"construction_facility", "x":150, "y":150, "direction":0, "team":"social-earth", "uid":-700}
+				{"type":"buildings", "name":"construction_facility", "x":50, "y":30, "direction":0, "team":"technology", "uid":-100},
+				{"type":"buildings", "name":"construction_facility", "x":170, "y":170, "direction":0, "team":"social-earth", "uid":-500}
 			],
 			"resources": [
-				{"type":"resources", "name":"water", "x":100, "y":60, "uid":-1100},
-				{"type":"resources", "name":"oil", "x":110, "y":120, "uid":-1101},
-				{"type":"resources", "name":"water", "x":140, "y":190, "uid":-1102},
-				{"type":"resources", "name":"oil", "x":70, "y":110, "uid":-1103}
+				{"type":"resources", "name":"oil", "x":226, "y":134, "uid":-1000},
+				{"type":"resources", "name":"water", "x":116, "y":102, "uid":-1001},
+				{"type":"resources", "name":"oil", "x":110, "y":218, "uid":-1002},
+				{"type":"resources", "name":"water", "x":228, "y":4, "uid":-1003},
+				{"type":"resources", "name":"oil", "x":112, "y":78, "uid":-1004},
+				{"type":"resources", "name":"water", "x":195, "y":80, "uid":-1005},
+				{"type":"resources", "name":"oil", "x":34, "y":148, "uid":-1006},
+				{"type":"resources", "name":"water", "x":182, "y":96, "uid":-1007}
 			]
 		},
 		{
-			"name": "skirmish-standoff",
+			"name": "skirmish-island",
 			"type": "skirmish",
-			"briefing": "The bases face each other across the diagonal, and the only oil sits between them. Expect early contact: hold your water, contest the oil, and keep something back for the counter-attack. A short map, where the first attack lands before either side has finished building.",
-			"mapImage": "Resources/images/maps/singleplayer/ai-level/",
-			"numberOfHorizontalTiles": 10,
-			"numberOfVerticalTiles": 6,
+			"briefing": "You land on the largest island with a construction facility and nothing else. Social-earth is already dug in across the water to the south-east -- powerplant, barracks, assembly tunnel, radar, an airfield and two missile turrets -- and it starts with half your money because it does not need to spend it. Take the eight nodes across the middle before it does, or the head start it has becomes the whole match.",
+			"mapImage": "Resources/images/maps/singleplayer/skirmish-island/",
+			"mapPreview": "Resources/images/preview/skirmish/skirmish-island/preview.png",
+			"numberOfHorizontalTiles": 13,
+			"numberOfVerticalTiles": 10,
 			"backgroundOffsetX": 0,
 			"backgroundOffsetY": 80,
 			"backgroundOffsetWidth": 160,
 			"backgroundOffsetHeight": 0,
 			"positions": [
-				{"x":40, "y":150}
+				{"x":106, "y":94}
 			],
-			"mapGridWidth": 240,
-			"mapGridHeight": 240,
+			"mapGridWidth": 400,
+			"mapGridHeight": 320,
 			"teams": [
 				{"name":"technology", "type":"player"},
 				{"name":"social-earth", "type":"ai"}
 			],
-			"cash": {"technology":25000, "social-earth":25000},
+			"cash": {"technology":25000, "social-earth":12500},
 			"water": {"technology":0, "social-earth":0},
 			"oil": {"technology":0, "social-earth":0},
 			"additional_requirements": [
 				{"type":"buildings", "name":"powerplant", "team":"technology"},
 				{"type":"buildings", "name":"barracks", "team":"technology"},
-				{"type":"buildings", "name":"factory", "team":"technology"},
-				{"type":"buildings", "name":"radar", "team":"technology"},
-				{"type":"buildings", "name":"extractor", "team":"technology"},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "team":"technology"},
+				{"type":"buildings", "name":"water_extractor", "team":"technology"},
+				{"type":"buildings", "name":"oil_extractor", "team":"technology"},
 				{"type":"infantry", "name":"soldier", "team":"technology"},
-				{"type":"infantry", "name":"rocketeer", "team":"technology"},
 				{"type":"infantry", "name":"grenadier", "team":"technology"},
-				{"type":"infantry", "name":"engineer", "team":"technology"},
+				{"type":"infantry", "name":"rocketeer", "team":"technology"},
+				{"type":"vehicles", "name":"prospector", "team":"technology"},
+				{"type":"vehicles", "name":"truck", "team":"technology"},
+				{"type":"vehicles", "name":"tank", "team":"technology"},
 				{"type":"turrets", "name":"laser-tower", "team":"technology"},
-				{"type":"turrets", "name":"missile-turret", "team":"technology"}
+				{"type":"turrets", "name":"missile-turret", "team":"technology"},
+				{"type":"buildings", "name":"powerplant", "team":"social-earth"},
+				{"type":"buildings", "name":"barracks", "team":"social-earth"},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "team":"social-earth"},
+				{"type":"buildings", "name":"water_extractor", "team":"social-earth"},
+				{"type":"buildings", "name":"oil_extractor", "team":"social-earth"},
+				{"type":"infantry", "name":"soldier", "team":"social-earth"},
+				{"type":"infantry", "name":"grenadier", "team":"social-earth"},
+				{"type":"infantry", "name":"rocketeer", "team":"social-earth"},
+				{"type":"vehicles", "name":"prospector", "team":"social-earth"},
+				{"type":"vehicles", "name":"truck", "team":"social-earth"},
+				{"type":"vehicles", "name":"tank", "team":"social-earth"},
+				{"type":"turrets", "name":"laser-tower", "team":"social-earth"},
+				{"type":"turrets", "name":"missile-turret", "team":"social-earth"},
+				{"type":"buildings", "name":"radar", "team":"social-earth"},
+				{"type":"buildings", "name":"airport", "team":"social-earth"}
 			],
 			"projectiles": [
 				{"type":"projectiles", "name":"bullet"},
@@ -577,7 +609,6 @@
 				{"type":"projectiles", "name":"rocket"},
 				{"type":"projectiles", "name":"shell"},
 				{"type":"projectiles", "name":"missile"},
-				{"type":"projectiles", "name":"bomb"},
 				{"type":"projectiles", "name":"laser"}
 			],
 			"interface": [
@@ -588,7 +619,7 @@
 			],
 			"economy": {
 				"technology": {"cash":25000},
-				"social-earth": {"cash":25000}
+				"social-earth": {"cash":12500}
 			},
 			"fog_of_war": [
 				{"type":"fog_of_war"},
@@ -628,7 +659,7 @@
 			"ai": [
 				{
 					"name": "builder",
-					"buildLimit": 6,
+					"buildLimit": 8,
 					"techTree": {
 						"nodes": [
 							{
@@ -686,35 +717,38 @@
 								"powerOutput": 0,
 								"isRoot": false,
 								"children": [
-									"prospector"
+									"prospector",
+									"truck",
+									"tank"
 								]
 							},
-							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
+							{"name":"prospector", "type":"vehicles", "role":"light_land_gatherer", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"truck", "type":"vehicles", "role":"light_land_offensive", "buildTime":480, "cost":500, "powerUsage":0, "powerOutput":0, "isRoot":false},
+							{"name":"tank", "type":"vehicles", "role":"heavy_land_offensive", "buildTime":720, "cost":2000, "powerUsage":0, "powerOutput":0, "isRoot":false}
 						]
 					}
 				}
 			],
 			"items": [
-				{"type":"buildings", "name":"construction_facility", "x":40, "y":150, "direction":0, "team":"technology", "uid":-600},
-				{"type":"buildings", "name":"powerplant", "x":75, "y":150, "direction":0, "team":"technology", "uid":-601},
-				{"type":"buildings", "name":"barracks", "x":40, "y":185, "direction":0, "team":"technology", "uid":-602},
-				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":70, "y":185, "direction":0, "team":"technology", "uid":-603},
-				{"type":"infantry", "name":"soldier", "x":50, "y":178, "direction":0, "team":"technology", "uid":-604},
-				{"type":"infantry", "name":"soldier", "x":53, "y":178, "direction":0, "team":"technology", "uid":-605},
-				{"type":"infantry", "name":"rocketeer", "x":56, "y":178, "direction":0, "team":"technology", "uid":-606},
-				{"type":"buildings", "name":"construction_facility", "x":160, "y":40, "direction":0, "team":"social-earth", "uid":-700},
-				{"type":"buildings", "name":"powerplant", "x":195, "y":40, "direction":0, "team":"social-earth", "uid":-701},
-				{"type":"buildings", "name":"barracks", "x":160, "y":75, "direction":0, "team":"social-earth", "uid":-702},
-				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":190, "y":75, "direction":0, "team":"social-earth", "uid":-703},
-				{"type":"infantry", "name":"soldier", "x":170, "y":68, "direction":0, "team":"social-earth", "uid":-704},
-				{"type":"infantry", "name":"soldier", "x":173, "y":68, "direction":0, "team":"social-earth", "uid":-705},
-				{"type":"infantry", "name":"rocketeer", "x":176, "y":68, "direction":0, "team":"social-earth", "uid":-706}
+				{"type":"buildings", "name":"construction_facility", "x":106, "y":94, "direction":0, "team":"technology", "uid":-100},
+				{"type":"buildings", "name":"construction_facility", "x":237, "y":185, "direction":0, "team":"social-earth", "uid":-500},
+				{"type":"buildings", "name":"powerplant", "x":268, "y":192, "direction":0, "team":"social-earth", "uid":-501},
+				{"type":"buildings", "name":"barracks", "x":242, "y":210, "direction":0, "team":"social-earth", "uid":-502},
+				{"type":"buildings", "name":"vehicle_assembly_tunnel", "x":250, "y":226, "direction":0, "team":"social-earth", "uid":-503},
+				{"type":"turrets", "name":"missile-turret", "x":226, "y":178, "direction":0, "team":"social-earth", "uid":-504},
+				{"type":"turrets", "name":"missile-turret", "x":234, "y":158, "direction":0, "team":"social-earth", "uid":-505},
+				{"type":"buildings", "name":"radar", "x":274, "y":212, "direction":0, "team":"social-earth", "uid":-509},
+				{"type":"buildings", "name":"airport", "x":260, "y":148, "direction":0, "team":"social-earth", "uid":-510}
 			],
 			"resources": [
-				{"type":"resources", "name":"water", "x":40, "y":110, "uid":-1100},
-				{"type":"resources", "name":"water", "x":170, "y":90, "uid":-1101},
-				{"type":"resources", "name":"oil", "x":100, "y":100, "uid":-1102},
-				{"type":"resources", "name":"oil", "x":110, "y":130, "uid":-1103}
+				{"type":"resources", "name":"oil", "x":196, "y":134, "uid":-1000},
+				{"type":"resources", "name":"water", "x":116, "y":102, "uid":-1001},
+				{"type":"resources", "name":"oil", "x":170, "y":218, "uid":-1002},
+				{"type":"resources", "name":"water", "x":198, "y":166, "uid":-1003},
+				{"type":"resources", "name":"oil", "x":122, "y":78, "uid":-1004},
+				{"type":"resources", "name":"water", "x":178, "y":102, "uid":-1005},
+				{"type":"resources", "name":"oil", "x":134, "y":148, "uid":-1006},
+				{"type":"resources", "name":"water", "x":182, "y":96, "uid":-1007}
 			]
 		},
 		{
