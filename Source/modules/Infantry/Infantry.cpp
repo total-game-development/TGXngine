@@ -877,7 +877,12 @@ void Steering(ItemInstance *itemInstance)
 
 		for (auto &collidedItem : collidedBodyItems)
 		{
+			// Both have to actually be in the same commanded group. An order id of 0
+			// is what a unit has when nobody has grouped it -- every AI unit, and
+			// anything freshly built -- so matching on it stood down any unit that
+			// so much as brushed another one parked at the factory.
 			if (collidedItem &&
+				(itemInstance->GetOrders()->id > 0) &&
 				(itemInstance->GetOrders()->id == collidedItem->GetOrders()->id) &&
 				(collidedItem->GetOrders()->order == Orders::Order::Stand || collidedItem->GetOrders()->order == Orders::Order::Standing))
 			{

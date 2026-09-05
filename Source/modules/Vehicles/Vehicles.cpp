@@ -767,7 +767,12 @@ void Steering(ItemInstance *itemInstance)
 				}
 			}
 
-			if ((itemInstance->GetOrders()->id == collidedItem->GetOrders()->id) &&
+			// Both have to actually be in the same commanded group. An order id of 0
+			// is what a unit has when nobody has grouped it -- every AI unit, and
+			// anything freshly built -- so matching on it stood down any unit that
+			// so much as brushed another one parked at the factory.
+			if ((itemInstance->GetOrders()->id > 0) &&
+				(itemInstance->GetOrders()->id == collidedItem->GetOrders()->id) &&
 				(collidedItem->GetOrders()->order == Orders::Order::Stand ||
 				 collidedItem->GetOrders()->order == Orders::Order::Standing))
 			{
@@ -811,7 +816,10 @@ void RegisterToQuadTree(const Set<String> &groups)
 
 void Stop(ItemInstance *item)
 {
-	static_cast<VehicleState *>(item)->accelerationIndex = VehicleState::accelerationFactor.size();
+	// The slowest factor is the last one in the table, not one past it. Reading
+	// off the end is what tripped the debug assertion, and in a release build it
+	// scaled the vehicle's speed by whatever happened to sit after the array.
+	static_cast<VehicleState *>(item)->accelerationIndex = VehicleState::accelerationFactor.size() - 1;
 };
 
 void Velocity(ItemInstance *itemInstance)
