@@ -805,14 +805,16 @@ Vector<ItemInstance *> Detect(ItemInstance *itemInstance, const Vector<ItemInsta
 
 	for (const auto &collisionItem : nearByItems)
 	{
-		if (collisionItem && collisionItem->GetType() == "ships")
+		// Ships against ships only. The client queries a ships-only tree here
+		// rather than the army one, so nothing on land is ever a candidate.
+		if (!collisionItem || collisionItem == itemInstance || collisionItem->GetType() != "ships")
 		{
-			float collisionResult = SATCollision(static_cast<ShipState *>(itemInstance)->polygon, static_cast<ShipState *>(collisionItem)->polygon);
+			continue;
+		}
 
-			if (collisionResult > 0.0)
-			{
-				collidedItems.emplace_back(collisionItem);
-			}
+		if (SATCollision(itemInstance->polygon, collisionItem->polygon) > 0.0f)
+		{
+			collidedItems.emplace_back(collisionItem);
 		}
 	}
 

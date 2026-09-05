@@ -888,6 +888,26 @@ void Steering(ItemInstance *itemInstance)
 
 		for (auto &collidedItem : collidedBodyItems)
 		{
+			// A wave converges on one target, so without this every unit walks to
+			// the same place and stands in it. Anything that reaches a friendly
+			// already stopped on the same target has arrived too. The order-group
+			// rule below cannot cover this: the AI stamps no order id, so its units
+			// all carry 0 and never match each other.
+			const Orders::Order theirs = collidedItem->GetOrders()->order;
+
+			const bool theyHaveArrived =
+				theirs == Orders::Order::Stand || theirs == Orders::Order::Standing ||
+				theirs == Orders::Order::TurnToFire || theirs == Orders::Order::Firing ||
+				theirs == Orders::Order::Fire;
+
+			if (itemInstance->GetState() == ItemStates::Attacking && theyHaveArrived &&
+				collidedItem->GetTeam() == itemInstance->GetTeam() &&
+				collidedItem->GetTargetUid() == itemInstance->GetTargetUid())
+			{
+				itemInstance->SetOrders(Orders::Order::Standing);
+				return;
+			}
+
 			// Both have to actually be in the same commanded group. An order id of 0
 			// is what a unit has when nobody has grouped it -- every AI unit, and
 			// anything freshly built -- so matching on it stood down any unit that
@@ -912,14 +932,19 @@ Vector<ItemInstance *> Detect(ItemInstance *itemInstance, const Vector<ItemInsta
 
 	for (const auto &collisionItem : nearByItems)
 	{
-		if (collisionItem && collisionItem->GetType() != "infantry")
+		// Infantry walk through each other, which is the client's own rule -- its
+		// infantry steering drops every "infantry" from the list before testing. They
+		// do stop for vehicles, and for aircraft they should not: those pass overhead
+		// and never build a ground polygon to test against.
+		if (!collisionItem || collisionItem == itemInstance ||
+			collisionItem->GetType() == "infantry" || collisionItem->IsAircraft())
 		{
-			float collisionResult = SATCollision(itemInstance->polygon, collisionItem->polygon);
+			continue;
+		}
 
-			if (collisionResult > 0.0)
-			{
-				collidedItems.emplace_back(collisionItem);
-			}
+		if (SATCollision(itemInstance->polygon, collisionItem->polygon) > 0.0f)
+		{
+			collidedItems.emplace_back(collisionItem);
 		}
 	}
 
