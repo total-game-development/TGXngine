@@ -148,12 +148,14 @@ extern "C"
 						}
 					}
 
-					if (i < deploys.size())
-					{
-						globalItem->SetX(world.items[index]->GetX() + std::get<0>(deploys[i]));
-						globalItem->SetY(world.items[index]->GetY() + std::get<1>(deploys[i]));
-						globalItem->SetDirection(12);
-					}
+					// Every berth taken still has to put the vehicle somewhere. At the
+					// last berth it is at least at the tunnel, where steering can push
+					// it clear; with no position at all it appears in the map corner.
+					const size_t berth = (i < deploys.size()) ? i : deploys.size() - 1;
+
+					globalItem->SetX(world.items[index]->GetX() + std::get<0>(deploys[berth]));
+					globalItem->SetY(world.items[index]->GetY() + std::get<1>(deploys[berth]));
+					globalItem->SetDirection(12);
 				}
 			}
 			else
@@ -184,6 +186,15 @@ extern "C"
 		globalItem->AddToGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
 		RegisterToQuadTree(globalItem->GetGroups());
+
+		// A prospector reports for work on its own. Waiting to be told holds a
+		// deploy berth the next vehicle needs, and no side the AI runs would ever
+		// think to tell it.
+		if (globalItem->CanExtract())
+		{
+			globalItem->SetOrders(Orders::Order::Extract);
+		}
+
 		Log::Success("Vehicle " + name + " created successfully");
 	}
 
@@ -534,14 +545,14 @@ void Moving(VehicleState *itemInstance)
 							builtCommand += builtName + ",";
 							String builtType = StringConcat("type:", "buildings");
 							builtCommand += builtType + ",";
-							String builtTeam = StringConcat("team:", world.GetTeam());
+							String builtTeam = StringConcat("team:", itemInstance->GetTeam());
 							builtCommand += builtTeam + ",";
 							String builtX = StringConcat("x:", world.resources[i]->GetX());
 							builtCommand += builtX + ",";
 							String builtY = StringConcat("y:", world.resources[i]->GetY());
 							builtCommand += builtY;
 
-							world.extractors[world.GetTeam()][world.resources[i]->GetName()]++;
+							world.extractors[itemInstance->GetTeam()][world.resources[i]->GetName()]++;
 							world.gameEvents.emplace_back(UIAction::AddGameItem, builtCommand);
 							itemInstance->SetOrders(Orders::Order::Destroyed);
 							return;
@@ -942,6 +953,78 @@ void Fire(VehicleState *itemInstance)
 	itemInstance->SetOrders(Orders::Order::Firing);
 }
 
+namespace
+{
+// Nothing marks a resource as taken, so the claim is read back off the world:
+// a prospector already on its way to the node, or the extractor that a previous
+// one turned into on top of it. Without this every prospector picks the same
+// nearest node and only the first one finds it still there.
+bool ResourceIsClaimed(const ResourceInstance *resource, int byUid)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	for (const auto &item : world.items)
+	{
+		if (!item || item->GetUid() == byUid || item->GetLife() <= 0.0f)
+		{
+			continue;
+		}
+
+		if (item->CanExtract() &&
+			item->GetState() == ItemStates::Extracting &&
+			item->GetTargetUid() == resource->GetUid())
+		{
+			return true;
+		}
+
+		// Standing on the node, not exactly on it: the extractor's position makes
+		// a round trip through the build command's text, and no two nodes on any
+		// map are within a cell of each other.
+		if (item->GetType() == "buildings" &&
+			item->GetName() == resource->GetName() + "_extractor")
+		{
+			const float offsetX = item->GetX() - resource->GetX();
+			const float offsetY = item->GetY() - resource->GetY();
+
+			if (((offsetX * offsetX) + (offsetY * offsetY)) <= 1.0f)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+ResourceInstance *NearestFreeResource(const ItemInstance *prospector)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	ResourceInstance *nearest = nullptr;
+	float nearestDistance = 0.0f;
+
+	for (const auto &resource : world.resources)
+	{
+		if (!resource || ResourceIsClaimed(resource.get(), prospector->GetUid()))
+		{
+			continue;
+		}
+
+		const float deltaX = resource->GetX() - prospector->GetX();
+		const float deltaY = resource->GetY() - prospector->GetY();
+		const float distance = (deltaX * deltaX) + (deltaY * deltaY);
+
+		if (!nearest || distance < nearestDistance)
+		{
+			nearest = resource.get();
+			nearestDistance = distance;
+		}
+	}
+
+	return nearest;
+}
+} // namespace
+
 void Extract(ItemInstance *itemInstance)
 {
 	Log::Debug("Extract");
@@ -959,25 +1042,45 @@ void Extract(ItemInstance *itemInstance)
 
 	Log::Info(world.GetResourceUidThatIsUnderCursor());
 
-	for (size_t i = 0; i < world.resources.size(); i++)
+	ResourceInstance *targetInstance = nullptr;
+
+	if (world.IsResourceUnderCursor())
 	{
-		if (world.resources[i]->GetUid() == world.GetResourceUidThatIsUnderCursor())
+		for (const auto &resource : world.resources)
 		{
-			itemInstance->RemoveFromGrid(
-				world.currentTerrainMapPassableGrid,
-				physics.GetGridTracker());
-
-			ResourceInstance *targetInstance = world.resources[i].get();
-			itemInstance->SetState(ItemStates::Extracting);
-
-			itemInstance->SetTargetUid(targetInstance->GetUid());
-
-			itemInstance->GetOrders()->toX = targetInstance->GetX();
-			itemInstance->GetOrders()->toY = targetInstance->GetY();
-			itemInstance->SetOrders(Orders::Order::MoveTo);
-			break;
+			if (resource && resource->GetUid() == world.GetResourceUidThatIsUnderCursor())
+			{
+				targetInstance = resource.get();
+				break;
+			}
 		}
 	}
+
+	// Nobody picked a node for it, so it picks its own. A prospector that comes
+	// off the line and waits to be told is a berth held and no income earned,
+	// and on a map with no construction facility income is the whole game.
+	if (!targetInstance)
+	{
+		targetInstance = NearestFreeResource(itemInstance);
+	}
+
+	if (!targetInstance)
+	{
+		itemInstance->SetOrders(Orders::Order::Stand);
+		return;
+	}
+
+	itemInstance->RemoveFromGrid(
+		world.currentTerrainMapPassableGrid,
+		physics.GetGridTracker());
+
+	itemInstance->SetState(ItemStates::Extracting);
+
+	itemInstance->SetTargetUid(targetInstance->GetUid());
+
+	itemInstance->GetOrders()->toX = targetInstance->GetX();
+	itemInstance->GetOrders()->toY = targetInstance->GetY();
+	itemInstance->SetOrders(Orders::Order::MoveTo);
 }
 
 void Destroyed(ItemInstance *itemInstance)
