@@ -172,9 +172,17 @@ bool BuilderAIState::IsPlotClear(int x, int y) const
 {
 	WorldState &world = WorldState::GetInstance();
 
+	// The map's size has to come off WorldState, not Globals. Globals is a
+	// header of static inline members with nothing exported, so a module gets
+	// its own copy and only the executable ever writes it: read from here and
+	// the width is still 0, every plot fails the bounds test, and the commander
+	// reports no room on an empty map.
+	const int mapWidth = world.GetMapGridWidth();
+	const int mapHeight = world.GetMapGridHeight();
+
 	if (x < 0 || y < 0 ||
-		x + plotWidth > Globals::mapGridWidth ||
-		y + plotHeight > Globals::mapGridHeight)
+		x + plotWidth > mapWidth ||
+		y + plotHeight > mapHeight)
 	{
 		return false;
 	}
