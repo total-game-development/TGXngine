@@ -8,6 +8,22 @@ TGXngine decouples stable engine fundamentals from flexible gameplay rules. The 
 
 The engine's roots trace back to War of Salvation, the original RTS in this ecosystem, which was initially built specifically for the web. TGXngine was subsequently engineered as a major architectural extension to empower and involve the community, providing a high-performance native substrate for advanced development. A live web demo version of the original War of Salvation experience is available to play at https://tgame.dev/wos-game/.
 
+## Version 0.2
+
+Version 0.2 is implemented and tagged. The headline additions are a modular strategy AI and a standalone skirmish mode, alongside the modules that extend play beyond the land domain.
+
+### Modular Strategy AI (modules/AI/)
+
+The opponent ships as a dynamic module like any other gameplay layer, so its behaviour can be replaced or extended without recompiling the core engine. It is built on a polymorphic state architecture: an `AIState` base with `BuilderAIState` driving base development and build-order execution through a `BuildPlanner`, and `PlexAIState` handling the strategic layer above it. Role demand is resolved dynamically against whatever modules are loaded, so an `AIProfile` only tracks roles the current module set can actually field. The module is bound through `modules.json` as `{"type":"ai", "name":"modules/AI"}`, and maps declare their AI teams in their own `ai` blocks.
+
+### Skirmish Mode
+
+A skirmish lobby scene configures a match before it starts: map selection, per-slot team and role assignment, spectator mode, and start or cancel. The lobby writes its result into `SkirmishSetup`, which the game scene reads when building the match. Five skirmish maps ship with the engine: plains, island, snow, desert and water.
+
+### Supporting Modules
+
+Version 0.2 also lands the Aircrafts, Ships, FogOfWar and Turrets modules, extending the engine to air and naval domains, battlefield visibility, and defensive structures.
+
 ## Engine Architecture and Codebase Structure
 
 The engine codebase is divided into three distinct structural layers: the Core Application, the Static Library Core, and external Dynamic Modules designed for modding.
@@ -46,15 +62,20 @@ Implementation components:
 
 This layer encapsulates gameplay logic inside isolated dynamic libraries. This decoupling allows developers and community modders to write entirely new unit behaviors, faction mechanics, or game triggers as self-contained mods.
 
-Isolated dynamic modules available in version 0.1:
+Isolated dynamic modules available in version 0.2:
 
+* modules/AI/
+* modules/Aircrafts/
 * modules/Buildings/
 * modules/Economy/
+* modules/FogOfWar/
 * modules/Infantry/
 * modules/Interface/
 * modules/Projectiles/
 * modules/Resources/
+* modules/Ships/
 * modules/Triggers/
+* modules/Turrets/
 * modules/Vehicles/
 
 ### 4. Verification Frameworks
