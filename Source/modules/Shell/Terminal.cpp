@@ -101,6 +101,8 @@ void Terminal::WriteFile(const String &name, const String &source)
 	std::lock_guard<std::recursive_mutex> lock(mutex);
 
 	current->fileSystem.Write(name, source);
+
+	Persist();
 }
 
 void Terminal::SetToggleHandler(ToggleHandler handler)
@@ -243,6 +245,7 @@ void Terminal::Submit(const String &line)
 		{
 			current->fileSystem.MakeDirectory(args[1], message);
 			Print(message);
+			Persist();
 		}
 	}
 	else if (head == "make" || head == "mk")
@@ -255,6 +258,7 @@ void Terminal::Submit(const String &line)
 		{
 			current->fileSystem.MakeFile(args[1], message);
 			Print(message);
+			Persist();
 		}
 	}
 	else if (head == "delete" || head == "del")
@@ -267,6 +271,7 @@ void Terminal::Submit(const String &line)
 		{
 			current->fileSystem.Remove(args[1], message);
 			Print(message);
+			Persist();
 		}
 	}
 	else if (head == "rename" || head == "rn")
@@ -279,6 +284,7 @@ void Terminal::Submit(const String &line)
 		{
 			current->fileSystem.Rename(args[1], args[2], message);
 			Print(message);
+			Persist();
 		}
 	}
 	else if (head == "print" || head == "pwd")
@@ -415,6 +421,8 @@ void Terminal::SaveEditor()
 		current->fileSystem.Write(editor.Name(), editor.Source());
 		Print("Saved " + editor.Name());
 	}
+
+	Persist();
 
 	editor.ClearDirty();
 	editor.Close();
@@ -669,6 +677,8 @@ void Terminal::Seed()
 
 void Terminal::Load(const String &path)
 {
+	savePath = path;
+
 	std::ifstream stream(path);
 
 	if (!stream.is_open())
@@ -712,8 +722,26 @@ void Terminal::Load(const String &path)
 	current = &local;
 }
 
+void Terminal::Persist()
+{
+	if (!savePath.empty())
+	{
+		Save(savePath);
+	}
+}
+
+void Terminal::CommitEditor()
+{
+	if (mode == TerminalMode::Editing)
+	{
+		SaveEditor();
+	}
+}
+
 void Terminal::Save(const String &path) const
 {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
 	nlohmann::json data;
 	data["local"] = local.fileSystem.Serialise();
 	data["remotes"] = nlohmann::json::object();

@@ -262,6 +262,7 @@ extern "C"
 	{
 		if (terminal)
 		{
+			terminal->CommitEditor();
 			terminal->Save(savePath);
 			terminal->Stop();
 		}
@@ -271,6 +272,7 @@ extern "C"
 	{
 		if (terminal)
 		{
+			terminal->CommitEditor();
 			terminal->Save(savePath);
 			terminal->Stop();
 			terminal.reset();

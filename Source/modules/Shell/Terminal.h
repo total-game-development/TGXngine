@@ -50,6 +50,7 @@ private:
 
 	bool requestClose = false;
 	bool showFogOfWar = false;
+	String savePath;
 	ToggleHandler toggleHandler = nullptr;
 
 	void Help();
@@ -59,6 +60,7 @@ private:
 	void Disconnect();
 	void Cheat(const String &command);
 	void SaveEditor();
+	void Persist();
 
 	static Vector<String> Split(const String &text, char delimiter);
 
@@ -99,6 +101,7 @@ public:
 	bool ShouldClose();
 
 	void Load(const String &path);
+	void CommitEditor();
 	void Save(const String &path) const;
 	void Seed();
 };
