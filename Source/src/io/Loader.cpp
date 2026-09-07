@@ -570,6 +570,34 @@ void Loader::AssignFogOfWar()
 	Log::Success("FogOfWar assigned");
 }
 
+void Loader::AssignShell()
+{
+	Log::Info("Assign Shell");
+
+	if (!dlls.contains("shell"))
+	{
+		Log::Error("Missing DLL for shell");
+		return;
+	}
+
+	auto *dllHandle = dlls["shell"];
+
+	shellModule = std::make_unique<ShellModule>(
+		(FNPTR_SHELL_AWAKE)GET_PROC(dllHandle, "Awake"),
+		(FNPTR_SHELL_CREATE)GET_PROC(dllHandle, "Create"),
+		(FNPTR_SHELL_UPDATE)GET_PROC(dllHandle, "Update"),
+		(FNPTR_SHELL_RENDER_WINDOW)GET_PROC(dllHandle, "Draw"),
+		(FNPTR_SHELL_CLICK)GET_PROC(dllHandle, "Click"),
+		(FNPTR_SHELL_TEXT)GET_PROC(dllHandle, "Text"),
+		(FNPTR_SHELL_KEY)GET_PROC(dllHandle, "Key"),
+		(FNPTR_SHELL_SHOULD_CLOSE)GET_PROC(dllHandle, "ShouldClose"),
+		(FNPTR_SHELL_SET_TOGGLE_HANDLER)GET_PROC(dllHandle, "SetToggleHandler"),
+		(FNPTR_SHELL_CLEAR)GET_PROC(dllHandle, "Clear"),
+		(FNPTR_SHELL_DELETE)GET_PROC(dllHandle, "Delete"));
+
+	Log::Success("Shell assigned");
+}
+
 void Loader::ResetUIDCounter()
 {
 	uid = 0;
@@ -613,6 +641,11 @@ Vector<Unique<Triggers>> &Loader::GetGameTriggers()
 Unique<FogOfWar> &Loader::GetFogOfWar()
 {
 	return fogOfWarModule;
+}
+
+Unique<ShellModule> &Loader::GetShell()
+{
+	return shellModule;
 }
 
 Vector<Unique<Economy>> &Loader::GetEconomies()

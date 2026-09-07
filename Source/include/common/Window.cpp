@@ -85,6 +85,11 @@ void Window::SetEventCallbacks(std::function<void(sf::Event)> &key, std::functio
 	_mouse = std::move(mouse);
 }
 
+void Window::SetTextCallback(std::function<void(sf::Event)> &text)
+{
+	_text = std::move(text);
+}
+
 sf::Vector2f Window::PixelToCoords(sf::Vector2i pixel)
 {
 	return _window.mapPixelToCoords(pixel, _fixed);
@@ -155,6 +160,15 @@ void Window::Update()
 					if (_key)
 					{
 						_key(event);
+					}
+					break;
+				}
+
+			case sf::Event::TextEntered:
+				{
+					if (_text)
+					{
+						_text(event);
 					}
 					break;
 				}

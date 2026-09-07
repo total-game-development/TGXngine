@@ -348,9 +348,18 @@ if(BUILD_UNIT_TESTS)
 
 	file(GLOB_RECURSE TEST_SOURCES "Source/tests/*.cpp")
 
-	add_executable(UnitTests ${TEST_SOURCES})
+	# the shell module's language and filesystem are exercised headlessly, so they
+	# are compiled into the test binary directly. Shell.cpp is the DLL entry point
+	# and pulls in the window, so it stays out.
+	file(GLOB SHELL_TESTABLE_SOURCES "Source/modules/Shell/*.cpp")
+	list(FILTER SHELL_TESTABLE_SOURCES EXCLUDE REGEX "Shell\.cpp$")
 
-	target_include_directories(UnitTests PRIVATE ${GLOBAL_INCLUDES})
+	add_executable(UnitTests ${TEST_SOURCES} ${SHELL_TESTABLE_SOURCES})
+
+	target_include_directories(
+		UnitTests
+		PRIVATE ${GLOBAL_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/Source/modules/Shell
+	)
 
 	target_link_libraries(
 		UnitTests

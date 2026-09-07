@@ -39,6 +39,25 @@
 					"action": "LoadScene",
 					"value": "skirmish"
 				}
+			},
+			{
+				"text": "Shell",
+				"font": "courier",
+				"font-style": "italic bold",
+				"size": 48,
+				"colour": "FFFFFF",
+				"outline-color": "000060",
+				"outline-size": 4,
+				"alignment": "none",
+				"x": 455,
+				"y": 640,
+				"width": 130,
+				"height": 48,
+				"hover": "FFD700",
+				"click": {
+					"action": "LoadScene",
+					"value": "shell"
+				}
 			}
 		]
 	}

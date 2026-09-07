@@ -35,6 +35,7 @@ public:
 
 	COMMON_API bool ShouldClose();
 	COMMON_API void SetEventCallbacks(std::function<void(sf::Event)> &key, std::function<void(sf::Event)> &mouse);
+	COMMON_API void SetTextCallback(std::function<void(sf::Event)> &text);
 
 	COMMON_API sf::Vector2f GetViewSize() const;
 
@@ -58,6 +59,7 @@ private:
 
 	std::function<void(sf::Event)> _key;
 	std::function<void(sf::Event)> _mouse;
+	std::function<void(sf::Event)> _text;
 };
 
 } // namespace TGX

@@ -15,6 +15,7 @@
 #include "Scene/Game.h"
 #include "Scene/Intro.h"
 #include "Scene/Skirmish.h"
+#include "Scene/ShellScene.h"
 #include "StringUtils.hpp"
 #include "Window.h"
 
@@ -35,6 +36,7 @@ Renderer::Renderer()
 	scenes.insert({SceneType::Intro, std::make_shared<Intro>()});
 	scenes.insert({SceneType::Skirmish, std::make_shared<Skirmish>()});
 	scenes.insert({SceneType::Game, std::make_shared<Game>()});
+	scenes.insert({SceneType::Shell, std::make_shared<ShellScene>()});
 
 	functions[UIAction::Log] = &Renderer::Log;
 	functions[UIAction::LoadScene] = &Renderer::LoadScene;
@@ -132,11 +134,24 @@ void Renderer::Start()
 		};
 	};
 
-	std::function<void(sf::Event)> keyboardCallback = [&keyboard](sf::Event event) {
+	std::function<void(sf::Event)> keyboardCallback = [&keyboard, this](sf::Event event) {
 		keyboard.KeyPressed(event.key.code);
+
+		if (auto *shell = dynamic_cast<ShellScene *>(scene.get()))
+		{
+			shell->Key(static_cast<int>(event.key.code));
+		}
+	};
+
+	std::function<void(sf::Event)> textCallback = [this](sf::Event event) {
+		if (auto *shell = dynamic_cast<ShellScene *>(scene.get()))
+		{
+			shell->Text(event.text.unicode);
+		}
 	};
 
 	window.SetEventCallbacks(keyboardCallback, mouseCallback);
+	window.SetTextCallback(textCallback);
 
 	while (!window.ShouldClose() && !world.IsClosed())
 	{
