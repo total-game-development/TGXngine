@@ -135,12 +135,13 @@ void Renderer::Start()
 	};
 
 	std::function<void(sf::Event)> keyboardCallback = [&keyboard, this](sf::Event event) {
-		keyboard.KeyPressed(event.key.code);
-
 		if (auto *shell = dynamic_cast<ShellScene *>(scene.get()))
 		{
 			shell->Key(static_cast<int>(event.key.code));
+			return;
 		}
+
+		keyboard.KeyPressed(event.key.code);
 	};
 
 	std::function<void(sf::Event)> textCallback = [this](sf::Event event) {

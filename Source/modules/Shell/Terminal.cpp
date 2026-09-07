@@ -533,7 +533,10 @@ void Terminal::Escape()
 	if (mode == TerminalMode::Editing)
 	{
 		SaveEditor();
+		return;
 	}
+
+	requestClose = true;
 }
 
 void Terminal::CursorUp()
