@@ -469,13 +469,16 @@ void Terminal::Cheat(const String &command)
 {
 	const Vector<String> args = Split(command, ' ');
 
-	if (args.size() != 2)
+	if (args.size() == 5 && args[1] == "when" && args[2] == "the" && args[3] == "walls" && args[4] == "fell")
 	{
-		Print("Invalid command. Usage: cheat <code>");
+		showFogOfWar = !showFogOfWar;
+
+		Toggle("fogofwar", showFogOfWar ? "show" : "hide", showFogOfWar);
+
 		return;
 	}
 
-	Print("Cheat " + args[1] + " accepted");
+	Print("Unknown command");
 }
 
 void Terminal::Character(char character)

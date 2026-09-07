@@ -49,6 +49,7 @@ private:
 	mutable std::recursive_mutex mutex;
 
 	bool requestClose = false;
+	bool showFogOfWar = false;
 	ToggleHandler toggleHandler = nullptr;
 
 	void Help();
