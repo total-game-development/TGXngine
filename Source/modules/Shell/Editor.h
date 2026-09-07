@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "Core.h"
+#include "Highlight.h"
 
 namespace TGX::Shell
 {
@@ -20,7 +21,11 @@ private:
 
 	bool dirty = false;
 
+	mutable Vector<Vector<Span>> spans;
+	mutable bool spansStale = true;
+
 	void ClampColumn();
+	void Invalidate();
 
 public:
 	Editor();
@@ -46,6 +51,7 @@ public:
 	String Source() const;
 	const String &Name() const;
 	const Vector<String> &Lines() const;
+	const Vector<Vector<Span>> &Spans() const;
 
 	std::size_t Row() const;
 	std::size_t Column() const;

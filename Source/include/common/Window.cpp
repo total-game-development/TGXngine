@@ -217,6 +217,16 @@ void Window::DrawText(const std::string &content, sf::Vector2f position, unsigne
 	_window.draw(text);
 }
 
+float Window::MeasureText(const std::string &content, unsigned int size) const
+{
+	sf::Text text;
+	text.setFont(_mainFont);
+	text.setString(content);
+	text.setCharacterSize(size);
+
+	return text.findCharacterPos(content.size()).x;
+}
+
 void Window::MoveView(float x, float y)
 {
 	_fixed.move(x, y);

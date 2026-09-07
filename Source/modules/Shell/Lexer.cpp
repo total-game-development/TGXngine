@@ -50,6 +50,11 @@ void Push(Vector<Token> &tokens, const String &value, TokenType type)
 }
 } // namespace
 
+bool IsKeyword(const String &identifier)
+{
+	return Keywords().find(identifier) != Keywords().end();
+}
+
 Vector<Token> Tokenise(const String &sourceCode, Vector<String> &errors)
 {
 	Vector<Token> tokens;

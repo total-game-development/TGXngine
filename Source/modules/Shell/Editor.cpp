@@ -35,6 +35,8 @@ void Editor::Open(const String &name, const String &source)
 	column = 0;
 	scroll = 0;
 	dirty = false;
+
+	Invalidate();
 }
 
 void Editor::Close()
@@ -47,6 +49,24 @@ void Editor::Close()
 	column = 0;
 	scroll = 0;
 	dirty = false;
+
+	Invalidate();
+}
+
+void Editor::Invalidate()
+{
+	spansStale = true;
+}
+
+const Vector<Vector<Span>> &Editor::Spans() const
+{
+	if (spansStale)
+	{
+		spans = HighlightSource(lines);
+		spansStale = false;
+	}
+
+	return spans;
 }
 
 void Editor::ClampColumn()
@@ -70,6 +90,7 @@ void Editor::Insert(char character)
 	++column;
 
 	dirty = true;
+	Invalidate();
 
 	ScrollIntoView();
 }
@@ -87,6 +108,7 @@ void Editor::Newline()
 	column = 0;
 
 	dirty = true;
+	Invalidate();
 
 	ScrollIntoView();
 }
@@ -100,6 +122,7 @@ void Editor::Backspace()
 		lines[row].erase(column - 1, 1);
 		--column;
 		dirty = true;
+	Invalidate();
 
 		ScrollIntoView();
 		return;
@@ -119,6 +142,7 @@ void Editor::Backspace()
 	column = previousLength;
 
 	dirty = true;
+	Invalidate();
 
 	ScrollIntoView();
 }

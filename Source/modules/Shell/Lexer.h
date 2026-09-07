@@ -52,4 +52,5 @@ struct Token
 };
 
 Vector<Token> Tokenise(const String &sourceCode, Vector<String> &errors);
+bool IsKeyword(const String &identifier);
 } // namespace TGX::Shell

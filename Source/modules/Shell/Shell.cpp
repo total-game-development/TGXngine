@@ -32,6 +32,27 @@ std::size_t VisibleRows()
 	return static_cast<std::size_t>(rows);
 }
 
+sf::Color StyleColour(TokenStyle style)
+{
+	switch (style)
+	{
+		case TokenStyle::Keyword:
+			return sf::Color(0x00, 0xA7, 0xFF);
+		case TokenStyle::Text:
+			return sf::Color(0x00, 0xF0, 0x3E);
+		case TokenStyle::Comment:
+			return sf::Color(0xFF, 0xD4, 0x00);
+		case TokenStyle::Number:
+			return sf::Color(0xD5, 0x7C, 0xFF);
+		case TokenStyle::Boolean:
+			return sf::Color(0xFF, 0x70, 0xE9);
+		case TokenStyle::Default:
+			return sf::Color::White;
+	}
+
+	return sf::Color::White;
+}
+
 void DrawTerminal()
 {
 	Window &window = Window::GetInstance();
@@ -79,21 +100,33 @@ void DrawEditor()
 
 	float y = MARGIN_Y + (LINE_HEIGHT * 2.0f);
 
+	const Vector<Vector<Span>> &spans = editor.Spans();
+
 	for (std::size_t index = scroll; index < limit; ++index)
 	{
-		String line = lines[index];
+		const String gutter = std::to_string(index + 1) + "  ";
+
+		window.DrawText(gutter, sf::Vector2f(MARGIN_X, y), FONT_SIZE, sf::Color(110, 110, 110));
+
+		float x = MARGIN_X + window.MeasureText(gutter, FONT_SIZE);
+
+		if (index < spans.size())
+		{
+			for (const Span &span : spans[index])
+			{
+				window.DrawText(span.text, sf::Vector2f(x, y), FONT_SIZE, StyleColour(span.style));
+				x += window.MeasureText(span.text, FONT_SIZE);
+			}
+		}
 
 		if (index == editor.Row())
 		{
+			const String &line = lines[index];
 			const std::size_t column = std::min(editor.Column(), line.size());
-			line.insert(column, "|");
-		}
+			const float caret = MARGIN_X + window.MeasureText(gutter + line.substr(0, column), FONT_SIZE);
 
-		window.DrawText(
-			std::to_string(index + 1) + "  " + line,
-			sf::Vector2f(MARGIN_X, y),
-			FONT_SIZE,
-			index == editor.Row() ? sf::Color::White : sf::Color(190, 190, 190));
+			window.DrawText("|", sf::Vector2f(caret - 1.0f, y), FONT_SIZE, sf::Color::White);
+		}
 
 		y += LINE_HEIGHT;
 	}

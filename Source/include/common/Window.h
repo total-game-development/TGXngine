@@ -32,6 +32,7 @@ public:
 
 	COMMON_API void Draw(const sf::Drawable &drawable);
 	COMMON_API void DrawText(const std::string &content, sf::Vector2f position, unsigned int size = 24, sf::Color color = sf::Color::White);
+	COMMON_API float MeasureText(const std::string &content, unsigned int size = 24) const;
 
 	COMMON_API bool ShouldClose();
 	COMMON_API void SetEventCallbacks(std::function<void(sf::Event)> &key, std::function<void(sf::Event)> &mouse);

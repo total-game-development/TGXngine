@@ -7,6 +7,7 @@
 #include "test_library/TestCollision.hpp"
 #include "test_library/TestNavalAStar.hpp"
 #include "test_shell/TestFileSystem.hpp"
+#include "test_shell/TestHighlight.hpp"
 #include "test_shell/TestInterpreter.hpp"
 
 int main(int argc, char **argv)
