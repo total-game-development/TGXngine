@@ -75,6 +75,12 @@ protected:
 	std::uint64_t digest = DIGEST_OFFSET;
 	std::int64_t digestTick = 0;
 
+	// The world as this client holds it. Two clients that have stayed in step
+	// fold to the same number; any difference in a unit's position, however
+	// small, changes it. Compared against the other client's, since the server
+	// has no world of its own yet.
+	std::uint64_t WorldDigest() const;
+
 	void MixDigest(std::uint64_t value);
 	void MixDigestText(const String &text);
 

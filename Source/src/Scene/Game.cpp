@@ -13,6 +13,7 @@
 #include "ImageLoader.h"
 #include "Mouse.h"
 #include "Navigation.h"
+#include <cstring>
 #include "Physics.h"
 #include "Renderer.h"
 #include "Window.h"
@@ -354,7 +355,7 @@ void Game::Update()
 
 			if (clock.IsSanityTick())
 			{
-				session.ReportDigest(digest);
+				session.ReportDigest(WorldDigest());
 			}
 
 			clock.Advance();
@@ -585,6 +586,56 @@ void Game::RightClick()
 	}
 
 	ApplyCommand(world.selected, orders);
+}
+
+std::uint64_t Game::WorldDigest() const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	std::uint64_t fold = DIGEST_OFFSET;
+
+	const auto mix = [&fold](std::uint64_t value) {
+		fold ^= value;
+		fold *= 0x100000001B3ULL;
+	};
+
+	// Folded in uid order, not in whatever order the containers happen to hold,
+	// so the sort the two lists are kept in cannot colour the answer.
+	Vector<const ItemInstance *> ordered;
+
+	ordered.reserve(world.items.size());
+
+	for (const auto &entry : world.items)
+	{
+		if (entry && entry->GetLife() > 0.0f)
+		{
+			ordered.push_back(entry.get());
+		}
+	}
+
+	std::ranges::sort(ordered, [](const ItemInstance *a, const ItemInstance *b) {
+		return a->GetUid() < b->GetUid();
+	});
+
+	for (const ItemInstance *entry : ordered)
+	{
+		mix(static_cast<std::uint64_t>(entry->GetUid()));
+
+		// The raw bits, because two clients in step agree exactly. Rounding
+		// here would hide the drift this is here to find.
+		float x = entry->GetX();
+		float y = entry->GetY();
+
+		std::uint32_t bits = 0;
+
+		std::memcpy(&bits, &x, sizeof(bits));
+		mix(bits);
+
+		std::memcpy(&bits, &y, sizeof(bits));
+		mix(bits);
+	}
+
+	return fold;
 }
 
 void Game::MixDigest(std::uint64_t value)
