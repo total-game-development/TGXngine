@@ -360,6 +360,8 @@ void Renderer::RunFunctions()
 		if (MultiplayerSetup::active && Net::Session::GetInstance().IsPlaying() &&
 			(action == UIAction::AddGameItem || action == UIAction::RemoveGameItem))
 		{
+			Log::Info("NET send event: " + value);
+
 			Net::Session::GetInstance().SendCommand(
 				{},
 				{{"kind", "event"}, {"action", static_cast<int>(action)}, {"value", value}});

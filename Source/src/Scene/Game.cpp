@@ -329,6 +329,11 @@ void Game::Update()
 		{
 			for (const Net::Command &command : clock.Due())
 			{
+				if (command.orders.value("kind", String{"order"}) == "order")
+				{
+					Log::Info("NET apply order at tick " + std::to_string(digestTick) + " for " + std::to_string(command.uids.size()) + " unit(s)");
+				}
+
 				ApplyCommand(command.uids, command.orders);
 			}
 
@@ -560,6 +565,8 @@ void Game::RightClick()
 		// tick and hands it back to every client -- this one included -- so all
 		// of them resolve it on the same tick. Acting on it now would put this
 		// client ahead of its peers by exactly one order.
+		Log::Info("NET send order for " + std::to_string(world.selected.size()) + " unit(s)");
+
 		Net::Session::GetInstance().SendCommand(world.selected, orders);
 		return;
 	}
@@ -600,9 +607,11 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 	// adds or removes the item on the same tick.
 	if (orders.value("kind", String{"order"}) == "event")
 	{
-		Renderer::GetInstance().RunAction(
-			static_cast<UIAction>(orders.value("action", 0)),
-			orders.value("value", String{}));
+		const String value = orders.value("value", String{});
+
+		Log::Info("NET apply event at tick " + std::to_string(digestTick) + ": " + value);
+
+		Renderer::GetInstance().RunAction(static_cast<UIAction>(orders.value("action", 0)), value);
 
 		return;
 	}
