@@ -14,6 +14,7 @@
 #include "Mouse.h"
 #include "Navigation.h"
 #include "Physics.h"
+#include "Renderer.h"
 #include "Window.h"
 #include "WorldState.h"
 
@@ -548,6 +549,7 @@ void Game::RightClick()
 	Orders *ordered = mouse.CurrentOrder();
 
 	json orders;
+	orders["kind"] = "order";
 	orders["order"] = static_cast<int>(ordered->order);
 	orders["toX"] = ordered->toX;
 	orders["toY"] = ordered->toY;
@@ -593,6 +595,17 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 	}
 
 	MixDigestText(orders.dump());
+
+	// A queued action the server has stamped, replayed here so every client
+	// adds or removes the item on the same tick.
+	if (orders.value("kind", String{"order"}) == "event")
+	{
+		Renderer::GetInstance().RunAction(
+			static_cast<UIAction>(orders.value("action", 0)),
+			orders.value("value", String{}));
+
+		return;
+	}
 
 	currentOrderId = (currentOrderId + 1) % 65536;
 
@@ -879,7 +892,11 @@ void Game::DrawEconomy()
 		const String team = economy->GetTeam();
 		const bool isPlayer = (team == world.GetTeam());
 
-		sf::Text teamName(team + (isPlayer ? "  (player)" : "  (ai)"), font, 13);
+		// In a networked match the other side is another person, not a
+		// commander, and labelling them "ai" reads as a bug in the wiring.
+		const String role = isPlayer ? "  (player)" : (MultiplayerSetup::active ? "  (remote)" : "  (ai)");
+
+		sf::Text teamName(team + role, font, 13);
 		teamName.setFillColor(isPlayer ? sf::Color(140, 200, 255) : sf::Color(255, 160, 140));
 		teamName.setPosition(panelX + 10.0f, y);
 		window.Draw(teamName);

@@ -14,6 +14,10 @@ namespace TGX
 class Renderer
 {
 public:
+	// Runs one queued action now. A networked match replays an action the
+	// server has stamped through it, rather than the one it queued locally.
+	void RunAction(UIAction action, const String &value);
+
 	Map<UIAction, Function<void(Renderer &, Any)>> functions;
 	Map<SceneType, Ref<Scene>> scenes;
 	Ref<Scene> scene;

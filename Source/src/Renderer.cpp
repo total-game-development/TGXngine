@@ -15,6 +15,8 @@
 #include "Scene/Game.h"
 #include "Scene/Intro.h"
 #include "Scene/Skirmish.h"
+#include "MultiplayerSetup.h"
+#include "Net/Session.h"
 #include "Scene/Multiplayer.h"
 #include "Scene/ShellScene.h"
 #include "StringUtils.hpp"
@@ -349,11 +351,33 @@ void Renderer::RunFunctions()
 		UIAction action = gameEvent.first;
 		String value = gameEvent.second;
 
-		auto it = functions.find(action);
-		if (it != functions.end())
+		// A networked match does not act on its own events. Anything that
+		// changes the world goes to the server, which stamps a tick and hands
+		// it back to every client, this one included, so all of them add and
+		// remove the same items on the same tick. Acting locally would also
+		// walk this client's uid counter out of step with its peers', and
+		// every command names its units by uid.
+		if (MultiplayerSetup::active && Net::Session::GetInstance().IsPlaying() &&
+			(action == UIAction::AddGameItem || action == UIAction::RemoveGameItem))
 		{
-			it->second(Renderer::GetInstance(), value);
+			Net::Session::GetInstance().SendCommand(
+				{},
+				{{"kind", "event"}, {"action", static_cast<int>(action)}, {"value", value}});
+
+			continue;
 		}
+
+		RunAction(action, value);
+	}
+}
+
+void Renderer::RunAction(UIAction action, const String &value)
+{
+	const auto found = functions.find(action);
+
+	if (found != functions.end())
+	{
+		found->second(Renderer::GetInstance(), value);
 	}
 }
 
