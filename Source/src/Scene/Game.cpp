@@ -172,6 +172,9 @@ void Game::Init()
 		// Seeded exactly as the server seeds its own, since the comparison is
 		// of the whole fold and not of what each side added to it. Missing this
 		// leaves the client on zero and every check reads as a desync.
+		// Every client draws the same numbers in the same order from here.
+		world.SeedRandom(MultiplayerSetup::seed);
+
 		digest = DIGEST_OFFSET;
 		digestTick = MultiplayerSetup::startTick;
 
@@ -322,6 +325,12 @@ void Game::Update()
 
 		Net::Lockstep &clock = session.Clock();
 
+		WorldState &world = WorldState::GetInstance();
+
+		// Kept so anything drawn after the loop still reads the frame it was
+		// drawn in, rather than a tick of simulated time.
+		const float frameDelta = world.GetDeltaTime();
+
 		// Catch up to where the server has said it is safe to reach, one whole
 		// tick at a time. Running a partial tick, or running past this, would
 		// put this client somewhere no other client is.
@@ -337,6 +346,8 @@ void Game::Update()
 				ApplyCommand(command.uids, command.orders);
 			}
 
+			world.SetDeltaTime(TICK_SECONDS);
+
 			Step();
 
 			digestTick++;
@@ -348,6 +359,8 @@ void Game::Update()
 
 			clock.Advance();
 		}
+
+		world.SetDeltaTime(frameDelta);
 
 		return;
 	}

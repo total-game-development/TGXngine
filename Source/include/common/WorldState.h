@@ -1,5 +1,6 @@
 #pragma once
 
+#include <random>
 #include <utility>
 #include "AIDebug.h"
 #include "AssetState.h"
@@ -79,6 +80,22 @@ public:
 	Vector<String> errors;
 	Vector<Pair<float, float>> activeItemPositions;
 	Vector<Pair<UIAction, String>> gameEvents;
+
+	// One stream of chance for the whole match, living where every module can
+	// reach it. A generator held static inside a header is a separate stream
+	// per module, seeded from the machine, which under lockstep sends the same
+	// unit somewhere different on each client.
+	std::mt19937 random{0x9E3779B9U};
+
+	std::mt19937 &Random()
+	{
+		return random;
+	}
+
+	void SeedRandom(std::uint32_t seed)
+	{
+		random.seed(seed);
+	}
 	Map<String, Vector<Unique<ProjectileInstance>>> projectiles;
 	Map<String, Map<String, int>> extractors;
 	Map<int, std::tuple<int, int, int, int>> uids_grid;

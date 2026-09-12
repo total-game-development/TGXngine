@@ -7,6 +7,7 @@
 #include <ostream>
 #include <random>
 #include <span>
+#include "WorldState.h"
 #include <string>
 #include <vector>
 #include "Logs.h"
@@ -268,10 +269,9 @@ public:
 
 	static Vector2D Random()
 	{
-		static std::mt19937 rng(std::random_device{}());
-		static std::uniform_real_distribution<float> dist(0.0f, 2.0f * std::numbers::pi_v<float>);
+		std::uniform_real_distribution<float> dist(0.0f, 2.0f * std::numbers::pi_v<float>);
 
-		return FromAngle(dist(rng));
+		return FromAngle(dist(WorldState::GetInstance().Random()));
 	}
 	static Vector2D FromAngle(float angle, float length = 1.0f)
 	{

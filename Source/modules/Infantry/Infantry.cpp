@@ -1054,7 +1054,9 @@ void SpreadDestination(float &x, float &y)
 
 	vel = Vector2D::Random();
 
-	float norm = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	std::uniform_real_distribution<float> spread(0.0f, 1.0f);
+
+	float norm = spread(WorldState::GetInstance().Random());
 
 	vel.SetMagnitude(norm + 0.5f);
 

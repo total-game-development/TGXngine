@@ -64,6 +64,12 @@ protected:
 	// Folded over the commands this client has applied and the ticks it applied
 	// them on. It must match what the server folds, byte for byte, or every
 	// sanity check reads as a desync -- see Simulation.h in TGXngineServer.
+	// One tick of simulated time, matching the rate the server counts at. A
+	// networked step advances by exactly this, never by the frame it was drawn
+	// in: two machines never render at the same rate, and a simulation paid in
+	// real time would move the same unit a different distance on each of them.
+	static constexpr float TICK_SECONDS = 1.0f / 60.0f;
+
 	static constexpr std::uint64_t DIGEST_OFFSET = 0xCBF29CE484222325ULL;
 
 	std::uint64_t digest = DIGEST_OFFSET;
