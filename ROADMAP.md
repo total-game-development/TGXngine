@@ -12,12 +12,11 @@ This document tracks TGXngine's development targets: what has shipped, what was 
 * Turrets module (`modules/Turrets/`) — defensive structures.
 * Modular strategy AI (`modules/AI/`) — polymorphic `AIState` architecture, dynamic role assignment against the loaded module set, strategic planning layers, build-order execution and JSON-driven technology progression.
 * Skirmish mode — a lobby scene configuring map, per-slot teams and roles, and spectating, writing its result into `SkirmishSetup`.
-* Button anchors — interface elements resolve against an anchor point rather than a fixed corner.
 
 ### Version 0.3 — The In-Engine Shell
 
 * Shell module (`modules/Shell/`) — a lexer, recursive-descent parser, AST and tree-walking interpreter; an in-memory filesystem; a terminal command set with remote computers; and a code editor with syntax highlighting. Persists to `Resources/shell.json`.
-* UI module (`modules/UI/`) — a data-driven portal of screens, windows and pages declared in `portal.json`, with layout expressions that survive any view size.
+* UI module (`modules/UI/`) — a data-driven portal of screens, windows and pages declared in `portal.json`, with layout expressions that survive any view size. This carries the button anchors planned for 0.2: every element resolves against an anchor point rather than a fixed corner.
 * The shell in a match — the console runs the real interpreter inside a portal raised over live play, brokered by the `Game` scene so neither module depends on the other.
 * AI economic management — the commander spends from the team's shared `EconomyInstance` rather than a private figure, under army and wave limits, and publishes an `AIDebugSnapshot` to an on-screen readout.
 
@@ -113,7 +112,7 @@ Planned functionality:
 
 ### Text Justification
 
-Element anchoring landed with the interface layer, but wrapped body text inside a window is drawn left-aligned only.
+Element anchoring landed with the 0.3 UI module, but the other half of the 0.2 UI item did not: wrapped body text inside a window is drawn left-aligned only.
 
 Planned functionality:
 
