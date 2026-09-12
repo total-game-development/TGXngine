@@ -577,14 +577,18 @@ void Moving(ShipState *itemInstance)
 							builtCommand += builtName + ",";
 							String builtType = StringConcat("type:", "buildings");
 							builtCommand += builtType + ",";
-							String builtTeam = StringConcat("team:", world.GetTeam());
+							// The ship's own side, not whoever is watching. Every client
+							// simulates every ship, so reading the local team credited
+							// the extractor to a different side on each of them -- and
+							// in a skirmish handed the player what the AI had built.
+							String builtTeam = StringConcat("team:", itemInstance->GetTeam());
 							builtCommand += builtTeam + ",";
 							String builtX = StringConcat("x:", world.resources[i]->GetX());
 							builtCommand += builtX + ",";
 							String builtY = StringConcat("y:", world.resources[i]->GetY());
 							builtCommand += builtY;
 
-							world.extractors[world.GetTeam()][world.resources[i]->GetName()]++;
+							world.extractors[itemInstance->GetTeam()][world.resources[i]->GetName()]++;
 							world.gameEvents.emplace_back(UIAction::AddGameItem, builtCommand);
 							itemInstance->SetOrders(Orders::Order::Destroyed);
 							return;
