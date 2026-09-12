@@ -13,6 +13,8 @@
 #include "Projectile.h"
 #include "Scene.h"
 #include "SkirmishSetup.h"
+#include "MultiplayerSetup.h"
+#include "Net/Session.h"
 #include "ShellModule.h"
 #include "UIModule.h"
 #include "WayPoints/WayPoints.h"
@@ -59,6 +61,15 @@ protected:
 	Map<String, int> lastSampledCash;
 	Map<String, int> cashPerSecond;
 
+	// Folded over the commands this client has applied and the ticks it applied
+	// them on. It must match what the server folds, byte for byte, or every
+	// sanity check reads as a desync -- see Simulation.h in TGXngineServer.
+	std::uint64_t digest = 0;
+	std::int64_t digestTick = 0;
+
+	void MixDigest(std::uint64_t value);
+	void MixDigestText(const String &text);
+
 public:
 	Game();
 	~Game() override;
@@ -69,6 +80,15 @@ public:
 	void RightClick() override;
 	bool Text(unsigned int codepoint);
 	bool Key(int code);
+
+	// One player's order, resolved onto the world. Single player calls it the
+	// moment the order is given; a networked match calls it when the tick the
+	// server stamped comes round, so every client resolves it at once.
+	void ApplyCommand(const Vector<int> &uids, const json &orders);
+
+	// One tick of simulation. Update runs it freely in single player and only
+	// when the lockstep clock allows in a networked match.
+	void Step();
 	void Release() override;
 	void Close() override;
 	void Free() override;

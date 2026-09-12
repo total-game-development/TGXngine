@@ -15,6 +15,7 @@
 #include "Scene/Game.h"
 #include "Scene/Intro.h"
 #include "Scene/Skirmish.h"
+#include "Scene/Multiplayer.h"
 #include "Scene/ShellScene.h"
 #include "StringUtils.hpp"
 #include "Window.h"
@@ -37,6 +38,7 @@ Renderer::Renderer()
 	scenes.insert({SceneType::Skirmish, std::make_shared<Skirmish>()});
 	scenes.insert({SceneType::Game, std::make_shared<Game>()});
 	scenes.insert({SceneType::Shell, std::make_shared<ShellScene>()});
+	scenes.insert({SceneType::Multiplayer, std::make_shared<Multiplayer>()});
 
 	functions[UIAction::Log] = &Renderer::Log;
 	functions[UIAction::LoadScene] = &Renderer::LoadScene;
@@ -144,6 +146,14 @@ void Renderer::Start()
 		if (auto *game = dynamic_cast<Game *>(scene.get()))
 		{
 			if (game->Key(static_cast<int>(event.key.code)))
+			{
+				return;
+			}
+		}
+
+		if (auto *multiplayer = dynamic_cast<Multiplayer *>(scene.get()))
+		{
+			if (multiplayer->Key(static_cast<int>(event.key.code)))
 			{
 				return;
 			}

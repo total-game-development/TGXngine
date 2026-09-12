@@ -81,6 +81,25 @@ void Game::Init()
 		currentLevel = SkirmishSetup::level;
 	}
 
+	// The server deals the level, and its copy is the authority: every client
+	// has to build the match from one description, not from whatever its own
+	// maps.json happens to hold.
+	if (MultiplayerSetup::active && MultiplayerSetup::level.is_object())
+	{
+		const String dealt = MultiplayerSetup::level.value("name", String{});
+
+		for (std::size_t index = 0; index < mapsJsonRef["singleplayer"].size(); index++)
+		{
+			if (mapsJsonRef["singleplayer"][index].value("name", String{}) == dealt)
+			{
+				currentLevel = static_cast<int>(index);
+				break;
+			}
+		}
+
+		mapsJsonRef["singleplayer"][currentLevel] = MultiplayerSetup::level;
+	}
+
 	WorldState &world = WorldState::GetInstance();
 	world.SetCurrentLevel(currentLevel);
 
@@ -130,6 +149,24 @@ void Game::Init()
 		}
 
 		level["teams"] = teams;
+	}
+
+	// One side belongs to this client and no commander runs anywhere: the other
+	// sides are other people. A local AI would command their units as well as
+	// their owner does, from every client at once.
+	if (MultiplayerSetup::active)
+	{
+		level.erase("ai");
+
+		if (level.contains("teams"))
+		{
+			for (auto &teamEntry : level["teams"])
+			{
+				const bool mine = teamEntry.value("name", String{}) == MultiplayerSetup::team;
+
+				teamEntry["type"] = mine ? "player" : "remote";
+			}
+		}
 	}
 
 	if (level.contains("teams"))
@@ -262,13 +299,53 @@ void Game::Update()
 		}
 	}
 
+	// Panning and the camera are how the match is watched, not part of it, so
+	// they run every frame whether or not the clock has let a tick through.
+	HandlePanning();
+	background->SyncPosition();
+
+	if (MultiplayerSetup::active)
+	{
+		Net::Session &session = Net::Session::GetInstance();
+
+		session.Poll();
+
+		Net::Lockstep &clock = session.Clock();
+
+		// Catch up to where the server has said it is safe to reach, one whole
+		// tick at a time. Running a partial tick, or running past this, would
+		// put this client somewhere no other client is.
+		while (clock.ShouldAdvance())
+		{
+			for (const Net::Command &command : clock.Due())
+			{
+				ApplyCommand(command.uids, command.orders);
+			}
+
+			Step();
+
+			digestTick++;
+
+			if (clock.IsSanityTick())
+			{
+				session.ReportDigest(digest);
+			}
+
+			clock.Advance();
+		}
+
+		return;
+	}
+
+	Step();
+}
+
+void Game::Step()
+{
 	WorldState &world = WorldState::GetInstance();
 	Physics &physics = Physics::GetInstance();
 
 	physics.Update();
-
-	HandlePanning();
-	background->SyncPosition();
 
 	world.SetItemUnderCursor(false);
 	world.SetEnemyItemUnderCursor(false);
@@ -458,26 +535,75 @@ void Game::RightClick()
 	WorldState &world = WorldState::GetInstance();
 	world.SetRightClicked(true);
 
+	Mouse &mouse = Mouse::GetInstance();
+	Orders *ordered = mouse.CurrentOrder();
+
+	json orders;
+	orders["order"] = static_cast<int>(ordered->order);
+	orders["toX"] = ordered->toX;
+	orders["toY"] = ordered->toY;
+
+	if (MultiplayerSetup::active)
+	{
+		// The order is not resolved here. It goes to the server, which stamps a
+		// tick and hands it back to every client -- this one included -- so all
+		// of them resolve it on the same tick. Acting on it now would put this
+		// client ahead of its peers by exactly one order.
+		Net::Session::GetInstance().SendCommand(world.selected, orders);
+		return;
+	}
+
+	ApplyCommand(world.selected, orders);
+}
+
+void Game::MixDigest(std::uint64_t value)
+{
+	digest ^= value;
+	digest *= 0x100000001B3ULL;
+}
+
+void Game::MixDigestText(const String &text)
+{
+	for (unsigned char letter : text)
+	{
+		MixDigest(letter);
+	}
+}
+
+void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	// Folded in the same order the server folds it: the tick, then each uid,
+	// then the orders as text.
+	MixDigest(static_cast<std::uint64_t>(digestTick));
+
+	for (int uid : uids)
+	{
+		MixDigest(static_cast<std::uint64_t>(uid));
+	}
+
+	MixDigestText(orders.dump());
+
 	currentOrderId = (currentOrderId + 1) % 65536;
 
 	for (std::size_t i = 0; i < gameItems.size(); i++)
 	{
-		for (std::size_t j = 0; j < world.selected.size(); j++)
+		for (int uid : uids)
 		{
-			if (world.selected[j] == world.items[i]->GetUid())
+			if (uid != world.items[i]->GetUid())
 			{
-				Mouse &mouse = Mouse::GetInstance();
-				Orders *orders = mouse.CurrentOrder();
-
-				world.items[i]->GetOrders()->order = orders->order;
-				world.items[i]->GetOrders()->toX = orders->toX;
-				world.items[i]->GetOrders()->toY = orders->toY;
-				world.items[i]->GetOrders()->id = static_cast<int>(currentOrderId);
-
-				gameItems[i]->SendOrders(world.items[i]);
-
-				break;
+				continue;
 			}
+
+			world.items[i]->GetOrders()->order = static_cast<Orders::Order>(orders.value("order", 0));
+			world.items[i]->GetOrders()->toX = orders.value("toX", 0.0f);
+			world.items[i]->GetOrders()->toY = orders.value("toY", 0.0f);
+			world.items[i]->GetOrders()->id = static_cast<int>(currentOrderId);
+
+			gameItems[i]->SendOrders(world.items[i]);
+
+			break;
 		}
 	}
 }
