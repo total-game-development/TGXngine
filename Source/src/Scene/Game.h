@@ -51,6 +51,10 @@ protected:
 	String outcome;
 	sf::FloatRect exitButton;
 
+	// Sampled once a second so the overlay can show income, not just balance.
+	Map<String, int> lastSampledCash;
+	Map<String, int> cashPerSecond;
+
 public:
 	Game();
 	~Game() override;
@@ -59,6 +63,8 @@ public:
 	void Draw() override;
 	void Click() override;
 	void RightClick() override;
+	bool Text(unsigned int codepoint);
+	bool Key(int code);
 	void Release() override;
 	void Close() override;
 	void Free() override;
@@ -69,6 +75,8 @@ public:
 private:
 	void HandlePanning();
 	void DrawOutcome();
+	void DrawEconomy();
+	void SampleEconomy();
 	void HandleSingleSelection();
 	void ClearSelection();
 	std::optional<nlohmann::json> LoadJsonFile(std::string_view filePath);

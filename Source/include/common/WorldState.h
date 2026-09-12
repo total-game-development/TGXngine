@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utility>
+#include "AIDebug.h"
 #include "AssetState.h"
 #include "Core.h"
 #include "EconomyInstance.h"
@@ -100,6 +101,9 @@ public:
 	Map<String, int> powerUsage;
 	Map<String, int> powerTotal;
 	Map<int, int> lookupMap;
+
+	// Published by the AI module, read by the debug overlay.
+	Map<String, AIDebugSnapshot> aiDebug;
 
 	float GetGameX() const
 	{
@@ -673,6 +677,7 @@ public:
 		commandQueue.clear();
 		projectileRegistry.clear();
 		deployMap.clear();
+		aiDebug.clear();
 		powerUsage.clear();
 		powerTotal.clear();
 

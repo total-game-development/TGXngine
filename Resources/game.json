@@ -1,5 +1,10 @@
 {
 	"game": {
 		"startLevel": 0
+	},
+	"debug": {
+		"showGrid": false,
+		"showWayPoints": false,
+		"showEconomy": false
 	}
 }

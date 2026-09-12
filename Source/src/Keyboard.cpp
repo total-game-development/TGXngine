@@ -34,6 +34,12 @@ void Keyboard::KeyPressed(Key code)
 				break;
 			}
 
+		case Key::E: // Toggle the economy readout
+			{
+				Debug::showEconomy = !Debug::showEconomy;
+				break;
+			}
+
 		case Key::Q: // Exit game
 		case Key::Escape:
 			{

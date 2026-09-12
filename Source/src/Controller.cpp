@@ -24,6 +24,7 @@ void Controller::SetupBindings()
 	buttonBindings[ControllerAction::Action] = 1;
 	buttonBindings[ControllerAction::ToggleGrid] = 2;
 	buttonBindings[ControllerAction::ToggleWaypoints] = 3;
+	buttonBindings[ControllerAction::ToggleEconomy] = 5;
 	buttonBindings[ControllerAction::Confirm] = 4;
 	buttonBindings[ControllerAction::Exit] = 7;
 }
@@ -53,6 +54,11 @@ void Controller::Update()
 	if (IsActionPressed(ControllerAction::ToggleWaypoints))
 	{
 		Debug::showWayPoints = !Debug::showWayPoints;
+	}
+
+	if (IsActionPressed(ControllerAction::ToggleEconomy))
+	{
+		Debug::showEconomy = !Debug::showEconomy;
 	}
 
 	if (IsActionPressed(ControllerAction::Exit))

@@ -2,10 +2,13 @@
 
 #include <nlohmann/json.hpp> // Ensure json support is available to the parsing signature
 #include <functional>
+#include "AIDebug.h"
 #include "Core.h"
+#include "EconomyInstance.h"
 
 namespace TGX
 {
+class ItemInstance;
 
 struct BuildNode
 {
@@ -120,12 +123,25 @@ private:
 
 	int Owned(const String &name) const;
 	int OwnedStructures() const;
+	int ArmySize() const;
+
+	// The live treasury this commander shares with the rest of the game,
+	// so income and spending land in the same purse the player's does.
+	EconomyInstance *Treasury() const;
+	int Funds() const;
+	bool Spend(int amount);
 
 	Ref<BuildNode> NextBuild();
 	bool IsPlotClear(int x, int y) const;
 	bool FindPlot(int &outX, int &outY) const;
 	void Issue(const Ref<BuildNode> &node, int x, int y) const;
 	void CommandArmy();
+
+	// The units idling at base, which is what a wave is drawn from.
+	Vector<ItemInstance *> Muster(float &centreX, float &centreY) const;
+
+	// Hands the commander's books to the debug overlay.
+	void PublishDebug();
 
 	Map<String, Ref<BuildNode>> buildTemplates;
 	Vector<Ref<BuildNode>> rootNodes;
@@ -136,8 +152,13 @@ private:
 	int pendingY = -1;
 	int buildCounter = 0;
 	int buildLimit = 6;
+	int armyLimit = 12;
+	int waveSize = 5;
 	std::size_t trainCursor = 0;
 	int commandCounter = 0;
+	int cashSpent = 0;
+	int wavesSent = 0;
+	String stallReason;
 };
 
 class PlexAIState : public AIState

@@ -51,6 +51,15 @@ void Game::Init()
 
 	currentLevel = gameJsonRef["game"]["startLevel"].get<int>();
 
+	if (gameJsonRef.contains("debug") && gameJsonRef["debug"].is_object())
+	{
+		const auto &debugJson = gameJsonRef["debug"];
+
+		Debug::showGrid = debugJson.value("showGrid", Debug::showGrid);
+		Debug::showWayPoints = debugJson.value("showWayPoints", Debug::showWayPoints);
+		Debug::showEconomy = debugJson.value("showEconomy", Debug::showEconomy);
+	}
+
 	// A skirmish agreed in the lobby picks the map; startLevel is the fallback.
 	if (SkirmishSetup::active && SkirmishSetup::level >= 0)
 	{
@@ -78,6 +87,14 @@ void Game::Init()
 	json &files = jsonFiles["singleplayer"][currentLevel];
 
 	Log::Info("Current Level Number: " + std::to_string(currentLevel));
+
+	// A skirmish is played to watch the commander, so the readout comes up with
+	// the match rather than waiting to be asked for. E still puts it away, and
+	// game.json's own setting is what a campaign level starts on.
+	if (level.value("type", String{}) == "skirmish")
+	{
+		Debug::showEconomy = true;
+	}
 
 	// The lobby writes its choices onto the level's own team list, so everything
 	// downstream reads one answer instead of two.
@@ -313,9 +330,16 @@ void Game::Draw()
 		{
 			fpsText.setString("FPS: " + std::to_string(floor(world.GetFPS())));
 		}
+
+		SampleEconomy();
 	}
 
 	window.Draw(fpsText);
+
+	if (Debug::showEconomy)
+	{
+		DrawEconomy();
+	}
 
 	frame++;
 }
@@ -501,6 +525,186 @@ void Game::DrawOutcome()
 		exitButton.left + ((buttonWidth - label.getLocalBounds().width) / 2.0f),
 		exitButton.top + 8.0f);
 	window.Draw(label);
+}
+
+void Game::SampleEconomy()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	for (const auto &economy : world.economies)
+	{
+		if (!economy)
+		{
+			continue;
+		}
+
+		const String &team = economy->GetTeam();
+		const int cash = economy->GetCash();
+
+		auto previous = lastSampledCash.find(team);
+
+		if (previous != lastSampledCash.end())
+		{
+			cashPerSecond[team] = cash - previous->second;
+		}
+
+		lastSampledCash[team] = cash;
+	}
+}
+
+void Game::DrawEconomy()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	if (world.economies.empty())
+	{
+		return;
+	}
+
+	Window &window = Window::GetInstance();
+
+	const float lineHeight = 16.0f;
+	const float panelX = 20.0f;
+	const float panelY = 200.0f;
+	const float panelWidth = 330.0f;
+
+	// Two lines of heading, then a block per team, sized before anything is drawn.
+	float panelHeight = (lineHeight * 2.0f) + 16.0f;
+
+	for (const auto &economy : world.economies)
+	{
+		if (!economy)
+		{
+			continue;
+		}
+
+		panelHeight += lineHeight * 2.0f;
+		panelHeight += world.aiDebug.count(economy->GetTeam()) != 0 ? (lineHeight * 3.0f) : 0.0f;
+		panelHeight += 8.0f;
+	}
+
+	sf::RectangleShape panel({panelWidth, panelHeight});
+	panel.setPosition(panelX, panelY);
+	panel.setFillColor(sf::Color(18, 22, 30, 220));
+	panel.setOutlineColor(sf::Color(96, 116, 148));
+	panel.setOutlineThickness(1.0f);
+	window.Draw(panel);
+
+	float y = panelY + 8.0f;
+
+	sf::Text heading("ECONOMY  [E]", font, 13);
+	heading.setFillColor(sf::Color(255, 215, 0));
+	heading.setPosition(panelX + 10.0f, y);
+	window.Draw(heading);
+
+	y += lineHeight * 2.0f;
+
+	for (const auto &economy : world.economies)
+	{
+		if (!economy)
+		{
+			continue;
+		}
+
+		const String team = economy->GetTeam();
+		const bool isPlayer = (team == world.GetTeam());
+
+		sf::Text teamName(team + (isPlayer ? "  (player)" : "  (ai)"), font, 13);
+		teamName.setFillColor(isPlayer ? sf::Color(140, 200, 255) : sf::Color(255, 160, 140));
+		teamName.setPosition(panelX + 10.0f, y);
+		window.Draw(teamName);
+
+		y += lineHeight;
+
+		int income = 0;
+		auto rate = cashPerSecond.find(team);
+
+		if (rate != cashPerSecond.end())
+		{
+			income = rate->second;
+		}
+
+		int extractors = 0;
+
+		auto teamExtractors = world.extractors.find(team);
+
+		if (teamExtractors != world.extractors.end())
+		{
+			for (const auto &[resource, count] : teamExtractors->second)
+			{
+				extractors += count;
+			}
+		}
+
+		String money = "  $" + std::to_string(economy->GetCash());
+		money += (income >= 0 ? "   +" : "   ") + std::to_string(income) + "/s";
+		money += "   extractors " + std::to_string(extractors);
+
+		sf::Text balance(money, font, 13);
+		balance.setFillColor(income == 0 ? sf::Color(150, 160, 175) : sf::Color(160, 220, 160));
+		balance.setPosition(panelX + 10.0f, y);
+		window.Draw(balance);
+
+		y += lineHeight;
+
+		auto snapshotIt = world.aiDebug.find(team);
+
+		if (snapshotIt != world.aiDebug.end())
+		{
+			const AIDebugSnapshot &snapshot = snapshotIt->second;
+
+			String army = "  army " + std::to_string(snapshot.armySize);
+			army += "/" + std::to_string(snapshot.armyLimit);
+			army += "   base " + std::to_string(snapshot.structures);
+			army += "/" + std::to_string(snapshot.buildLimit);
+			army += "   spent $" + std::to_string(snapshot.cashSpent);
+
+			sf::Text forces(army, font, 13);
+			forces.setFillColor(sf::Color(150, 160, 175));
+			forces.setPosition(panelX + 10.0f, y);
+			window.Draw(forces);
+
+			y += lineHeight;
+
+			String wave = "  muster " + std::to_string(snapshot.muster);
+			wave += "/" + std::to_string(snapshot.waveSize);
+			wave += "   waves sent " + std::to_string(snapshot.wavesSent);
+
+			sf::Text waves(wave, font, 13);
+			waves.setFillColor(sf::Color(150, 160, 175));
+			waves.setPosition(panelX + 10.0f, y);
+			window.Draw(waves);
+
+			y += lineHeight;
+
+			String work = "  idle";
+			sf::Color workColour(120, 130, 145);
+
+			if (!snapshot.building.empty())
+			{
+				const int percent = snapshot.buildTime > 0
+									  ? ((snapshot.buildProgress * 100) / snapshot.buildTime)
+									  : 0;
+
+				work = "  building " + snapshot.building + " " + std::to_string(percent) + "%";
+				workColour = sf::Color(220, 200, 120);
+			}
+			else if (!snapshot.stalled.empty())
+			{
+				work = "  held: " + snapshot.stalled;
+				workColour = sf::Color(216, 120, 80);
+			}
+
+			sf::Text building(work, font, 13);
+			building.setFillColor(workColour);
+			building.setPosition(panelX + 10.0f, y);
+			window.Draw(building);
+
+			y += lineHeight;
+		}
+
+		y += 8.0f;
+	}
 }
 
 void Game::HandlePanning()

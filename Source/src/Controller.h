@@ -11,6 +11,7 @@ enum class ControllerAction
 	Action,
 	ToggleGrid,
 	ToggleWaypoints,
+	ToggleEconomy,
 	Select,
 	Exit
 };

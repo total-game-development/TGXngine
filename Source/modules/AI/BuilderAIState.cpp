@@ -22,7 +22,6 @@ constexpr int plotWidth = 24;
 constexpr int plotHeight = 24;
 constexpr int plotSearchRings = 40;
 constexpr int commandInterval = 60;
-constexpr int musterSize = 5;
 } // namespace
 
 void BuilderAIState::Awake()
@@ -31,7 +30,7 @@ void BuilderAIState::Awake()
 
 void BuilderAIState::Start()
 {
-	Log::Print(StringConcat("BuilderAI commanding ", team, " with $", std::to_string(cash)));
+	Log::Print(StringConcat("BuilderAI commanding ", team, " with $", std::to_string(Funds())));
 }
 
 void BuilderAIState::Update()
@@ -44,12 +43,12 @@ void BuilderAIState::Update()
 	if (pending)
 	{
 		buildCounter++;
+		stallReason.clear();
 
 		if (buildCounter >= pending->buildTime)
 		{
 			Issue(pending, pendingX, pendingY);
 
-			cash -= pending->cost;
 			pending = nullptr;
 			buildCounter = 0;
 		}
@@ -58,27 +57,45 @@ void BuilderAIState::Update()
 	{
 		Ref<BuildNode> next = NextBuild();
 
-		if (next)
+		if (!next)
 		{
+			stallReason = ArmySize() >= armyLimit ? "army at cap" : "nothing affordable";
+		}
+		else
+		{
+			bool sited = true;
+
 			if (next->type == "buildings" || next->type == "turrets")
 			{
-				if (FindPlot(pendingX, pendingY))
-				{
-					pending = next;
-				}
+				sited = FindPlot(pendingX, pendingY);
 			}
 			else
 			{
 				pendingX = -1;
 				pendingY = -1;
-				pending = next;
 			}
 
-			buildCounter = 0;
+			// The money leaves the purse the moment the work starts, so the
+			// commander cannot commit the same funds to two orders at once.
+			if (!sited)
+			{
+				stallReason = StringConcat("no room for ", next->name);
+			}
+			else if (!Spend(next->cost))
+			{
+				stallReason = StringConcat("cannot afford ", next->name);
+			}
+			else
+			{
+				stallReason.clear();
+				pending = next;
+				buildCounter = 0;
+			}
 		}
 	}
 
 	CommandArmy();
+	PublishDebug();
 }
 
 int BuilderAIState::Owned(const String &name) const
@@ -115,6 +132,74 @@ int BuilderAIState::OwnedStructures() const
 	return count;
 }
 
+int BuilderAIState::ArmySize() const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	int count = 0;
+
+	for (const auto &item : world.items)
+	{
+		if (item && item->GetTeam() == team && item->GetLife() > 0.0f && item->CanAttack())
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+
+EconomyInstance *BuilderAIState::Treasury() const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	for (const auto &economy : world.economies)
+	{
+		if (economy && economy->GetTeam() == team)
+		{
+			return economy.get();
+		}
+	}
+
+	return nullptr;
+}
+
+int BuilderAIState::Funds() const
+{
+	const EconomyInstance *treasury = Treasury();
+
+	return treasury ? treasury->GetCash() : cash;
+}
+
+bool BuilderAIState::Spend(int amount)
+{
+	EconomyInstance *treasury = Treasury();
+
+	if (treasury)
+	{
+		if (treasury->GetCash() < amount)
+		{
+			return false;
+		}
+
+		treasury->SetCash(treasury->GetCash() - amount);
+		cash = treasury->GetCash();
+		cashSpent += amount;
+
+		return true;
+	}
+
+	if (cash < amount)
+	{
+		return false;
+	}
+
+	cash -= amount;
+	cashSpent += amount;
+
+	return true;
+}
+
 Ref<BuildNode> BuilderAIState::NextBuild()
 {
 	if (OwnedStructures() < buildLimit)
@@ -126,7 +211,7 @@ Ref<BuildNode> BuilderAIState::NextBuild()
 				continue;
 			}
 
-			if (Owned(node->name) > 0 || cash < node->cost)
+			if (Owned(node->name) > 0 || Funds() < node->cost)
 			{
 				continue;
 			}
@@ -140,7 +225,7 @@ Ref<BuildNode> BuilderAIState::NextBuild()
 		}
 	}
 
-	if (orderedNodes.empty())
+	if (orderedNodes.empty() || ArmySize() >= armyLimit)
 	{
 		return nullptr;
 	}
@@ -155,7 +240,7 @@ Ref<BuildNode> BuilderAIState::NextBuild()
 			continue;
 		}
 
-		if (!node->parent || Owned(node->parent->name) == 0 || cash < node->cost)
+		if (!node->parent || Owned(node->parent->name) == 0 || Funds() < node->cost)
 		{
 			continue;
 		}
@@ -272,6 +357,52 @@ void BuilderAIState::Issue(const Ref<BuildNode> &node, int x, int y) const
 	world.gameEvents.emplace_back(UIAction::AddGameItem, command);
 }
 
+// Only the units still waiting at the barracks make up a wave. Counting the
+// ones already marching would keep the muster permanently full, and every
+// fresh recruit would be sent out on its own the moment it deployed.
+Vector<ItemInstance *> BuilderAIState::Muster(float &centreX, float &centreY) const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	Vector<ItemInstance *> muster;
+
+	centreX = 0.0f;
+	centreY = 0.0f;
+
+	for (const auto &item : world.items)
+	{
+		if (!item || item->GetTeam() != team || item->GetLife() <= 0.0f || !item->CanAttack())
+		{
+			continue;
+		}
+
+		const Orders::Order order = item->GetOrders()->order;
+
+		if (order != Orders::Order::Stand && order != Orders::Order::Standing)
+		{
+			continue;
+		}
+
+		if (item->GetState() == ItemStates::Attacking && LookUp::Get(item->GetTargetUid()) != -1)
+		{
+			continue;
+		}
+
+		muster.push_back(item.get());
+
+		centreX += item->GetX();
+		centreY += item->GetY();
+	}
+
+	if (!muster.empty())
+	{
+		centreX /= static_cast<float>(muster.size());
+		centreY /= static_cast<float>(muster.size());
+	}
+
+	return muster;
+}
+
 void BuilderAIState::CommandArmy()
 {
 	commandCounter++;
@@ -287,25 +418,13 @@ void BuilderAIState::CommandArmy()
 
 	float musterX = 0.0f;
 	float musterY = 0.0f;
-	int soldiers = 0;
 
-	for (const auto &item : world.items)
-	{
-		if (item && item->GetTeam() == team && item->CanAttack())
-		{
-			musterX += item->GetX();
-			musterY += item->GetY();
-			soldiers++;
-		}
-	}
+	Vector<ItemInstance *> muster = Muster(musterX, musterY);
 
-	if (soldiers < musterSize)
+	if (static_cast<int>(muster.size()) < waveSize)
 	{
 		return;
 	}
-
-	musterX /= static_cast<float>(soldiers);
-	musterY /= static_cast<float>(soldiers);
 
 	int targetUid = -1;
 	float targetDistance = 0.0f;
@@ -333,29 +452,43 @@ void BuilderAIState::CommandArmy()
 		return;
 	}
 
-	for (const auto &item : world.items)
+	for (ItemInstance *soldier : muster)
 	{
-		if (!item || item->GetTeam() != team || !item->CanAttack())
-		{
-			continue;
-		}
-
-		const Orders::Order order = item->GetOrders()->order;
-
-		if (order != Orders::Order::Stand && order != Orders::Order::Standing)
-		{
-			continue;
-		}
-
-		if (item->GetState() == ItemStates::Attacking && LookUp::Get(item->GetTargetUid()) != -1)
-		{
-			continue;
-		}
-
-		item->SetState(ItemStates::Attacking);
-		item->SetTargetUid(targetUid);
-		item->SetOrders(Orders::Order::Move);
+		soldier->SetState(ItemStates::Attacking);
+		soldier->SetTargetUid(targetUid);
+		soldier->SetOrders(Orders::Order::Move);
 	}
+
+	wavesSent++;
+
+	Log::Print(StringConcat("BuilderAI sent a wave of ", std::to_string(muster.size()),
+							" for ", team));
+}
+
+void BuilderAIState::PublishDebug()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	float musterX = 0.0f;
+	float musterY = 0.0f;
+
+	AIDebugSnapshot &snapshot = world.aiDebug[team];
+
+	snapshot.team = team;
+	snapshot.profile = "builder";
+	snapshot.cash = Funds();
+	snapshot.cashSpent = cashSpent;
+	snapshot.structures = OwnedStructures();
+	snapshot.buildLimit = buildLimit;
+	snapshot.armySize = ArmySize();
+	snapshot.armyLimit = armyLimit;
+	snapshot.muster = static_cast<int>(Muster(musterX, musterY).size());
+	snapshot.waveSize = waveSize;
+	snapshot.wavesSent = wavesSent;
+	snapshot.building = pending ? pending->name : String{};
+	snapshot.buildProgress = pending ? buildCounter : 0;
+	snapshot.buildTime = pending ? pending->buildTime : 0;
+	snapshot.stalled = stallReason;
 }
 
 void BuilderAIState::InitialiseMapTechTree(const nlohmann::json &aiOpponentData)
@@ -372,6 +505,9 @@ void BuilderAIState::InitialiseMapTechTree(const nlohmann::json &aiOpponentData)
 	{
 		buildLimit = aiOpponentData["buildLimit"].get<int>();
 	}
+
+	armyLimit = aiOpponentData.value("armyLimit", armyLimit);
+	waveSize = std::max(1, aiOpponentData.value("waveSize", waveSize));
 
 	if (!aiOpponentData.contains("techTree") || !aiOpponentData["techTree"].contains("nodes"))
 	{
