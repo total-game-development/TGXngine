@@ -1333,6 +1333,16 @@ void Game::Close()
 	// launch, which reads startLevel.
 	SkirmishSetup::Clear();
 
+	// The same, and worse: a skirmish started after a match would take the
+	// networked path and wait on a clock no server is turning, so it would
+	// never advance a tick.
+	if (MultiplayerSetup::active)
+	{
+		Net::Session::GetInstance().Disconnect();
+
+		MultiplayerSetup::Clear();
+	}
+
 	outcome.clear();
 	exitButton = sf::FloatRect();
 
