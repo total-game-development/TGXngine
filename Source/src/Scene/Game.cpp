@@ -372,6 +372,7 @@ void Game::Update()
 void Game::Step()
 {
 	WorldState &world = WorldState::GetInstance();
+	const bool networked = MultiplayerSetup::active;
 	Physics &physics = Physics::GetInstance();
 
 	physics.Update();
@@ -431,6 +432,14 @@ void Game::Step()
 	world.SetRightClicked(false);
 
 	Navigation::DeleteAllMarkers(world.currentTerrainMapPassableGrid);
+
+	// What this tick raised is dealt with before the next one starts, so two
+	// clients add and remove the same items at the same tick and their uid
+	// counters keep level. Outside a match the frame drains them as before.
+	if (networked)
+	{
+		Renderer::GetInstance().DrainEvents();
+	}
 }
 
 void Game::Draw()

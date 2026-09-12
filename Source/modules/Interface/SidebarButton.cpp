@@ -344,7 +344,7 @@ void SidebarButton::BuildImmediately()
 	String builtTeam = StringConcat("team:", world.GetTeam());
 	builtCommand += builtTeam;
 
-	world.gameEvents.emplace_back(UIAction::AddGameItem, builtCommand);
+	world.gameEvents.emplace_back(UIAction::PlayerBuild, builtCommand);
 }
 
 void SidebarButton::ResetButtonState()

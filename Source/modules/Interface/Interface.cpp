@@ -93,7 +93,7 @@ extern "C"
 
 				Log::Info("NI Command: " + command);
 
-				world.gameEvents.emplace_back(UIAction::AddGameItem, command);
+				world.gameEvents.emplace_back(UIAction::PlayerBuild, command);
 
 				GetSidebar().Restore();
 

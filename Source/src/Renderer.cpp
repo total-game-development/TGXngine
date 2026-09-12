@@ -45,6 +45,7 @@ Renderer::Renderer()
 	functions[UIAction::Log] = &Renderer::Log;
 	functions[UIAction::LoadScene] = &Renderer::LoadScene;
 	functions[UIAction::Print] = &Renderer::Print;
+	functions[UIAction::PlayerBuild] = &Renderer::AddGameItem;
 	functions[UIAction::AddGameItem] = &Renderer::AddGameItem;
 	functions[UIAction::RemoveGameItem] = &Renderer::RemoveGameItem;
 	functions[UIAction::GameOver] = &Renderer::GameOver;
@@ -341,26 +342,40 @@ void Renderer::RemoveGameItem(Any item)
 
 void Renderer::RunFunctions()
 {
+	// A networked match drains inside the tick that raised the events, so the
+	// two clients work through them at the same point in the same tick rather
+	// than wherever their frames happened to fall.
+	if (MultiplayerSetup::active && Net::Session::GetInstance().IsPlaying())
+	{
+		return;
+	}
+
+	DrainEvents();
+}
+
+void Renderer::DrainEvents()
+{
 	WorldState &world = WorldState::GetInstance();
 
 	auto events = std::move(world.gameEvents);
 	world.gameEvents.clear();
+
+	const bool networked = MultiplayerSetup::active && Net::Session::GetInstance().IsPlaying();
 
 	for (auto &gameEvent : events)
 	{
 		UIAction action = gameEvent.first;
 		String value = gameEvent.second;
 
-		// A networked match does not act on its own events. Anything that
-		// changes the world goes to the server, which stamps a tick and hands
-		// it back to every client, this one included, so all of them add and
-		// remove the same items on the same tick. Acting locally would also
-		// walk this client's uid counter out of step with its peers', and
-		// every command names its units by uid.
-		if (MultiplayerSetup::active && Net::Session::GetInstance().IsPlaying() &&
-			(action == UIAction::AddGameItem || action == UIAction::RemoveGameItem))
+		// Only what a player asked for travels. It was raised on one machine,
+		// so the others have no way to know of it. Everything else on this
+		// queue a match works out for itself -- a unit dying, a prospector
+		// finishing its extractor -- and every client works out the same thing
+		// on the same tick. Sending those too would have each client raise its
+		// own copy and every client apply all of them.
+		if (networked && action == UIAction::PlayerBuild)
 		{
-			Log::Info("NET send event: " + value);
+			Log::Info("NET send build: " + value);
 
 			Net::Session::GetInstance().SendCommand(
 				{},

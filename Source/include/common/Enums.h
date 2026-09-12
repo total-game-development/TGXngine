@@ -64,6 +64,10 @@ enum class UIAction : std::uint8_t
 	Log,
 	Print,
 	Send,
+	// Raised where a player asked for something, and only on that player's
+	// machine. Everything else on this list a match works out for itself, and
+	// every client works out the same thing.
+	PlayerBuild,
 	AddGameItem,
 	RemoveGameItem,
 	GameOver
@@ -80,6 +84,7 @@ inline UIAction UIActionFromString(const String &str)
 	if (str == "Log") { return UIAction::Log; }
 	if (str == "Print") { return UIAction::Print; }
 	if (str == "Send") { return UIAction::Send; }
+	if (str == "PlayerBuild") { return UIAction::PlayerBuild; }
 	if (str == "AddGameItem") { return UIAction::AddGameItem; }
 	if (str == "RemoveGameItem") { return UIAction::RemoveGameItem; }
 	if (str == "GameOver") { return UIAction::GameOver; }

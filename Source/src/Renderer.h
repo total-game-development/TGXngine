@@ -18,6 +18,10 @@ public:
 	// server has stamped through it, rather than the one it queued locally.
 	void RunAction(UIAction action, const String &value);
 
+	// Runs everything queued this far. A networked match calls it from inside
+	// the tick, so every client works through the same events at the same tick.
+	void DrainEvents();
+
 	Map<UIAction, Function<void(Renderer &, Any)>> functions;
 	Map<SceneType, Ref<Scene>> scenes;
 	Ref<Scene> scene;
