@@ -167,6 +167,15 @@ void Game::Init()
 				teamEntry["type"] = mine ? "player" : "remote";
 			}
 		}
+
+		// Seeded exactly as the server seeds its own, since the comparison is
+		// of the whole fold and not of what each side added to it. Missing this
+		// leaves the client on zero and every check reads as a desync.
+		digest = DIGEST_OFFSET;
+		digestTick = MultiplayerSetup::startTick;
+
+		MixDigest(MultiplayerSetup::seed);
+		MixDigestText(level.value("name", String{}));
 	}
 
 	if (level.contains("teams"))

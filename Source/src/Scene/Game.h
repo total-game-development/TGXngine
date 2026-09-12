@@ -64,7 +64,9 @@ protected:
 	// Folded over the commands this client has applied and the ticks it applied
 	// them on. It must match what the server folds, byte for byte, or every
 	// sanity check reads as a desync -- see Simulation.h in TGXngineServer.
-	std::uint64_t digest = 0;
+	static constexpr std::uint64_t DIGEST_OFFSET = 0xCBF29CE484222325ULL;
+
+	std::uint64_t digest = DIGEST_OFFSET;
 	std::int64_t digestTick = 0;
 
 	void MixDigest(std::uint64_t value);

@@ -2,7 +2,7 @@
 	"settings": {
 		"canvasWidthOffset": 0,
 		"canvasHeightOffset": 0,
-		"production": true,
+		"production": false,
 		"debugOnScreen": false,
 		"fogOfWar": false
 	}
