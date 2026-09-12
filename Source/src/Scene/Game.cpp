@@ -617,22 +617,41 @@ std::uint64_t Game::WorldDigest() const
 		return a->GetUid() < b->GetUid();
 	});
 
+	const auto mixFloat = [&mix](float value) {
+		std::uint32_t bits = 0;
+		std::memcpy(&bits, &value, sizeof(bits));
+		mix(bits);
+	};
+
+	const auto mixText = [&mix](const String &text) {
+		for (unsigned char letter : text)
+		{
+			mix(letter);
+		}
+	};
+
 	for (const ItemInstance *entry : ordered)
 	{
 		mix(static_cast<std::uint64_t>(entry->GetUid()));
 
+		// What the unit is, not only where. Two clients that disagreed about a
+		// unit's kind or its side while it stood in the same place would
+		// otherwise fold to the same number and look in step.
+		mixText(entry->GetName());
+		mixText(entry->GetType());
+		mixText(entry->GetTeam());
+
 		// The raw bits, because two clients in step agree exactly. Rounding
 		// here would hide the drift this is here to find.
-		float x = entry->GetX();
-		float y = entry->GetY();
+		mixFloat(entry->GetX());
+		mixFloat(entry->GetY());
+		mixFloat(entry->GetDirection());
+		mixFloat(entry->GetLife());
 
-		std::uint32_t bits = 0;
-
-		std::memcpy(&bits, &x, sizeof(bits));
-		mix(bits);
-
-		std::memcpy(&bits, &y, sizeof(bits));
-		mix(bits);
+		// What it is doing and to whom, so a unit that is fighting on one
+		// client and idle on the other is caught before the two worlds part.
+		mix(static_cast<std::uint64_t>(entry->GetState()));
+		mix(static_cast<std::uint64_t>(entry->GetTargetUid()));
 	}
 
 	return fold;
