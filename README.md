@@ -8,6 +8,30 @@ TGXngine decouples stable engine fundamentals from flexible gameplay rules. The 
 
 The engine's roots trace back to War of Salvation, the original RTS in this ecosystem, which was initially built specifically for the web. TGXngine was subsequently engineered as a major architectural extension to empower and involve the community, providing a high-performance native substrate for advanced development. A live web demo version of the original War of Salvation experience is available to play at https://tgame.dev/wos-game/.
 
+## Version 0.3
+
+Version 0.3 is implemented and tagged. The headline addition is an in-engine shell -- a filesystem, a scripting language and a code editor running in-process -- reachable both from the intro menu and from a portal raised over a live match. The strategy AI also stops keeping its own books.
+
+### Shell Module (modules/Shell/)
+
+The language and filesystem that War of Salvation ran in the browser are ported to a dynamic module: a `Lexer`, a recursive-descent `Parser` producing an `Ast`, and a tree-walking `Interpreter` over an `Environment` of `Value`s. A `FileSystem` holds directories and files in memory, a `Terminal` supplies the command set and its remote computers, and an `Editor` provides in-shell editing with `Highlight` colouring keywords, numbers, booleans and comments as they are typed. The four Web Workers behind `spawn` collapse into a `TaskPool`, so the runtime that `worker.js` duplicated inline exists once.
+
+Programs reach the engine only through `Host` -- print, read, write, exec, spawn and toggle -- with toggle forwarded to a handler the executable registers, since a module cannot see `Globals`. Everything lives in `namespace TGX::Shell`. The filesystem persists to `Resources/shell.json` as it changes, so work survives a restart.
+
+### UI Module (modules/UI/)
+
+A second module supplies the in-match interface layer. A `Portal` reads `portal.json` and builds `Screen`s from declared `Element`s -- text, buttons, icon buttons and text inputs -- resolving positions through `Layout` expressions such as `centre-300` and `height-20` so a layout survives any view size. Opening a window attaches a `Panel` bound to a `Page`: a framed, draggable, closable window carrying a title, wrapped body text, an optional image and an optional inbox. The module is bound through `modules.json` as `{"type":"ui", "name":"modules/UI"}`, and maps declare their portal in their own `ui` blocks.
+
+The toggle keys, opening screen, backdrop and console page are all declared in `portal.json` rather than compiled in. The portal pauses the match it covers.
+
+### The Shell In a Match
+
+The two modules never call one another. The `Game` scene holds both handles and brokers between them: it asks the UI where the console window sits, hands the Shell that rectangle as a viewport, and forwards the keys the portal reports unhandled. `Shell::Draw` anchors to that viewport rather than to the window, so the intro menu's full-screen shell is unchanged by the arrangement.
+
+### AI Economy
+
+`BuilderAIState` previously spent a private figure handed to it at load, so it could build past an empty treasury and its income never appeared in the game's own books. It now reads and debits the team's `EconomyInstance`, taking payment when an order starts rather than when it completes, so the same funds cannot be committed twice. With a shared purse the commander gained limits -- `armyLimit` and `waveSize`, both declarable per opponent -- and a wave now forms only from units actually idle at base. Each tick it publishes an `AIDebugSnapshot` to `WorldState`, which an on-screen readout draws: balance, income, forces against the cap, waves sent, the order on the slab, and why nothing is being built when nothing is.
+
 ## Version 0.2
 
 Version 0.2 is implemented and tagged. The headline additions are a modular strategy AI and a standalone skirmish mode, alongside the modules that extend play beyond the land domain.
@@ -62,7 +86,7 @@ Implementation components:
 
 This layer encapsulates gameplay logic inside isolated dynamic libraries. This decoupling allows developers and community modders to write entirely new unit behaviors, faction mechanics, or game triggers as self-contained mods.
 
-Isolated dynamic modules available in version 0.2:
+Isolated dynamic modules available in version 0.3:
 
 * modules/AI/
 * modules/Aircrafts/
@@ -73,15 +97,18 @@ Isolated dynamic modules available in version 0.2:
 * modules/Interface/
 * modules/Projectiles/
 * modules/Resources/
+* modules/Shell/
 * modules/Ships/
 * modules/Triggers/
 * modules/Turrets/
+* modules/UI/
 * modules/Vehicles/
 
 ### 4. Verification Frameworks
 
 * tests/test_common/
 * tests/test_library/
+* tests/test_shell/
 
 ## Core Dependency Frameworks
 
