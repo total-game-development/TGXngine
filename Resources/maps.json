@@ -70,6 +70,10 @@
 			[
 				{"type":"interface","name":"sidebar"}
 			],
+			"ui":
+			[
+				{"type":"ui","name":"portal"}
+			],
 			"triggers":
 			[
 				{"type":"triggers","name":"log"},			
@@ -221,6 +225,10 @@
 			"interface":
 			[
 				{"type":"interface","name":"sidebar"}
+			],
+			"ui":
+			[
+				{"type":"ui","name":"portal"}
 			],
 			"triggers":
 			[
@@ -419,6 +427,10 @@
 			"interface": [
 				{"type":"interface", "name":"sidebar"}
 			],
+			"ui":
+			[
+				{"type":"ui","name":"portal"}
+			],
 			"triggers": [
 				{"type":"triggers", "name":"log"}
 			],
@@ -614,6 +626,10 @@
 			"interface": [
 				{"type":"interface", "name":"sidebar"}
 			],
+			"ui":
+			[
+				{"type":"ui","name":"portal"}
+			],
 			"triggers": [
 				{"type":"triggers", "name":"log"}
 			],
@@ -792,6 +808,10 @@
 			"interface": [
 				{"type":"interface", "name":"sidebar"}
 			],
+			"ui":
+			[
+				{"type":"ui","name":"portal"}
+			],
 			"triggers": [
 				{"type":"triggers", "name":"log"}
 			],
@@ -838,6 +858,8 @@
 				{
 					"name": "builder",
 					"buildLimit": 8,
+					"armyLimit": 12,
+					"waveSize": 4,
 					"techTree": {
 						"nodes": [
 							{
@@ -926,6 +948,10 @@
 			],
 			"interface": [
 				{"type":"interface", "name":"sidebar"}
+			],
+			"ui":
+			[
+				{"type":"ui","name":"portal"}
 			],
 			"triggers": [
 				{"type":"triggers", "name":"log"}
@@ -1069,6 +1095,10 @@
 			],
 			"interface": [
 				{"type":"interface", "name":"sidebar"}
+			],
+			"ui":
+			[
+				{"type":"ui","name":"portal"}
 			],
 			"triggers": [
 				{"type":"triggers", "name":"log"}

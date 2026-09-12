@@ -141,6 +141,14 @@ void Renderer::Start()
 			return;
 		}
 
+		if (auto *game = dynamic_cast<Game *>(scene.get()))
+		{
+			if (game->Key(static_cast<int>(event.key.code)))
+			{
+				return;
+			}
+		}
+
 		keyboard.KeyPressed(event.key.code);
 	};
 
@@ -148,6 +156,12 @@ void Renderer::Start()
 		if (auto *shell = dynamic_cast<ShellScene *>(scene.get()))
 		{
 			shell->Text(event.text.unicode);
+			return;
+		}
+
+		if (auto *game = dynamic_cast<Game *>(scene.get()))
+		{
+			game->Text(event.text.unicode);
 		}
 	};
 

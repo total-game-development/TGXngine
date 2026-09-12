@@ -376,6 +376,52 @@ void Loader::AssignInterface(json &level)
 	}
 }
 
+void Loader::AssignUI(json &level)
+{
+	Log::Info("Assign UI");
+
+	if (!level.contains("ui") || !level["ui"].is_array() || level["ui"].empty())
+	{
+		return;
+	}
+
+	json &declaration = level["ui"][0];
+
+	String type = declaration["type"];
+	String name = declaration["name"];
+
+	Log::Print("Game UI Type: " + type);
+	Log::Print("Game UI Name: " + name);
+
+	if (!dlls.contains(type))
+	{
+		Log::Error("Missing DLL for ui type: " + type);
+		return;
+	}
+
+	auto *dllHandle = dlls[type];
+
+	uiModule = std::make_unique<UIModule>(
+		(FNPTR_UI_AWAKE)GET_PROC(dllHandle, "Awake"),
+		(FNPTR_UI_CREATE)GET_PROC(dllHandle, "Create"),
+		(FNPTR_UI_UPDATE)GET_PROC(dllHandle, "Update"),
+		(FNPTR_UI_RENDER_WINDOW)GET_PROC(dllHandle, "Draw"),
+		(FNPTR_UI_CLICK)GET_PROC(dllHandle, "Click"),
+		(FNPTR_UI_RELEASE)GET_PROC(dllHandle, "Release"),
+		(FNPTR_UI_TEXT)GET_PROC(dllHandle, "Text"),
+		(FNPTR_UI_KEY)GET_PROC(dllHandle, "Key"),
+		(FNPTR_UI_CONSOLE_BOUNDS)GET_PROC(dllHandle, "ConsoleBounds"),
+		(FNPTR_UI_IS_VISIBLE)GET_PROC(dllHandle, "IsVisible"),
+		(FNPTR_UI_IS_PAUSED)GET_PROC(dllHandle, "IsPaused"),
+		(FNPTR_UI_CLEAR)GET_PROC(dllHandle, "Clear"),
+		(FNPTR_UI_DELETE)GET_PROC(dllHandle, "Delete"));
+
+	uiModule->Awake(name);
+	uiModule->Create();
+
+	Log::Success("UI assigned");
+}
+
 void Loader::AssignTriggers(json &level)
 {
 	Log::Info("Assign Triggers");
@@ -590,6 +636,8 @@ void Loader::AssignShell()
 		(FNPTR_SHELL_CLICK)GET_PROC(dllHandle, "Click"),
 		(FNPTR_SHELL_TEXT)GET_PROC(dllHandle, "Text"),
 		(FNPTR_SHELL_KEY)GET_PROC(dllHandle, "Key"),
+		(FNPTR_SHELL_SET_VIEWPORT)GET_PROC(dllHandle, "SetViewport"),
+		(FNPTR_SHELL_IS_EDITING)GET_PROC(dllHandle, "IsEditing"),
 		(FNPTR_SHELL_SHOULD_CLOSE)GET_PROC(dllHandle, "ShouldClose"),
 		(FNPTR_SHELL_SET_TOGGLE_HANDLER)GET_PROC(dllHandle, "SetToggleHandler"),
 		(FNPTR_SHELL_CLEAR)GET_PROC(dllHandle, "Clear"),
@@ -646,6 +694,11 @@ Unique<FogOfWar> &Loader::GetFogOfWar()
 Unique<ShellModule> &Loader::GetShell()
 {
 	return shellModule;
+}
+
+Unique<UIModule> &Loader::GetUI()
+{
+	return uiModule;
 }
 
 Vector<Unique<Economy>> &Loader::GetEconomies()

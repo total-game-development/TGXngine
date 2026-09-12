@@ -1,0 +1,346 @@
+{
+	"ui": {
+		"toggle": [
+			"F10",
+			"Tab"
+		],
+		"screen": "home",
+		"visible": false,
+		"paths": {
+			"icons": "Resources/images/ui/icons/",
+			"windows": "Resources/images/ui/windows/",
+			"images": "Resources/images/ui/images/"
+		},
+		"screens": {
+			"home": {
+				"pause": true,
+				"elements": [
+					{
+						"type": "text",
+						"x": "centre",
+						"y": 40,
+						"anchorX": 0.5,
+						"text": "TGXNGINE PORTAL",
+						"fontSize": 24,
+						"textFill": "#00A7FF"
+					},
+					{
+						"type": "text",
+						"x": "centre",
+						"y": 72,
+						"anchorX": 0.5,
+						"text": "F10 or Tab returns you to the battlefield",
+						"fontSize": 14,
+						"textFill": "#5A6472"
+					},
+					{
+						"type": "icon-button",
+						"x": "width-50",
+						"y": "height-20",
+						"scale": 0.5,
+						"anchorX": 1.0,
+						"anchorY": 1.0,
+						"name": "sign-out-icon.png",
+						"action": {
+							"condition": "closeUI"
+						}
+					},
+					{
+						"type": "icon-button",
+						"x": "50",
+						"y": "height-20",
+						"scale": 0.5,
+						"anchorX": 0.0,
+						"anchorY": 1.0,
+						"name": "globe-icon-remove.png",
+						"action": {
+							"condition": "gotoScreen",
+							"value": "units"
+						}
+					},
+					{
+						"type": "icon-button",
+						"x": "centre-100",
+						"y": "height-20",
+						"scale": 0.3,
+						"anchorX": 0.5,
+						"anchorY": 1.0,
+						"name": "notes-icon.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "notes"
+						}
+					},
+					{
+						"type": "icon-button",
+						"x": "centre+100",
+						"y": "height-20",
+						"scale": 0.3,
+						"anchorX": 0.5,
+						"anchorY": 1.0,
+						"name": "code-icon.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "shell"
+						}
+					},
+					{
+						"type": "text",
+						"x": "50",
+						"y": "height-90",
+						"anchorX": 0.0,
+						"text": "Reference",
+						"fontSize": 13,
+						"textFill": "#5A6472"
+					},
+					{
+						"type": "text",
+						"x": "centre-100",
+						"y": "height-90",
+						"anchorX": 0.5,
+						"text": "Notes",
+						"fontSize": 13,
+						"textFill": "#5A6472"
+					},
+					{
+						"type": "text",
+						"x": "centre+100",
+						"y": "height-90",
+						"anchorX": 0.5,
+						"text": "Console",
+						"fontSize": 13,
+						"textFill": "#5A6472"
+					}
+				]
+			},
+			"units": {
+				"pause": true,
+				"elements": [
+					{
+						"type": "text",
+						"x": "centre",
+						"y": 60,
+						"anchorX": 0.5,
+						"text": "Reference / Units",
+						"fontSize": 24,
+						"textFill": "#00A7FF"
+					},
+					{
+						"type": "icon-button",
+						"x": "centre-300",
+						"y": "centre",
+						"scale": 0.4,
+						"anchorX": 0.5,
+						"anchorY": 0.5,
+						"name": "globe-icon-remove.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "infantry-soldier"
+						}
+					},
+					{
+						"type": "icon-button",
+						"x": "centre-100",
+						"y": "centre",
+						"scale": 0.4,
+						"anchorX": 0.5,
+						"anchorY": 0.5,
+						"name": "globe-icon-remove.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "infantry-grenadier"
+						}
+					},
+					{
+						"type": "icon-button",
+						"x": "centre+100",
+						"y": "centre",
+						"scale": 0.4,
+						"anchorX": 0.5,
+						"anchorY": 0.5,
+						"name": "globe-icon-remove.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "infantry-rocketeer"
+						}
+					},
+					{
+						"type": "icon-button",
+						"x": "centre+300",
+						"y": "centre",
+						"scale": 0.4,
+						"anchorX": 0.5,
+						"anchorY": 0.5,
+						"name": "globe-icon-remove.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "infantry-engineer"
+						}
+					},
+					{
+						"type": "icon-button",
+						"x": "centre-100",
+						"y": "centre+240",
+						"scale": 0.4,
+						"anchorX": 0.5,
+						"anchorY": 0.5,
+						"name": "globe-icon-remove.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "ship-cruiser"
+						}
+					},
+					{
+						"type": "text",
+						"x": "centre-300",
+						"y": "centre+120",
+						"anchorX": 0.5,
+						"text": "Soldier",
+						"fontSize": 16,
+						"textFill": "#FFFFFF"
+					},
+					{
+						"type": "text",
+						"x": "centre-100",
+						"y": "centre+120",
+						"anchorX": 0.5,
+						"text": "Grenadier",
+						"fontSize": 16,
+						"textFill": "#FFFFFF"
+					},
+					{
+						"type": "text",
+						"x": "centre+100",
+						"y": "centre+120",
+						"anchorX": 0.5,
+						"text": "Rocketeer",
+						"fontSize": 16,
+						"textFill": "#FFFFFF"
+					},
+					{
+						"type": "text",
+						"x": "centre+300",
+						"y": "centre+120",
+						"anchorX": 0.5,
+						"text": "Engineer",
+						"fontSize": 16,
+						"textFill": "#FFFFFF"
+					},
+					{
+						"type": "text",
+						"x": "centre-100",
+						"y": "centre+330",
+						"anchorX": 0.5,
+						"text": "Cruiser",
+						"fontSize": 16,
+						"textFill": "#FFFFFF"
+					},
+					{
+						"type": "icon-button",
+						"x": "centre+100",
+						"y": "centre+240",
+						"scale": 0.4,
+						"anchorX": 0.5,
+						"anchorY": 0.5,
+						"name": "globe-icon-remove.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "infantry-medic"
+						}
+					},
+					{
+						"type": "text",
+						"x": "centre+100",
+						"y": "centre+330",
+						"anchorX": 0.5,
+						"text": "Medic",
+						"fontSize": 16,
+						"textFill": "#FFFFFF"
+					},
+					{
+						"type": "button",
+						"x": 60,
+						"y": "height-100",
+						"width": 140,
+						"height": 44,
+						"text": "back",
+						"fill": "#1C222E",
+						"textFill": "#FFFFFF",
+						"stroke": "#00A7FF",
+						"strokeWidth": 2,
+						"action": {
+							"condition": "gotoScreen",
+							"value": "home"
+						}
+					}
+				]
+			}
+		},
+		"pages": {
+			"infantry-soldier": {
+				"title": "IF-100 Ground Combat Soldier",
+				"body": "The IF-100 Ground Combat Soldier is a standardised infantry unit designed for modern, high-intensity warfare. Equipped with reinforced personal armour and integrated combat electronics, the IF-100 emphasises survivability, mobility, and coordinated fire control.\n\nIts modular equipment framework allows rapid reconfiguration for mission-specific roles, including assault, perimeter security, and support operations. This flexibility enables effective deployment alongside armoured vehicles or as independent infantry across varied combat environments.",
+				"window": "h720",
+				"image": {
+					"name": "infantry-soldier-panel.png"
+				}
+			},
+			"infantry-grenadier": {
+				"title": "IG-550 Ground Combat Grenadier",
+				"body": "The IG-550 Grenadier is a specialised infantry unit for high-intensity combat, providing explosive support on the frontlines. Outfitted with reinforced modular armor and integrated combat systems, the IG-550 balances survivability, mobility, and precision.\n\nEquipped with a modular arsenal of grenades and launcher attachments, the unit adapts quickly for assault, suppression, or breaching tasks. IG-550s operate alongside standard infantry or mechanized forces, delivering tactical explosive firepower across urban, industrial, and open-field environments.",
+				"window": "h720",
+				"image": {
+					"name": "infantry-grenadier-panel.png"
+				}
+			},
+			"infantry-rocketeer": {
+				"title": "RK-210 Combat Rocketeer",
+				"body": "The RK-210 Rocketeer is a specialised infantry unit for rapid assault and close support using rocket-based weaponry. Outfitted with reinforced modular armor and integrated targeting systems, it balances mobility, survivability, and precision.\n\nEquipped with a shoulder-mounted rocket launcher and modular support gear, the RK-210 adapts quickly for assault, suppression, or area-denial tasks, operating alongside infantry or mechanized units to deliver high-impact firepower across diverse combat environments.",
+				"window": "h720",
+				"image": {
+					"name": "infantry-rocketeer-panel.png"
+				}
+			},
+			"infantry-engineer": {
+				"title": "EN-42 Combat Engineer",
+				"body": "The EN-42 Combat Engineer is a specialised infantry unit trained for frontline support, including construction, repair, and tactical demolition. Outfitted with reinforced modular armor and integrated utility systems, it balances protection, mobility, and versatility.\n\nEquipped with a modular toolkit, the EN-42 can deploy fortifications, repair equipment, or breaching devices, operating independently or alongside infantry and mechanized units across urban, industrial, and open-field environments.",
+				"window": "h720",
+				"image": {
+					"name": "infantry-engineer-panel.png"
+				}
+			},
+			"infantry-medic": {
+				"title": "MD-33 Field Medic",
+				"body": "The MD-33 Field Medic is a specialised support infantry unit providing frontline medical assistance. Outfitted with modular armor and integrated medical systems, it balances protection, mobility, and rapid response.\n\nEquipped with a modular medical kit, the MD-33 stabilizes wounded personnel, administers emergency treatment, and operates alongside infantry or mechanized units across urban, industrial, and open-field environments.",
+				"window": "h720",
+				"image": {
+					"name": "infantry-medic-panel.png"
+				}
+			},
+			"ship-cruiser": {
+				"title": "Aegis Vanguard SP-500",
+				"body": "The Aegis Vanguard SP-500 is a cutting-edge, heavily armored cruiser ship crafted to meet the demands of modern warfare. Its sleek, angular design combines advanced materials for both durability and agility. The ship stands as a pinnacle of technological innovation in military transport.\n\nThe SP-500 boasts a modular interior, allowing for customizable arrangements to accommodate various combinations of infantry and vehicles. It can be configured to carry up to 4 vehicles and 20 infantry or adapt to transport up to 30 infantry or 6 vehicles exclusively.",
+				"window": "h720",
+				"image": {
+					"name": "ship-cruiser-panel.png"
+				}
+			},
+			"notes": {
+				"title": "",
+				"body": "TGXngine portal.\n\nF10 or Tab opens and closes this portal. It pauses the match while it is up, so nothing moves underneath you.\n\nConsole opens the engine shell: a filesystem, a scripting language and an editor, all running in-process. Type 'help' there for the command list, and 'exit' to leave the portal.\n\nThe globe opens the unit reference.\n\nEscape closes the focused window. The button in the bottom right leaves the portal and resumes the match.",
+				"window": "vNotes"
+			},
+			"shell": {
+				"title": "",
+				"window": "hShell",
+				"body": ""
+			}
+		},
+		"backdrop": {
+			"colour": "#05070A",
+			"alpha": 242,
+			"scanlines": true
+		},
+		"console": "shell"
+	}
+}

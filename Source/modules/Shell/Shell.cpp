@@ -17,11 +17,23 @@ constexpr float MARGIN_Y = 24.0f;
 Unique<Terminal> terminal;
 String savePath = "Resources/shell.json";
 
+sf::FloatRect viewport;
+
+sf::FloatRect Bounds()
+{
+	if (viewport.width > 0.0f && viewport.height > 0.0f)
+	{
+		return viewport;
+	}
+
+	const sf::Vector2f extent = Window::GetInstance().GetViewSize();
+
+	return {0.0f, 0.0f, extent.x, extent.y};
+}
+
 std::size_t VisibleRows()
 {
-	Window &window = Window::GetInstance();
-
-	const float height = window.GetViewSize().y - (MARGIN_Y * 2.0f);
+	const float height = Bounds().height - (MARGIN_Y * 2.0f);
 	const float rows = height / LINE_HEIGHT;
 
 	if (rows < 1.0f)
@@ -57,23 +69,27 @@ void DrawTerminal()
 {
 	Window &window = Window::GetInstance();
 
+	const sf::FloatRect area = Bounds();
+
 	const Vector<String> lines = terminal->GetOutput();
 	const std::size_t rows = VisibleRows();
 	const std::size_t reserved = rows > 0 ? rows - 1 : 0;
 
 	const std::size_t start = lines.size() > reserved ? lines.size() - reserved : 0;
 
-	float y = MARGIN_Y;
+	const float x = area.left + MARGIN_X;
+
+	float y = area.top + MARGIN_Y;
 
 	for (std::size_t index = start; index < lines.size(); ++index)
 	{
-		window.DrawText(lines[index], sf::Vector2f(MARGIN_X, y), FONT_SIZE, sf::Color(190, 230, 190));
+		window.DrawText(lines[index], sf::Vector2f(x, y), FONT_SIZE, sf::Color(190, 230, 190));
 		y += LINE_HEIGHT;
 	}
 
 	window.DrawText(
 		terminal->GetPrompt() + terminal->GetInput() + "_",
-		sf::Vector2f(MARGIN_X, y),
+		sf::Vector2f(x, y),
 		FONT_SIZE,
 		sf::Color::White);
 }
@@ -83,13 +99,15 @@ void DrawEditor()
 	Window &window = Window::GetInstance();
 	Editor &editor = terminal->GetEditor();
 
+	const sf::FloatRect area = Bounds();
+
 	const std::size_t rows = VisibleRows();
 
 	editor.SetVisibleRows(rows > 2 ? rows - 2 : 1);
 
 	window.DrawText(
 		"edit " + editor.Name() + (editor.IsDirty() ? " *" : "") + "   [ESC saves and closes]",
-		sf::Vector2f(MARGIN_X, MARGIN_Y),
+		sf::Vector2f(area.left + MARGIN_X, area.top + MARGIN_Y),
 		FONT_SIZE,
 		sf::Color(230, 230, 150));
 
@@ -98,7 +116,7 @@ void DrawEditor()
 	const std::size_t scroll = editor.Scroll();
 	const std::size_t limit = std::min(lines.size(), scroll + editor.VisibleRows());
 
-	float y = MARGIN_Y + (LINE_HEIGHT * 2.0f);
+	float y = area.top + MARGIN_Y + (LINE_HEIGHT * 2.0f);
 
 	const Vector<Vector<Span>> &spans = editor.Spans();
 
@@ -106,9 +124,9 @@ void DrawEditor()
 	{
 		const String gutter = std::to_string(index + 1) + "  ";
 
-		window.DrawText(gutter, sf::Vector2f(MARGIN_X, y), FONT_SIZE, sf::Color(110, 110, 110));
+		window.DrawText(gutter, sf::Vector2f(area.left + MARGIN_X, y), FONT_SIZE, sf::Color(110, 110, 110));
 
-		float x = MARGIN_X + window.MeasureText(gutter, FONT_SIZE);
+		float x = area.left + MARGIN_X + window.MeasureText(gutter, FONT_SIZE);
 
 		if (index < spans.size())
 		{
@@ -123,7 +141,7 @@ void DrawEditor()
 		{
 			const String &line = lines[index];
 			const std::size_t column = std::min(editor.Column(), line.size());
-			const float caret = MARGIN_X + window.MeasureText(gutter + line.substr(0, column), FONT_SIZE);
+			const float caret = area.left + MARGIN_X + window.MeasureText(gutter + line.substr(0, column), FONT_SIZE);
 
 			window.DrawText("|", sf::Vector2f(caret - 1.0f, y), FONT_SIZE, sf::Color::White);
 		}
@@ -243,6 +261,16 @@ extern "C"
 			default:
 				break;
 		}
+	}
+
+	MODULE_API void SetViewport(float x, float y, float width, float height)
+	{
+		viewport = {x, y, width, height};
+	}
+
+	MODULE_API bool IsEditing()
+	{
+		return terminal && terminal->GetMode() == TerminalMode::Editing;
 	}
 
 	MODULE_API bool ShouldClose()

@@ -10,6 +10,8 @@ ShellModule::ShellModule(
 	FNPTR_SHELL_CLICK inClick,
 	FNPTR_SHELL_TEXT inText,
 	FNPTR_SHELL_KEY inKey,
+	FNPTR_SHELL_SET_VIEWPORT inSetViewport,
+	FNPTR_SHELL_IS_EDITING inIsEditing,
 	FNPTR_SHELL_SHOULD_CLOSE inShouldClose,
 	FNPTR_SHELL_SET_TOGGLE_HANDLER inSetToggleHandler,
 	FNPTR_SHELL_CLEAR inClear,
@@ -21,6 +23,8 @@ ShellModule::ShellModule(
 	  click(inClick),
 	  text(inText),
 	  key(inKey),
+	  setViewport(inSetViewport),
+	  isEditing(inIsEditing),
 	  shouldClose(inShouldClose),
 	  setToggleHandler(inSetToggleHandler),
 	  clear(inClear),
@@ -82,6 +86,19 @@ void ShellModule::Key(int code)
 	{
 		key(code);
 	}
+}
+
+void ShellModule::SetViewport(const sf::FloatRect &bounds)
+{
+	if (setViewport)
+	{
+		setViewport(bounds.left, bounds.top, bounds.width, bounds.height);
+	}
+}
+
+bool ShellModule::IsEditing()
+{
+	return isEditing ? isEditing() : false;
 }
 
 bool ShellModule::ShouldClose()

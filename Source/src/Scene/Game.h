@@ -13,6 +13,8 @@
 #include "Projectile.h"
 #include "Scene.h"
 #include "SkirmishSetup.h"
+#include "ShellModule.h"
+#include "UIModule.h"
 #include "WayPoints/WayPoints.h"
 #include "io/Loader.h"
 
@@ -45,6 +47,8 @@ protected:
 	Vector<Unique<Economy>> gameEconomies;
 	Vector<Unique<AI>> gameAis;
 	Unique<FogOfWar> fogOfWarModule;
+	Unique<UIModule> uiModule;
+	Unique<ShellModule> shellModule;
 
 	int currentLevel = 0;
 

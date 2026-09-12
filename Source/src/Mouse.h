@@ -13,6 +13,8 @@ public:
 	float x = 0;
 	float y = 0;
 
+	void Suppress(bool inSuppressed);
+
 	void Click();
 	void RightClick();
 	void Release();
@@ -51,6 +53,7 @@ private:
 	Unique<Orders> orders;
 
 	bool selectGameItems = false;
+	bool suppressed = false;
 
 	float dragX = 0;
 	float dragY = 0;

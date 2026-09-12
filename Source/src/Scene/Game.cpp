@@ -19,6 +19,21 @@
 
 namespace TGX
 {
+namespace
+{
+void HandleShellToggle(const char *name, const char *value, bool active)
+{
+	const String key(name);
+
+	if (key == "fogofwar")
+	{
+		WorldState::GetInstance().SetFogOfWarEnabled(active);
+	}
+
+	Log::Print(String("toggle ") + name + " " + value);
+}
+} // namespace
+
 Game::Game()
 {
 	Log::Success("Game Created");
@@ -170,6 +185,8 @@ void Game::Init()
 	loader->AssignGameResources(level);
 	loader->AssignProjectiles(level);
 	loader->AssignInterface(level);
+	loader->AssignUI(level);
+	loader->AssignShell();
 	loader->AssignTriggers(level);
 
 	gameItems = std::move(loader->GetGameItems());
@@ -177,6 +194,15 @@ void Game::Init()
 	gameProjectiles = std::move(loader->GetGameProjectiles());
 	gameResources = std::move(loader->GetGameResources());
 	gameInterfaces = std::move(loader->GetGameInterfaces());
+	uiModule = std::move(loader->GetUI());
+	shellModule = std::move(loader->GetShell());
+
+	if (shellModule)
+	{
+		shellModule->Awake("shell");
+		shellModule->SetToggleHandler(&HandleShellToggle);
+		shellModule->Create();
+	}
 	gameTriggers = std::move(loader->GetGameTriggers());
 
 	if (level.contains("economy"))
@@ -212,6 +238,28 @@ void Game::Update()
 	if (!outcome.empty())
 	{
 		return;
+	}
+
+	if (uiModule)
+	{
+		uiModule->Update();
+
+		// The portal takes the pointer with it: a drag over a window is not a
+		// drag across the battlefield, and the selection box would draw on top.
+		Mouse::GetInstance().Suppress(uiModule->IsVisible());
+
+		sf::FloatRect console;
+
+		// exit from the console puts the whole portal away, as F10 does.
+		if (shellModule && uiModule->ConsoleBounds(console) && shellModule->ShouldClose())
+		{
+			uiModule->Clear();
+		}
+
+		if (uiModule->IsPaused())
+		{
+			return;
+		}
 	}
 
 	WorldState &world = WorldState::GetInstance();
@@ -341,6 +389,19 @@ void Game::Draw()
 		DrawEconomy();
 	}
 
+	if (uiModule)
+	{
+		uiModule->Draw();
+
+		sf::FloatRect console;
+
+		if (shellModule && uiModule->ConsoleBounds(console))
+		{
+			shellModule->SetViewport(console);
+			shellModule->Draw();
+		}
+	}
+
 	frame++;
 }
 
@@ -355,6 +416,11 @@ void Game::Click()
 			WorldState::GetInstance().gameEvents.emplace_back(UIAction::LoadScene, String{"intro"});
 		}
 
+		return;
+	}
+
+	if (uiModule && uiModule->Click())
+	{
 		return;
 	}
 
@@ -384,6 +450,11 @@ void Game::Click()
 
 void Game::RightClick()
 {
+	if (uiModule && uiModule->IsPaused())
+	{
+		return;
+	}
+
 	WorldState &world = WorldState::GetInstance();
 	world.SetRightClicked(true);
 
@@ -413,6 +484,16 @@ void Game::RightClick()
 
 void Game::Release()
 {
+	if (uiModule)
+	{
+		uiModule->Release();
+
+		if (uiModule->IsPaused())
+		{
+			return;
+		}
+	}
+
 	Mouse &mouse = Mouse::GetInstance();
 
 	if (!mouse.IsSelectGameItems())
@@ -450,6 +531,60 @@ void Game::Release()
 			world.selected.emplace_back(itemIinstance->GetUid());
 		}
 	}
+}
+
+bool Game::Text(unsigned int codepoint)
+{
+	if (!uiModule)
+	{
+		return false;
+	}
+
+	sf::FloatRect console;
+
+	if (shellModule && uiModule->ConsoleBounds(console))
+	{
+		shellModule->Text(codepoint);
+
+		return true;
+	}
+
+	return uiModule->Text(codepoint);
+}
+
+bool Game::Key(int code)
+{
+	if (!uiModule)
+	{
+		return false;
+	}
+
+	sf::FloatRect console;
+
+	const bool terminal = shellModule && uiModule->ConsoleBounds(console);
+
+	// The editor saves and closes on Escape, so it keeps the key the window
+	// would otherwise use to dismiss itself.
+	if (terminal && code == static_cast<int>(sf::Keyboard::Escape) && shellModule->IsEditing())
+	{
+		shellModule->Key(code);
+
+		return true;
+	}
+
+	if (uiModule->Key(code))
+	{
+		return true;
+	}
+
+	if (terminal)
+	{
+		shellModule->Key(code);
+
+		return true;
+	}
+
+	return false;
 }
 
 void Game::DrawOutcome()
@@ -934,6 +1069,13 @@ void Game::Close()
 {
 	Log::Success("Close Game");
 
+	Mouse::GetInstance().Suppress(false);
+
+	if (shellModule)
+	{
+		shellModule->Clear();
+	}
+
 	// Consumed by the match it set up. Left standing it would hijack the next
 	// launch, which reads startLevel.
 	SkirmishSetup::Clear();
@@ -997,6 +1139,13 @@ void Game::Close()
 		gameAi.reset();
 	}
 	gameAis.clear();
+
+	if (uiModule)
+	{
+		uiModule->Clear();
+		uiModule->Delete();
+		uiModule.reset();
+	}
 
 	fogOfWarModule.reset();
 

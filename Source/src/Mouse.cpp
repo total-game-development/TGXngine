@@ -27,8 +27,30 @@ Mouse &Mouse::GetInstance()
 	return mouse;
 }
 
+void Mouse::Suppress(bool inSuppressed)
+{
+	suppressed = inSuppressed;
+
+	if (!suppressed)
+	{
+		return;
+	}
+
+	selectionBox.setPosition(0, 0);
+	selectionBox.setSize(sf::Vector2f(0, 0));
+
+	dragPressed = false;
+	dragSelect = false;
+	selectGameItems = false;
+}
+
 void Mouse::Click()
 {
+	if (suppressed)
+	{
+		return;
+	}
+
 	Log::Info("Mouse Clicked");
 
 	dragPressed = true;
@@ -40,6 +62,11 @@ void Mouse::Click()
 
 void Mouse::RightClick()
 {
+	if (suppressed)
+	{
+		return;
+	}
+
 	WorldState &world = WorldState::GetInstance();
 
 	if (world.IsEnemyItemUnderCursor() || world.IsResourceUnderCursor() || world.IsLoadableItemUnderCursor() || world.IsItemUnderCursor())
@@ -57,6 +84,11 @@ void Mouse::RightClick()
 
 void Mouse::Release()
 {
+	if (suppressed)
+	{
+		return;
+	}
+
 	Log::Info("Mouse Released");
 
 	selectionBox.setPosition(0, 0);
@@ -73,7 +105,7 @@ void Mouse::Release()
 
 void Mouse::Moved(float inX, float inY)
 {
-	if (dragPressed)
+	if (!suppressed && dragPressed)
 	{
 		if ((std::abs(dragX - inX) > 4 || std::abs(dragY - inY) > 4))
 		{
@@ -106,6 +138,11 @@ void Mouse::Update()
 
 void Mouse::Draw()
 {
+	if (suppressed)
+	{
+		return;
+	}
+
 	Window &window = Window::GetInstance();
 
 	if (dragSelect)
