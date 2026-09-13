@@ -151,31 +151,6 @@ void Loader::AssignGameItems(json &level)
 
 		gameItems.push_back(std::move(newItem));
 	}
-
-	auto byPriority = [](const auto &a, const auto &b) {
-		return a->GetItemInstance()->GetPriority() < b->GetItemInstance()->GetPriority();
-	};
-
-	std::ranges::sort(gameItems, byPriority);
-
-	WorldState &world = WorldState::GetInstance();
-	std::ranges::sort(world.items, [](const auto &a, const auto &b) {
-		return a->GetPriority() < b->GetPriority();
-	});
-
-	for (size_t i = 0; i < gameItems.size(); i++)
-	{
-		int logicUid = world.items[i]->GetUid();
-		int wrapperUid = gameItems[i]->GetItemInstance()->GetUid();
-		String name = gameItems[i]->GetItemInstance()->GetName();
-
-		std::string match = (logicUid == wrapperUid) ? "[OK]" : "[MISMATCH]";
-
-		Log::Print(StringConcat(match, " Index ", std::to_string(i),
-								" | Logic UID: ", std::to_string(logicUid),
-								" | Wrapper UID: ", std::to_string(wrapperUid),
-								" | Logic Name: ", name));
-	}
 }
 
 void Loader::AssignGameResources(json &level)

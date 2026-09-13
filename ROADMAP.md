@@ -19,6 +19,7 @@ This document tracks TGXngine's development targets: what has shipped, what was 
 * UI module (`modules/UI/`) — a data-driven portal of screens, windows and pages declared in `portal.json`, with layout expressions that survive any view size. This carries the button anchors planned for 0.2: every element resolves against an anchor point rather than a fixed corner.
 * The shell in a match — the console runs the real interpreter inside a portal raised over live play, brokered by the `Game` scene so neither module depends on the other.
 * AI economic management — the commander spends from the team's shared `EconomyInstance` rather than a private figure, under army and wave limits, and publishes an `AIDebugSnapshot` to an on-screen readout.
+* Unified item update workflow — an `Item` carries its own `ItemInstance` rather than borrowing the one at its index in `world.items`, and both containers are ordered by the single `ItemOrder` comparator. This closes the `gameItems`/`world.items` consolidation carried forward from 0.2.
 
 ---
 
@@ -62,28 +63,13 @@ An AI commander need not run on the machine it plays from. Because decisions ent
 
 ### Prerequisite
 
-Deterministic lockstep requires a deterministic update order. The `gameItems` and `world.items` consolidation carried forward below is a prerequisite for this version, not an optional cleanup: two containers kept in step by two separately maintained sort comparators will eventually diverge, and under lockstep a divergence on one client is a desynchronized match rather than a local glitch.
+Deterministic lockstep requires a deterministic update order. The `gameItems` and `world.items` consolidation is done: both are ordered by one total comparator and the two containers are no longer paired by index.
 
 ---
 
 ## Carried Forward
 
 The following were planned for earlier versions and remain outstanding.
-
-### Consolidate `gameItems` and `world.items` Vectors
-
-Synchronize the application `gameItems` and `world.items` containers into a unified update workflow.
-
-Current state: the two vectors are kept aligned by index, and correctness depends on two separate sort calls using matching priority comparators. The duplicate sorting logic the original goal set out to remove is still present.
-
-Goals:
-
-* Maintain deterministic update ordering.
-* Eliminate duplicate sorting logic.
-* Reduce synchronization bugs between application and world layers.
-* Improve maintainability of the simulation pipeline.
-
----
 
 ### Aircraft Flight Systems
 

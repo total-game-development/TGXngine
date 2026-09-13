@@ -2,6 +2,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <Debug.h>
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -11,6 +12,7 @@
 #include "Controller.h"
 #include "Globals.h"
 #include "ImageLoader.h"
+#include "ItemOrder.h"
 #include "Mouse.h"
 #include "Navigation.h"
 #include <cstring>
@@ -241,6 +243,8 @@ void Game::Init()
 	loader->AssignTriggers(level);
 
 	gameItems = std::move(loader->GetGameItems());
+	ReindexItems();
+
 	gameAssets = std::move(loader->GetGameAssets());
 	gameProjectiles = std::move(loader->GetGameProjectiles());
 	gameResources = std::move(loader->GetGameResources());
@@ -386,9 +390,9 @@ void Game::Step()
 		gameItem->Update();
 	}
 
-	for (std::size_t i = 0; i < gameItems.size(); i++)
+	for (const auto &gameItem : gameItems)
 	{
-		gameItems[i]->ProcessOrders(world.items[i]);
+		gameItem->ProcessOrders();
 	}
 
 	for (const auto &gameAsset : gameAssets)
@@ -682,8 +686,6 @@ void Game::MixDigestText(const String &text)
 
 void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 {
-	WorldState &world = WorldState::GetInstance();
-
 	// Folded in the same order the server folds it: the tick, then each uid,
 	// then the orders as text.
 	MixDigest(static_cast<std::uint64_t>(digestTick));
@@ -710,24 +712,22 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 
 	currentOrderId = (currentOrderId + 1) % 65536;
 
-	for (std::size_t i = 0; i < gameItems.size(); i++)
+	for (const auto &gameItem : gameItems)
 	{
-		for (int uid : uids)
+		ItemInstance *instance = gameItem->GetItemInstance();
+
+		if (!instance || std::ranges::find(uids, instance->GetUid()) == uids.end())
 		{
-			if (uid != world.items[i]->GetUid())
-			{
-				continue;
-			}
-
-			world.items[i]->GetOrders()->order = static_cast<Orders::Order>(orders.value("order", 0));
-			world.items[i]->GetOrders()->toX = orders.value("toX", 0.0f);
-			world.items[i]->GetOrders()->toY = orders.value("toY", 0.0f);
-			world.items[i]->GetOrders()->id = static_cast<int>(currentOrderId);
-
-			gameItems[i]->SendOrders(world.items[i]);
-
-			break;
+			continue;
 		}
+
+		Orders *itemOrders = instance->GetOrders();
+		itemOrders->order = static_cast<Orders::Order>(orders.value("order", 0));
+		itemOrders->toX = orders.value("toX", 0.0f);
+		itemOrders->toY = orders.value("toY", 0.0f);
+		itemOrders->id = static_cast<int>(currentOrderId);
+
+		gameItem->SendOrders();
 	}
 }
 
@@ -1469,11 +1469,38 @@ void Game::Free()
 	Log::Clean("Game Resources Freed");
 }
 
+void Game::ReindexItems()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	std::ranges::sort(gameItems, [](const auto &a, const auto &b) {
+		return ItemOrder::Before(a->GetItemInstance(), b->GetItemInstance());
+	});
+
+	std::ranges::sort(world.items, [](const auto &a, const auto &b) {
+		return ItemOrder::Before(a.get(), b.get());
+	});
+
+	auto &lookup = world.GetLookup();
+	lookup.clear();
+
+	for (std::size_t i = 0; i < world.items.size(); i++)
+	{
+		lookup[world.items[i]->GetUid()] = static_cast<int>(i);
+	}
+
+	if (gameItems.size() != world.items.size())
+	{
+		Log::Error(StringConcat(
+			"Item controllers and instances are out of step: ",
+			std::to_string(gameItems.size()), " controllers, ",
+			std::to_string(world.items.size()), " instances."));
+	}
+}
+
 void Game::AddGameItem(json &jsonItem)
 {
 	Log::Info("Add Game Item");
-
-	WorldState &world = WorldState::GetInstance();
 
 	static int uid = 0;
 	jsonItem["uid"] = uid;
@@ -1491,17 +1518,7 @@ void Game::AddGameItem(json &jsonItem)
 	gameItems.emplace_back(std::move(loader->GetGameItems().back()));
 	loader->GetGameItems().pop_back();
 
-	auto byPriorityGame = [](const auto &a, const auto &b) {
-		return a->GetItemInstance()->GetPriority() < b->GetItemInstance()->GetPriority();
-	};
-
-	std::ranges::sort(gameItems, byPriorityGame);
-
-	auto byPriorityWorld = [](const auto &a, const auto &b) {
-		return a->GetPriority() < b->GetPriority();
-	};
-
-	std::ranges::sort(world.items, byPriorityWorld);
+	ReindexItems();
 
 	uid++;
 }
@@ -1520,6 +1537,10 @@ void Game::RemoveGameItem(json &jsonItem)
 	std::erase_if(world.items, [targetUid](const auto &instance) {
 		return instance->GetUid() == targetUid;
 	});
+
+	LookUp::Remove(targetUid);
+
+	ReindexItems();
 }
 
 bool Game::LoadExtraResources(int inCurrentLevel, json &level, json &requiredJsons)

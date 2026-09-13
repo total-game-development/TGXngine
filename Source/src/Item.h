@@ -51,8 +51,8 @@ public:
 	Item &operator=(const Item &) = delete;
 
 	bool Create(json &data);
-	void SendOrders(const Unique<ItemInstance> &inItemInstance);
-	void ProcessOrders(const Unique<ItemInstance> &inItemInstance);
+	void SendOrders();
+	void ProcessOrders();
 	void Draw();
 	void Update();
 	void Delete();

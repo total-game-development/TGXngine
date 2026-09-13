@@ -111,6 +111,7 @@ public:
 	void RemoveGameItem(json &item);
 
 private:
+	void ReindexItems();
 	void HandlePanning();
 	void DrawOutcome();
 	void DrawEconomy();

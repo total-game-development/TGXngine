@@ -113,23 +113,23 @@ bool Item::Create(json &data)
 	return true;
 }
 
-void Item::SendOrders(const Unique<ItemInstance> &inItemInstance)
+void Item::SendOrders()
 {
-	if (sendOrders && inItemInstance)
+	if (sendOrders && itemInstance)
 	{
-		sendOrders(inItemInstance.get());
+		sendOrders(itemInstance);
 	}
 	else
 	{
-		Log::Warning("SendOrders: Received an empty Unique pointer or null callback.");
+		Log::Warning("SendOrders: Item has no instance or no callback.");
 	}
 }
 
-void Item::ProcessOrders(const Unique<ItemInstance> &inItemInstance)
+void Item::ProcessOrders()
 {
-	if (processOrders && inItemInstance)
+	if (processOrders && itemInstance)
 	{
-		processOrders(inItemInstance.get());
+		processOrders(itemInstance);
 	}
 }
 
