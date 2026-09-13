@@ -356,6 +356,18 @@ if(BUILD_UNIT_TESTS)
 
 	add_executable(UnitTests ${TEST_SOURCES} ${SHELL_TESTABLE_SOURCES})
 
+	# The test binary links Common as a shared library, so it has to sit beside
+	# the Common.dll this build just produced. Left in the generator's own Debug/
+	# directory it loads whatever stale copy is lying next to it, and an inline
+	# accessor compiled here then reads a WorldState laid out by an older build.
+	set_outputs(UnitTests "${OUT_BIN_ROOT}")
+
+	foreach(gtest_target IN ITEMS gtest gtest_main gmock gmock_main)
+		if(TARGET ${gtest_target})
+			set_outputs(${gtest_target} "${OUT_BIN_ROOT}")
+		endif()
+	endforeach()
+
 	target_include_directories(
 		UnitTests
 		PRIVATE ${GLOBAL_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/Source/modules/Shell

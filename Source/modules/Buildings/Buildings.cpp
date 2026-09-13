@@ -205,9 +205,15 @@ extern "C"
 		}
 	}
 
-	MODULE_API void SendOrders(Orders *orders, ItemInstance * /*itemInstance*/)
+	MODULE_API void SendOrders(ItemInstance *itemInstance)
 	{
-		Log::Print(StringConcat("This building is processing it's orders ", orders));
+		if (itemInstance == nullptr)
+		{
+			return;
+		}
+
+		Log::Print(StringConcat("Building ", itemInstance->GetUid(),
+								" is processing order ", static_cast<int>(itemInstance->GetOrders()->order)));
 	}
 
 	MODULE_API void ProcessOrders(ItemInstance *itemInstance)

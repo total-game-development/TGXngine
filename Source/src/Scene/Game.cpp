@@ -1530,6 +1530,15 @@ void Game::RemoveGameItem(json &jsonItem)
 
 	Log::Success("Removing Item with UID: " + std::to_string(targetUid));
 
+	for (auto &gameItem : gameItems)
+	{
+		if (gameItem->GetItemInstance()->GetUid() == targetUid)
+		{
+			gameItem->Delete();
+			break;
+		}
+	}
+
 	std::erase_if(gameItems, [targetUid](const auto &item) {
 		return item->GetItemInstance()->GetUid() == targetUid;
 	});
