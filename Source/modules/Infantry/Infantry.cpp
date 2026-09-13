@@ -733,8 +733,8 @@ void Search(InfantryState *itemInstance)
 	Log::Info("Search: " + std::to_string(world.GetMapGridWidth()) + " " + std::to_string(world.GetMapGridHeight()));
 	Log::Info("itemState->GetUid: " + std::to_string(itemInstance->GetUid()));
 
-	itemInstance->GetOrders()->toX = static_cast<float>(Random::get(0, world.GetMapGridWidth()));
-	itemInstance->GetOrders()->toY = static_cast<float>(Random::get(0, world.GetMapGridHeight()));
+	itemInstance->GetOrders()->toX = static_cast<float>(world.RandomInt(0, world.GetMapGridWidth()));
+	itemInstance->GetOrders()->toY = static_cast<float>(world.RandomInt(0, world.GetMapGridHeight()));
 
 	itemInstance->SetOrders(Orders::Order::MoveTo);
 }
@@ -1054,9 +1054,7 @@ void SpreadDestination(float &x, float &y)
 
 	vel = Vector2D::Random();
 
-	std::uniform_real_distribution<float> spread(0.0f, 1.0f);
-
-	float norm = spread(WorldState::GetInstance().Random());
+	float norm = WorldState::GetInstance().RandomFloat(0.0f, 1.0f);
 
 	vel.SetMagnitude(norm + 0.5f);
 

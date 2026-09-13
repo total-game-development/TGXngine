@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <effolkronium/random.hpp>
 #include <Common.hpp>
 #include "Globals.h"
 #include "InfantryStates.h"
@@ -12,8 +11,6 @@
 
 namespace TGX
 {
-using Random = effolkronium::random_static;
-
 ItemInstance *globalItem;
 
 Unique<Boundary> near;

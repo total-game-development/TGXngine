@@ -96,6 +96,55 @@ public:
 	{
 		random.seed(seed);
 	}
+
+	// Two engine values, so a draw covers any range an int can express without
+	// the span arithmetic overflowing.
+	std::uint64_t Draw64()
+	{
+		const std::uint64_t high = static_cast<std::uint32_t>(random());
+		const std::uint64_t low = static_cast<std::uint32_t>(random());
+
+		return (high << 32) | low;
+	}
+
+	// Reduced here rather than through std::uniform_int_distribution, whose
+	// mapping from engine output onto a range is unspecified and differs between
+	// standard libraries. mt19937 itself is specified, so a draw taken this way
+	// is the same number on every machine in the match. Inclusive of both ends.
+	int RandomInt(int minimum, int maximum)
+	{
+		if (maximum <= minimum)
+		{
+			return minimum;
+		}
+
+		const std::int64_t low = minimum;
+		const std::uint64_t span = static_cast<std::uint64_t>(static_cast<std::int64_t>(maximum) - low) + 1;
+
+		const std::uint64_t bucket = (~std::uint64_t{0}) / span;
+		const std::uint64_t ceiling = bucket * span;
+
+		std::uint64_t draw = Draw64();
+
+		// The tail that would land unevenly is thrown away rather than folded in,
+		// so every value in the range is equally likely on every machine.
+		while (draw >= ceiling)
+		{
+			draw = Draw64();
+		}
+
+		return static_cast<int>(low + static_cast<std::int64_t>(draw / bucket));
+	}
+
+	// The same, for a fraction. Twenty-four bits is what a float holds exactly,
+	// so the division is lossless and lands on the same value everywhere.
+	float RandomFloat(float minimum, float maximum)
+	{
+		const std::uint32_t bits = static_cast<std::uint32_t>(random()) >> 8;
+		const float unit = static_cast<float>(bits) / 16777216.0f;
+
+		return minimum + (unit * (maximum - minimum));
+	}
 	Map<String, Vector<Unique<ProjectileInstance>>> projectiles;
 	Map<String, Map<String, int>> extractors;
 	Map<int, std::tuple<int, int, int, int>> uids_grid;

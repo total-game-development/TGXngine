@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "test_common/TestCommon.hpp"
 #include "test_common/TestHeuristic.hpp"
+#include "test_common/TestRandom.hpp"
 #include "test_common/TestStringUtils.hpp"
 #include "test_common/TestTree.hpp"
 #include "test_common/TestUtils.hpp"

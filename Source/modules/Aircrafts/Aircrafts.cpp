@@ -673,9 +673,9 @@ void Search(AircraftState *itemInstance)
 	// turns up on the way. Any cell will do -- an aircraft is not held to the
 	// passable grid the way everything on the ground is.
 	itemInstance->GetOrders()->toX =
-		static_cast<float>(Random::get(0, std::max(0, world.GetMapGridWidth() - 1)));
+		static_cast<float>(world.RandomInt(0, std::max(0, world.GetMapGridWidth() - 1)));
 	itemInstance->GetOrders()->toY =
-		static_cast<float>(Random::get(0, std::max(0, world.GetMapGridHeight() - 1)));
+		static_cast<float>(world.RandomInt(0, std::max(0, world.GetMapGridHeight() - 1)));
 
 	itemInstance->isAttackMove = true;
 	itemInstance->SetState(ItemStates::Flying);

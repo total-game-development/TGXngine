@@ -269,9 +269,7 @@ public:
 
 	static Vector2D Random()
 	{
-		std::uniform_real_distribution<float> dist(0.0f, 2.0f * std::numbers::pi_v<float>);
-
-		return FromAngle(dist(WorldState::GetInstance().Random()));
+		return FromAngle(WorldState::GetInstance().RandomFloat(0.0f, 2.0f * std::numbers::pi_v<float>));
 	}
 	static Vector2D FromAngle(float angle, float length = 1.0f)
 	{
