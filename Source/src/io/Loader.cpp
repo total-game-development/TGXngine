@@ -415,10 +415,18 @@ void Loader::AssignTriggers(json &level)
 
 	for (auto &[type, triggerList] : triggersByType)
 	{
+		auto fnUpdate = (FNPTR_TRIGGERS_UPDATE)GET_PROC(dlls[type], "Update");
+
+		if (!fnUpdate)
+		{
+			Log::Error("Trigger module '" + type + "' exports no Update: its conditions will never be checked and the match will not end.");
+		}
+
 		gameTriggers.push_back(
 			std::make_unique<Triggers>(
 				(FNPTR_TRIGGERS_AWAKE)GET_PROC(dlls[type], "Awake"),
 				(FNPTR_TRIGGERS_START)GET_PROC(dlls[type], "Start"),
+				fnUpdate,
 				(FNPTR_TRIGGERS_CLEAR)GET_PROC(dlls[type], "Clear"),
 				(FNPTR_TRIGGERS_DELETE)GET_PROC(dlls[type], "Delete")));
 

@@ -1,22 +1,22 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <mutex>
-#include <thread>
 #include "Trigger.h"
 
 using namespace nlohmann;
 
 namespace TGX
 {
-inline Unique<std::thread> trigger_thread;
-inline bool trigger_running;
-
 inline Vector<Unique<Trigger>> triggers;
-inline std::mutex trigger_mutex;
 
-inline int triggerIndex;
-inline int triggerLimit = 10;
+// Ticks between one sweep of the conditions and the next. Counted in ticks
+// rather than slept on a wall clock: the simulation advances in ticks, so a
+// check paced by the machine's clock lands on a different tick on every client,
+// and the match is declared over at two different moments. Every other read of
+// the world happens on the tick that owns it, and this is no different.
+inline constexpr int TRIGGER_INTERVAL = 60;
+
+inline int triggerCountdown = TRIGGER_INTERVAL;
 
 enum class Outcome : std::uint8_t
 {
@@ -25,7 +25,6 @@ enum class Outcome : std::uint8_t
 	Lost
 };
 
-void Run();
 Outcome CurrentOutcome();
 bool HasWon();
 bool HasLost();

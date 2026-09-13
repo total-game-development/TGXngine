@@ -1,4 +1,5 @@
 #include "Triggers.h"
+#include <vector>
 #include "Enums.h"
 #include "module_interface.h"
 
@@ -16,7 +17,6 @@ extern "C"
 		Function<bool()> wonTest = [] { return HasWon(); };
 		Function<bool()> lostTest = [] { return HasLost(); };
 
-		std::lock_guard<std::mutex> lock(trigger_mutex);
 		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::GameOver, "won", wonTest));
 		triggers.push_back(std::make_unique<ConditionalTrigger>(UIAction::GameOver, "lost", lostTest));
 
@@ -25,29 +25,37 @@ extern "C"
 
 	MODULE_API void Start()
 	{
-		triggerIndex = 0;
-		trigger_running = true;
+		triggerCountdown = TRIGGER_INTERVAL;
+	}
 
-		trigger_thread = std::make_unique<std::thread>([] {
-			Run();
+	// Driven by the scene, once for every tick it steps. A trigger that fires is
+	// dropped, as it was before: the conditions here are the end of the match and
+	// there is nothing to ask after the answer.
+	MODULE_API void Update()
+	{
+		if (triggers.empty())
+		{
+			return;
+		}
+
+		if (triggerCountdown > 0)
+		{
+			triggerCountdown--;
+			return;
+		}
+
+		triggerCountdown = TRIGGER_INTERVAL;
+
+		std::erase_if(triggers, [](const Unique<Trigger> &trigger) {
+			return trigger->Elapse();
 		});
 	}
 
 	MODULE_API void Clear()
 	{
-		trigger_running = false;
-
-		if (trigger_thread && trigger_thread->joinable())
-		{
-			trigger_thread->join();
-		}
-
-		trigger_thread.reset();
-
-		std::lock_guard<std::mutex> lock(trigger_mutex);
 		triggers.clear();
 
-		triggerIndex = 0;
+		triggerCountdown = TRIGGER_INTERVAL;
 	}
 
 	MODULE_API void Delete()
@@ -56,37 +64,6 @@ extern "C"
 		Clear();
 		Log::Success("All triggers deleted");
 	}
-}
-
-void Run()
-{
-	while (trigger_running)
-	{
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-
-		std::lock_guard<std::mutex> lock(trigger_mutex);
-
-		if (triggers.empty())
-		{
-			continue;
-		}
-
-		if (triggerIndex >= static_cast<int>(triggers.size()))
-		{
-			triggerIndex = 0;
-		}
-
-		if (triggers[triggerIndex]->Elapse())
-		{
-			triggers.erase(triggers.begin() + triggerIndex);
-		}
-		else
-		{
-			triggerIndex++;
-		}
-	}
-
-	Log::Clean("Trigger thread stopped");
 }
 
 Outcome CurrentOutcome()

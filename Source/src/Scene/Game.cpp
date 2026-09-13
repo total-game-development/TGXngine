@@ -430,6 +430,14 @@ void Game::Step()
 		fogOfWarModule->Update();
 	}
 
+	// Asked on the tick, not on a timer of their own. The conditions read the
+	// same world every other subsystem has just finished with, so two clients
+	// reach the end of the same match on the same tick.
+	for (const auto &gameTrigger : gameTriggers)
+	{
+		gameTrigger->Update();
+	}
+
 	HandleSingleSelection();
 
 	world.SetLeftClicked(false);
