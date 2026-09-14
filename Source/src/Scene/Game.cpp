@@ -593,6 +593,11 @@ void Game::RightClick()
 	orders["order"] = static_cast<int>(ordered->order);
 	orders["toX"] = ordered->toX;
 	orders["toY"] = ordered->toY;
+	orders["targetUid"] = world.GetItemUidThatIsUnderCursor();
+	orders["item"] = world.IsItemUnderCursor();
+	orders["enemy"] = world.IsEnemyItemUnderCursor();
+	orders["resource"] = world.IsResourceUnderCursor();
+	orders["loadable"] = world.IsLoadableItemUnderCursor();
 
 	if (MultiplayerSetup::active)
 	{
@@ -720,6 +725,20 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 
 	currentOrderId = (currentOrderId + 1) % 65536;
 
+	WorldState &world = WorldState::GetInstance();
+
+	const int localTargetUid = world.GetItemUidThatIsUnderCursor();
+	const bool localItem = world.IsItemUnderCursor();
+	const bool localEnemy = world.IsEnemyItemUnderCursor();
+	const bool localResource = world.IsResourceUnderCursor();
+	const bool localLoadable = world.IsLoadableItemUnderCursor();
+
+	world.SetItemUidThatIsUnderCursor(orders.value("targetUid", -1));
+	world.SetItemUnderCursor(orders.value("item", false));
+	world.SetEnemyItemUnderCursor(orders.value("enemy", false));
+	world.SetResourceUnderCursor(orders.value("resource", false));
+	world.SetLoadableItemUnderCursor(orders.value("loadable", false));
+
 	for (const auto &gameItem : gameItems)
 	{
 		ItemInstance *instance = gameItem->GetItemInstance();
@@ -737,6 +756,12 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 
 		gameItem->SendOrders();
 	}
+
+	world.SetItemUidThatIsUnderCursor(localTargetUid);
+	world.SetItemUnderCursor(localItem);
+	world.SetEnemyItemUnderCursor(localEnemy);
+	world.SetResourceUnderCursor(localResource);
+	world.SetLoadableItemUnderCursor(localLoadable);
 }
 
 void Game::Release()

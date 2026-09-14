@@ -320,24 +320,6 @@ extern "C"
 					if (anyCanAttack)
 					{
 						world.SetEnemyItemUnderCursor(true);
-
-						if (world.IsRightClicked())
-						{
-							for (int uid : world.selected)
-							{
-								int targetIndex = LookUp::Get(uid);
-
-								if (targetIndex != -1)
-								{
-									ItemInstance *targetInstance = world.items[targetIndex].get();
-
-									if (targetInstance)
-									{
-										targetInstance->SetTargetUid(itemInstance->GetUid());
-									}
-								}
-							}
-						}
 					}
 				}
 			}
@@ -709,6 +691,7 @@ void Action(ItemInstance *itemInstance)
 
 	if (world.IsEnemyItemUnderCursor())
 	{
+		itemInstance->SetTargetUid(world.GetItemUidThatIsUnderCursor());
 		order = Orders::Order::Attack;
 	}
 	else if (world.IsItemUnderCursor())
@@ -1391,14 +1374,7 @@ void Attack(ItemInstance *itemInstance)
 
 	WorldState &world = WorldState::GetInstance();
 
-	int targetUid = itemInstance->GetTargetUid();
-
-	if (world.IsEnemyItemUnderCursor())
-	{
-		targetUid = world.GetItemUidThatIsUnderCursor();
-	}
-
-	int targetIndex = LookUp::Get(targetUid);
+	int targetIndex = LookUp::Get(itemInstance->GetTargetUid());
 
 	if (targetIndex < 0 || static_cast<size_t>(targetIndex) >= world.items.size())
 	{
