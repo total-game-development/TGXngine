@@ -68,7 +68,11 @@ extern "C"
 		WorldState &world = WorldState::GetInstance();
 		if (world.IsPlacement())
 		{
-			if (world.IsBuilt())
+			// Asked again here rather than read back from world.IsBuilt(), which
+			// the last frame worked out while it drew. The pointer moves between
+			// the two, so that answer is about where the cursor used to be, and
+			// a quick move onto something impassable would be built on anyway.
+			if (GetSidebar().PlacementFits())
 			{
 				Log::Success("Successful placement and built");
 				world.SetPlacement(false);
@@ -101,7 +105,13 @@ extern "C"
 			}
 			else
 			{
-				Log::Warning("Successful placement, but invalid built");
+				// It is paid for and still waiting to be put down, so the click
+				// is a try that missed rather than the end of the placement.
+				// Keeping the selection keeps the producing building on the
+				// sidebar, which is what restores the ghost for the next try.
+				Log::Warning("Nothing can be built there");
+
+				world.SetSkipSelectionRemoval(true);
 			}
 		}
 

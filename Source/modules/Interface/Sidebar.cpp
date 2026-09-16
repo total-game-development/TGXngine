@@ -255,6 +255,19 @@ void Sidebar::Click()
 	}
 }
 
+bool Sidebar::PlacementFits() const
+{
+	for (const auto &button : buttons)
+	{
+		if (button.IsPlacing())
+		{
+			return button.PlacementFits();
+		}
+	}
+
+	return false;
+}
+
 void Sidebar::Reset()
 {
 	for (auto &button : buttons)

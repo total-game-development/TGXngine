@@ -27,5 +27,9 @@ public:
 	void Reset();
 	void Restore();
 	void Clear();
+
+	// Whether the building waiting to be put down fits where the cursor is now.
+	// False when nothing is being placed.
+	bool PlacementFits() const;
 };
 } // namespace TGX

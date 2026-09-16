@@ -54,6 +54,12 @@ private:
 	int powerUsage;
 	bool waitForClick;
 
+	// A button with a buildable grid is one the player puts down by clicking a
+	// spot. Kept separately from waitForClick so the two can be held against
+	// each other: a placeable button that skips placement has nowhere to put
+	// what it built.
+	bool placeable = false;
+
 public:
 	SidebarButton(SidebarButton &&) = default;
 	SidebarButton &operator=(SidebarButton &&) = default;
@@ -85,6 +91,17 @@ public:
 	void ResetDrawState();
 	void BeginProgress();
 	void CancelPending();
+
+	// Whether what is being placed would fit where the cursor is now. Asked
+	// again on the click rather than read back from what the last frame drew:
+	// the pointer moves between the two, and the answer the frame arrived at
+	// was for where it used to be.
+	bool PlacementFits() const;
+
+	bool IsPlacing() const
+	{
+		return buttonState == States::Placement;
+	}
 	bool HasFreeDeployBerth() const;
 
 private:

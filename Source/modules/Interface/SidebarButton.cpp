@@ -36,6 +36,49 @@ void SidebarButton::Draw()
 	window.Draw(sprites[frame]);
 }
 
+bool SidebarButton::PlacementFits() const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	constexpr int CELL_SIZE = 20;
+
+	const int gridX = static_cast<int>(world.GetGameX() / CELL_SIZE);
+	const int gridY = static_cast<int>(world.GetGameY() / CELL_SIZE);
+
+	const int cellsWide = static_cast<int>(buildableCells.getSize().x) / CELL_SIZE;
+	const int cellsHigh = static_cast<int>(buildableCells.getSize().y) / CELL_SIZE;
+
+	if (cellsWide <= 0 || cellsHigh <= 0)
+	{
+		return false;
+	}
+
+	const int startY = gridY - 4;
+	const int endX = gridX + cellsWide - 1;
+	const int endY = startY + cellsHigh - 1;
+
+	if (gridX < 0 ||
+		startY < 0 ||
+		endX >= world.GetMapGridWidth() ||
+		endY >= world.GetMapGridHeight())
+	{
+		return false;
+	}
+
+	for (int placementY = 0; placementY < cellsHigh; ++placementY)
+	{
+		for (int placementX = 0; placementX < cellsWide; ++placementX)
+		{
+			if (world.currentTerrainMapPassableGrid[startY + placementY][gridX + placementX] >= 1)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 void SidebarButton::DrawPlacement()
 {
 	if (drawState != States::Placement)
@@ -46,43 +89,13 @@ void SidebarButton::DrawPlacement()
 	WorldState &world = WorldState::GetInstance();
 
 	world.SetPlacement(true);
-	world.SetBuilt(true);
 
 	constexpr int CELL_SIZE = 20;
 
 	const int gridX = static_cast<int>(world.GetGameX() / CELL_SIZE);
 	const int gridY = static_cast<int>(world.GetGameY() / CELL_SIZE);
 
-	const int cellsWide = static_cast<int>(buildableCells.getSize().x) / CELL_SIZE;
-	const int cellsHigh = static_cast<int>(buildableCells.getSize().y) / CELL_SIZE;
-
-	const int startY = gridY - 4;
-	const int endX = gridX + cellsWide - 1;
-	const int endY = startY + cellsHigh - 1;
-
-	bool canBuild = true;
-
-	if (gridX < 0 ||
-		startY < 0 ||
-		endX >= world.GetMapGridWidth() ||
-		endY >= world.GetMapGridHeight())
-	{
-		canBuild = false;
-	}
-	else
-	{
-		for (int placementY = 0; placementY < cellsHigh && canBuild; ++placementY)
-		{
-			for (int placementX = 0; placementX < cellsWide; ++placementX)
-			{
-				if (world.currentTerrainMapPassableGrid[startY + placementY][gridX + placementX] >= 1)
-				{
-					canBuild = false;
-					break;
-				}
-			}
-		}
-	}
+	const bool canBuild = PlacementFits();
 
 	buildableCells.setFillColor(
 		canBuild ? sf::Color(0, 255, 0, 76) : sf::Color(255, 0, 0, 76));
@@ -109,7 +122,12 @@ void SidebarButton::Update()
 
 		if (durationCounter >= duration)
 		{
-			if (this->waitForClick)
+			// A button with a buildable grid is put down by the player, so it
+			// waits for the click that says where whatever its own flag claims.
+			// BuildImmediately sends no coordinates -- a unit is deployed from
+			// the building that made it and does not need any -- so a building
+			// that took this path would be raised at the origin.
+			if (this->waitForClick || placeable)
 			{
 				buttonState = States::Wait;
 				drawState = States::Wait;
@@ -147,6 +165,15 @@ void SidebarButton::Update()
 				else if (buttonState == States::Wait)
 				{
 					drawState = States::Wait;
+				}
+				else if (buttonState == States::Placement)
+				{
+					// Restored because Sidebar::Click clears every draw state
+					// before it works out which button was hit, and a click on
+					// the battlefield hits none of them. Without this the ghost
+					// vanishes after the first misplaced click while the
+					// building stays paid for and waiting to be put down.
+					drawState = States::Placement;
 				}
 			}
 		}
@@ -249,6 +276,13 @@ void SidebarButton::AddBuildableGrid(json buildableGrid)
 	buildableCells = sf::RectangleShape(sf::Vector2f(
 		static_cast<float>(buildableGrid["x"]) * 20,
 		static_cast<float>(buildableGrid["y"]) * 20));
+
+	placeable = true;
+
+	if (!waitForClick)
+	{
+		Log::Warning("Sidebar: " + value + " has a buildable grid but is not set to wait for a click; placing it anyway");
+	}
 }
 
 void SidebarButton::AssignAdditionalButton(const std::string &image_filename, const std::string &extension)

@@ -296,6 +296,18 @@ void Renderer::AddGameItem(Any item)
 
 	json json_command = json::parse("{" + addGameItemCommand + "}");
 
+	// A unit is deployed from the building that made it and arrives with no
+	// coordinates of its own. A building has nowhere to be put but where it was
+	// asked for, so one that arrives without them would be raised at the origin
+	// -- which is a corner of the map, and looks like a building that was placed
+	// rather than one that was never placed at all.
+	if (json_command.value("type", String{}) == "buildings" &&
+		!(json_command.contains("x") && json_command.contains("y")))
+	{
+		Log::Error("Refusing to build " + json_command.value("name", String{"?"}) + ": no position was given");
+		return;
+	}
+
 	std::static_pointer_cast<Game>(scenes[SceneType::Game])->AddGameItem(json_command);
 
 	String command = json_command["command"];
