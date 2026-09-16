@@ -10,6 +10,68 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
+# MARK: Optimisation
+#
+# Both of these have to be settled before the first add_subdirectory below.
+# add_compile_options fills in a directory property that a target reads when it
+# is created, and the flag variables are read the same way, so anything set after
+# a target exists does not reach it. OPTIMISE used to sit at the bottom of this
+# file, after every target in it had already been created, and reached none of
+# them.
+# ------------------------------------------------------------------------------
+option(OPTIMISE "Enable compiler optimizations" OFF)
+
+if(OPTIMISE)
+	message(STATUS "Compiler optimizations enabled (OPTIMISE=ON)")
+	if(MSVC)
+		add_compile_options(/O2)
+	else()
+		add_compile_options(-O3)
+	endif()
+endif()
+
+# A Debug build runs an order of magnitude under a Release one, which is a poor
+# way to judge whether a change to the simulation is fast enough, and painful in
+# a match that is paced by a clock. This builds the Debug configuration at
+# production speed while keeping its symbols, its assertions and its debug heap.
+#
+# The cost is that stepping becomes jumpy and some locals are optimised out,
+# because the code being stepped through is the optimised code. Plain Debug is
+# still there for when a breakpoint has to land exactly where it was put.
+option(FAST_DEBUG "Optimise the Debug configuration, keeping its symbols" OFF)
+
+if(FAST_DEBUG)
+	message(STATUS "Debug configuration will be optimised (FAST_DEBUG=ON)")
+
+	foreach(flags IN ITEMS CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG)
+		if(MSVC)
+			# Rewritten rather than appended to: /Od beats an /O2 that follows
+			# it, and the compiler refuses /RTC1 and /O2 together outright.
+			string(REGEX REPLACE "/RTC[1csu]+" "" ${flags} "${${flags}}")
+			string(REGEX REPLACE "/Ob[0-3]" "" ${flags} "${${flags}}")
+			string(REGEX REPLACE "/Od" "" ${flags} "${${flags}}")
+			set(${flags} "${${flags}} /O2")
+		else()
+			string(REGEX REPLACE "-O[0-3sgz]" "" ${flags} "${${flags}}")
+			set(${flags} "${${flags}} -O2")
+		endif()
+	endforeach()
+
+	if(MSVC)
+		# The checked iterators are the other half of the cost, and they change
+		# the layout of every standard container. Everything here -- the engine,
+		# the modules, SFML, fmt, IXWebSocket, gtest -- is built from this one
+		# tree and so is told the same thing, which is why this has to be above
+		# the vendor subdirectories. A binary that missed it would disagree about
+		# the shape of the containers WorldState carries across the module
+		# boundary; MSVC records the level in each object file and refuses to
+		# link a mismatch, so that reads as a link error rather than as
+		# corruption at run time.
+		add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+	endif()
+endif()
+
+# ------------------------------------------------------------------------------
 # MARK: Vendors
 # ------------------------------------------------------------------------------
 
@@ -526,13 +588,6 @@ endif()
 
 # ------------------------------------------------------------------------------
 # MARK: Toolchain specifics
+# OPTIMISE and FAST_DEBUG are declared at the top of this file, where they are
+# early enough to reach the targets they are meant to.
 # ------------------------------------------------------------------------------
-option(OPTIMISE "Enable compiler optimizations" OFF)
-if(OPTIMISE)
-	message(STATUS "Compiler optimizations enabled (OPTIMISE=ON)")
-	if(MSVC)
-		add_compile_options(/O2)
-	else()
-		add_compile_options(-O3)
-	endif()
-endif()

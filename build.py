@@ -44,6 +44,7 @@ def generate(
     optim: bool,
     docs: bool,
     sanitizers: bool,
+    fast_debug: bool = False,
 ) -> None:
     print(
         "GENERATING PROJECT WITH GENERATOR: ",
@@ -54,6 +55,7 @@ def generate(
     documentation = "ON" if docs else "OFF"
     optimise = "ON" if optim else "OFF"
     use_sanitizers = "ON" if sanitizers else "OFF"
+    quick_debug = "ON" if fast_debug else "OFF"
 
     # reset build dir
     if os.path.exists(project_dir):
@@ -67,6 +69,7 @@ def generate(
             *([] if generator == "" else ["-G", generator]),
             f"-DGENERATE_DOCUMENTATION={documentation}",
             f"-DOPTIMISE={optimise}",
+            f"-DFAST_DEBUG={quick_debug}",
             f"-DUSE_SANITIZERS={use_sanitizers}",
             f"-DCMAKE_BUILD_TYPE={target}",
             "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
@@ -396,6 +399,12 @@ def main() -> None:
         "-o", "--optimise", action="store_true", help="Build with -O3 optimisation"
     )
     parser.add_argument(
+        "-F",
+        "--fast-debug",
+        action="store_true",
+        help="Optimise the Debug build, keeping its symbols (stepping becomes jumpy)",
+    )
+    parser.add_argument(
         "-t", "--test", action="store_true", help="Build and run unit tests"
     )
     parser.add_argument(
@@ -429,6 +438,7 @@ def main() -> None:
         # force safe debug configuration
         args.release = False
         args.optimise = False
+        args.fast_debug = False
 
     if args.test:
         test_project(project_dir, args.generator, args.release)
@@ -444,6 +454,7 @@ def main() -> None:
             args.optimise,
             args.docs,
             args.sanitizers,
+            args.fast_debug,
         )
 
     if args.build:

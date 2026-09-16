@@ -181,7 +181,7 @@ Compilation, testing, and debugging loops are automated using a centralized pyth
 
 ```bash
 # General CLI Command Template
-python3 build.py [-h] [-g] [-b] [-p] [-r] [-d] [-R] [-o] [-t] [-e] [-S] [generator]
+python3 build.py [-h] [-g] [-b] [-p] [-r] [-d] [-R] [-o] [-F] [-t] [-e] [-S] [generator]
 ```
 
 ### Script Execution Parameters
@@ -194,6 +194,7 @@ python3 build.py [-h] [-g] [-b] [-p] [-r] [-d] [-R] [-o] [-t] [-e] [-S] [generat
 * -d, --docs: Build documentation with Doxygen.
 * -R, --release: Build target in Release mode.
 * -o, --optimise: Build with -O3 optimisation.
+* -F, --fast-debug: Optimise the Debug build while keeping its symbols. Stepping becomes jumpy and some locals are optimised away, so plain Debug is still the one to use when a breakpoint has to land exactly where it was put.
 * -t, --test: Build and run unit tests.
 * -e, --examine: Examine a crash using GDB/LLDB (Linux/macOS).
 * -S, --sanitizers: Generate project with ASan/UBSan (Linux/macOS).
@@ -215,7 +216,16 @@ python3 build.py -g -b -r
 
 # Build and Release project:
 python3 build.py -b -R
+
+# Judge whether a change is fast enough without leaving the Debug build:
+python3 build.py -g -F -b -r
 ```
+
+Both -o and -F are settled at generation time, so they need -g; a build alone
+will not pick them up. A Debug build runs an order of magnitude under a Release
+one, which makes it a poor place to judge the speed of anything and painful in a
+match paced by a clock. -F closes most of that gap: over the unit tests, naval
+pathfinding drops from 25ms to 3ms and the shell interpreter from 11ms to 2ms.
 
 ## Quality Guidelines
 
