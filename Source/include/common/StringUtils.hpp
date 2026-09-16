@@ -57,6 +57,24 @@ ToString(T value)
 	return std::to_string(value);
 }
 
+// One field out of the engine's "key:value,key:value" command strings. Shared so
+// the module that writes one and the executable that reads it back cannot drift
+// apart on how a field is spelled out.
+inline std::string StringField(const std::string &input, const std::string &key)
+{
+	for (const std::string &pair : StringSplit(input, ","))
+	{
+		const std::size_t split = pair.find(':');
+
+		if (split != std::string::npos && pair.substr(0, split) == key)
+		{
+			return pair.substr(split + 1);
+		}
+	}
+
+	return {};
+}
+
 template <typename... Args>
 std::string StringConcat(Args &&...args)
 {

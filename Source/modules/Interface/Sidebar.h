@@ -15,6 +15,8 @@ private:
 	sf::Texture sidebarTexture;
 	Vector<SidebarButton> buttons;
 
+	void Settle();
+
 public:
 	Sidebar();
 	~Sidebar();

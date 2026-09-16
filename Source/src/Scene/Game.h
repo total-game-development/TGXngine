@@ -14,6 +14,7 @@
 #include "Scene.h"
 #include "SkirmishSetup.h"
 #include "MultiplayerSetup.h"
+#include "Net/Digest.h"
 #include "Net/Session.h"
 #include "ShellModule.h"
 #include "UIModule.h"
@@ -61,18 +62,23 @@ protected:
 	Map<String, int> lastSampledCash;
 	Map<String, int> cashPerSecond;
 
-	// Folded over the commands this client has applied and the ticks it applied
-	// them on. It must match what the server folds, byte for byte, or every
-	// sanity check reads as a desync -- see Simulation.h in TGXngineServer.
 	// One tick of simulated time, matching the rate the server counts at. A
 	// networked step advances by exactly this, never by the frame it was drawn
 	// in: two machines never render at the same rate, and a simulation paid in
 	// real time would move the same unit a different distance on each of them.
 	static constexpr float TICK_SECONDS = 1.0f / 60.0f;
 
-	static constexpr std::uint64_t DIGEST_OFFSET = 0xCBF29CE484222325ULL;
-
-	std::uint64_t digest = DIGEST_OFFSET;
+	// How many ticks one frame may simulate. Normal play never reaches it: the
+	// clock holds the client a fixed handful of ticks behind the server. A
+	// client replaying a match it joined part-way through does reach it, and the
+	// cap is what keeps that replay from being one frame that never returns.
+	static constexpr int CATCHUP_BUDGET = 240;
+
+	// Folded over the commands this client has applied and the ticks it applied
+	// them on. It must match what the server folds, byte for byte, or every
+	// sanity check reads as a desync -- see Simulation.h in TGXngineServer.
+	Net::Digest commandDigest;
+
 	std::int64_t digestTick = 0;
 
 	// The world as this client holds it. Two clients that have stayed in step
@@ -80,9 +86,6 @@ protected:
 	// small, changes it. Compared against the other client's, since the server
 	// has no world of its own yet.
 	std::uint64_t WorldDigest() const;
-
-	void MixDigest(std::uint64_t value);
-	void MixDigestText(const String &text);
 
 public:
 	Game();
@@ -114,6 +117,11 @@ private:
 	void ReindexItems();
 	void HandlePanning();
 	void DrawOutcome();
+
+	// What the connection is doing, when it is doing something other than
+	// working. A held match looks exactly like a frozen one from the inside, so
+	// it says which it is.
+	void DrawNetworkState();
 	void DrawEconomy();
 	void SampleEconomy();
 	void HandleSingleSelection();

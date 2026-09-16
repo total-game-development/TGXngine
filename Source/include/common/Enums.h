@@ -68,6 +68,10 @@ enum class UIAction : std::uint8_t
 	// machine. Everything else on this list a match works out for itself, and
 	// every client works out the same thing.
 	PlayerBuild,
+	// The other half of what a player asks for: paying for a unit. It travels
+	// as its own command so every client takes the cost off the same treasury
+	// on the same tick, rather than only the machine that clicked.
+	PlayerPurchase,
 	AddGameItem,
 	RemoveGameItem,
 	GameOver
@@ -85,6 +89,7 @@ inline UIAction UIActionFromString(const String &str)
 	if (str == "Print") { return UIAction::Print; }
 	if (str == "Send") { return UIAction::Send; }
 	if (str == "PlayerBuild") { return UIAction::PlayerBuild; }
+	if (str == "PlayerPurchase") { return UIAction::PlayerPurchase; }
 	if (str == "AddGameItem") { return UIAction::AddGameItem; }
 	if (str == "RemoveGameItem") { return UIAction::RemoveGameItem; }
 	if (str == "GameOver") { return UIAction::GameOver; }
@@ -111,6 +116,10 @@ inline String UIActionToString(UIAction action)
 			return "Print";
 		case UIAction::Send:
 			return "Send";
+		case UIAction::PlayerBuild:
+			return "PlayerBuild";
+		case UIAction::PlayerPurchase:
+			return "PlayerPurchase";
 		case UIAction::AddGameItem:
 			return "AddGameItem";
 		case UIAction::RemoveGameItem:

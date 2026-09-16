@@ -46,6 +46,7 @@ Renderer::Renderer()
 	functions[UIAction::LoadScene] = &Renderer::LoadScene;
 	functions[UIAction::Print] = &Renderer::Print;
 	functions[UIAction::PlayerBuild] = &Renderer::AddGameItem;
+	functions[UIAction::PlayerPurchase] = &Renderer::Purchase;
 	functions[UIAction::AddGameItem] = &Renderer::AddGameItem;
 	functions[UIAction::RemoveGameItem] = &Renderer::RemoveGameItem;
 	functions[UIAction::GameOver] = &Renderer::GameOver;
@@ -304,6 +305,25 @@ void Renderer::AddGameItem(Any item)
 	Log::Print("Name: " + name);
 }
 
+void Renderer::Purchase(const Any &request)
+{
+	const auto entry = std::any_cast<String>(request);
+
+	WorldState &world = WorldState::GetInstance();
+
+	const String team = StringField(entry, "team");
+	const int cost = std::atoi(StringField(entry, "cost").c_str());
+
+	const bool paid = world.SpendTeamCash(team, cost);
+
+	if (!paid)
+	{
+		Log::Warning("Purchase refused for " + team + ": $" + std::to_string(cost) + " of $" + std::to_string(world.GetTeamCash(team)));
+	}
+
+	world.settledPurchases.push_back(entry + ",paid:" + (paid ? "true" : "false"));
+}
+
 void Renderer::GameOver(Any outcome)
 {
 	auto result = std::any_cast<String>(outcome);
@@ -373,9 +393,9 @@ void Renderer::DrainEvents()
 		// finishing its extractor -- and every client works out the same thing
 		// on the same tick. Sending those too would have each client raise its
 		// own copy and every client apply all of them.
-		if (networked && action == UIAction::PlayerBuild)
+		if (networked && (action == UIAction::PlayerBuild || action == UIAction::PlayerPurchase))
 		{
-			Log::Info("NET send build: " + value);
+			Log::Info("NET send " + UIActionToString(action) + ": " + value);
 
 			Net::Session::GetInstance().SendCommand(
 				{},

@@ -114,9 +114,54 @@ void Sidebar::Draw()
 
 void Sidebar::Update()
 {
+	Settle();
+
 	for (auto &button : buttons)
 	{
 		button.Update();
+	}
+}
+
+void Sidebar::Settle()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	if (world.settledPurchases.empty())
+	{
+		return;
+	}
+
+	Vector<String> settled;
+	settled.swap(world.settledPurchases);
+
+	for (const String &entry : settled)
+	{
+		if (StringField(entry, "team") != world.GetTeam())
+		{
+			continue;
+		}
+
+		const String key = StringField(entry, "key");
+		const bool paid = StringField(entry, "paid") == "true";
+
+		for (auto &button : buttons)
+		{
+			if (button.buttonState != SidebarButton::States::Pending || button.GetValue() != key)
+			{
+				continue;
+			}
+
+			if (paid)
+			{
+				button.BeginProgress();
+			}
+			else
+			{
+				button.CancelPending();
+			}
+
+			break;
+		}
 	}
 }
 
@@ -185,13 +230,15 @@ void Sidebar::Click()
 						button.buttonState = SidebarButton::States::Off;
 						button.drawState = SidebarButton::States::Off;
 					}
-					else if (world.GetCash() - button.GetCost() >= 0)
+					else if (world.GetTeamCash(owner) - button.GetCost() >= 0)
 					{
 						Log::Success("Buy!");
 
-						world.SetCash(world.GetCash() - button.GetCost());
+						world.gameEvents.emplace_back(
+							UIAction::PlayerPurchase,
+							"team:" + owner + ",cost:" + std::to_string(button.GetCost()) + ",key:" + button.GetValue());
 
-						button.buttonState = SidebarButton::States::Progress;
+						button.buttonState = SidebarButton::States::Pending;
 						button.drawState = SidebarButton::States::Progress;
 					}
 					else

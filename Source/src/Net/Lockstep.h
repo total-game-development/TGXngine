@@ -82,5 +82,13 @@ public:
 	{
 		return running;
 	}
+
+	// True while this client is pacing normally. A client replaying a match it
+	// joined part-way through is far behind by design, and what it reports on
+	// the way is about a tick the rest of the room passed long ago.
+	bool IsCaughtUp() const
+	{
+		return running && Lag() <= (TARGET_BUFFER * 2);
+	}
 };
 } // namespace TGX::Net

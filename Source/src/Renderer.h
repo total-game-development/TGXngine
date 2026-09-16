@@ -35,6 +35,7 @@ public:
 	void LoadScene(Any scene);
 	void Print(const Any &message);
 	void AddGameItem(Any item);
+	void Purchase(const Any &request);
 	void RemoveGameItem(Any item);
 	void GameOver(Any outcome);
 	void Cancel(const Any &item);

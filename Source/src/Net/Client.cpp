@@ -1,4 +1,5 @@
 #include "Client.h"
+#include <cstdlib>
 #include <ixwebsocket/IXNetSystem.h>
 #include "Logs.h"
 
@@ -17,6 +18,18 @@ void EnsureNetSystem()
 		started = true;
 	}
 }
+
+#ifdef IXWEBSOCKET_USE_TLS
+// Where to look for the authority that signs the server's certificate.
+// SYSTEM uses the platform's own store; TGX_SERVER_CA points at a file, which is
+// what a self-signed certificate on a development machine needs.
+String CertificateAuthority()
+{
+	const char *configured = std::getenv("TGX_SERVER_CA");
+
+	return configured != nullptr ? String(configured) : String("SYSTEM");
+}
+#endif
 } // namespace
 
 Client::~Client()
@@ -36,6 +49,29 @@ void Client::Connect(const String &url)
 		inbound.clear();
 		status = Status::Connecting;
 		failure.clear();
+	}
+
+	// wss:// needs a build that has TLS compiled in. IXWebSocket does not say so
+	// itself -- it simply never connects -- so the refusal is spelled out here.
+	if (url.rfind("wss://", 0) == 0)
+	{
+#ifdef IXWEBSOCKET_USE_TLS
+		ix::SocketTLSOptions tls;
+
+		tls.tls = true;
+		tls.caFile = CertificateAuthority();
+
+		socket.setTLSOptions(tls);
+#else
+		std::lock_guard<std::mutex> guard(mutex);
+
+		status = Status::Failed;
+		failure = "this build has no TLS; configure with -DTGX_ENABLE_TLS=ON or use a ws:// address";
+
+		Log::Error("Cannot connect to " + url + ": " + failure);
+
+		return;
+#endif
 	}
 
 	socket.setUrl(url);

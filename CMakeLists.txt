@@ -17,6 +17,16 @@ option(BUILD_TESTING "Build tests for vendor projects" OFF)
 option(Random_BuildTests "Build tests for random" OFF)
 set(IXWEBSOCKET_ENABLE_PROJECT ON) # TODO: might be unnecessary now
 
+# Off by default: TLS needs OpenSSL or mbedTLS present, and a client that only
+# ever speaks ws:// should not fail to configure over a library it never calls.
+# With it on, a wss:// address connects; without it, one is refused with a
+# message rather than failing silently.
+option(TGX_ENABLE_TLS "Build IXWebSocket with TLS, for wss:// transport" OFF)
+
+if(TGX_ENABLE_TLS)
+	set(USE_TLS ON CACHE BOOL "" FORCE)
+endif()
+
 add_subdirectory(Vendor/SFML) # sfml-graphics sfml-window sfml-system sfml-audio
 add_subdirectory(Vendor/IXWebSocket)
 add_subdirectory(Vendor/json) # header only
@@ -354,7 +364,12 @@ if(BUILD_UNIT_TESTS)
 	file(GLOB SHELL_TESTABLE_SOURCES "Source/modules/Shell/*.cpp")
 	list(FILTER SHELL_TESTABLE_SOURCES EXCLUDE REGEX "Shell\.cpp$")
 
-	add_executable(UnitTests ${TEST_SOURCES} ${SHELL_TESTABLE_SOURCES})
+	# The lockstep clock is the piece worth testing away from a socket: it decides
+	# when a client may simulate and holds every command until its tick. Client.cpp
+	# and Session.cpp stay out -- one owns a socket, the other drives the renderer.
+	set(NET_TESTABLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Source/src/Net/Lockstep.cpp")
+
+	add_executable(UnitTests ${TEST_SOURCES} ${SHELL_TESTABLE_SOURCES} ${NET_TESTABLE_SOURCES})
 
 	# The test binary links Common as a shared library, so it has to sit beside
 	# the Common.dll this build just produced. Left in the generator's own Debug/
@@ -370,7 +385,10 @@ if(BUILD_UNIT_TESTS)
 
 	target_include_directories(
 		UnitTests
-		PRIVATE ${GLOBAL_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/Source/modules/Shell
+		PRIVATE
+			${GLOBAL_INCLUDES}
+			${CMAKE_CURRENT_SOURCE_DIR}/Source/modules/Shell
+			${CMAKE_CURRENT_SOURCE_DIR}/Source/src
 	)
 
 	target_link_libraries(

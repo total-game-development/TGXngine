@@ -108,6 +108,7 @@ Isolated dynamic modules available in version 0.3:
 
 * tests/test_common/
 * tests/test_library/
+* tests/test_net/
 * tests/test_shell/
 
 ## Core Dependency Frameworks
@@ -115,7 +116,7 @@ Isolated dynamic modules available in version 0.3:
 The system depends on verified external vendor utilities embedded recursively inside the workflow:
 
 * Windowing, Context & Graphics: SFML (Simple and Fast Multimedia Library)
-* Real-time Networking Layers: IXWebSocket (Present but unused for future network implementations)
+* Real-time Networking Layers: IXWebSocket (the transport under `Source/src/Net/`; build with `-DTGX_ENABLE_TLS=ON` for `wss://`)
 * High-Speed Serialization: nlohmann-json
 * Optimal Associative Containers: ankerl::unordered_dense
 * String Formatting Pipeline: {fmt}

@@ -28,7 +28,8 @@ public:
 		Progress = 2,
 		Placement = 3,
 		Wait = 4,
-		Ready = 5
+		Ready = 5,
+		Pending = 6
 	};
 	States buttonState = States::Off;
 	States drawState = States::Off;
@@ -82,6 +83,8 @@ public:
 	int GetPowerUsage();
 	void ResetButtonState();
 	void ResetDrawState();
+	void BeginProgress();
+	void CancelPending();
 	bool HasFreeDeployBerth() const;
 
 private:

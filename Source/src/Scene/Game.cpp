@@ -178,11 +178,32 @@ void Game::Init()
 		// Every client draws the same numbers in the same order from here.
 		world.SeedRandom(MultiplayerSetup::seed);
 
-		digest = DIGEST_OFFSET;
+		commandDigest.Reset();
 		digestTick = MultiplayerSetup::startTick;
 
-		MixDigest(MultiplayerSetup::seed);
-		MixDigestText(level.value("name", String{}));
+		commandDigest.Mix(MultiplayerSetup::seed);
+		commandDigest.MixText(level.value("name", String{}));
+
+		// A client that joined part-way through, or came back after dropping,
+		// is handed every command the match has stamped. Queued here against
+		// the ticks they were stamped for, they are applied by the ordinary
+		// loop: the replay is the match being played again, not a special case.
+		Net::Session &session = Net::Session::GetInstance();
+
+		const Vector<json> replay = session.TakeReplay();
+
+		for (const json &entry : replay)
+		{
+			session.Clock().Accept(
+				entry.value("tick", std::int64_t{0}),
+				entry.value("uids", Vector<int>{}),
+				entry.value("orders", json::object()));
+		}
+
+		if (!replay.empty())
+		{
+			Log::Info("NET replaying " + std::to_string(replay.size()) + " command(s) to reach the match");
+		}
 	}
 
 	if (level.contains("teams"))
@@ -202,6 +223,14 @@ void Game::Init()
 	if (SkirmishSetup::active && SkirmishSetup::spectator && !SkirmishSetup::slots.empty())
 	{
 		world.SetTeam(SkirmishSetup::slots.front().team);
+	}
+
+	// The same for somebody watching a networked match. Their team is
+	// "observer", which no side answers to, so the loop above left the view on
+	// whatever the last match set it to.
+	if (MultiplayerSetup::active && MultiplayerSetup::observer && level.contains("teams") && !level["teams"].empty())
+	{
+		world.SetTeam(level["teams"][0].value("name", String{}));
 	}
 
 	world.SetBackgroundOffsetX(level["backgroundOffsetX"]);
@@ -339,8 +368,12 @@ void Game::Update()
 		// Catch up to where the server has said it is safe to reach, one whole
 		// tick at a time. Running a partial tick, or running past this, would
 		// put this client somewhere no other client is.
-		while (clock.ShouldAdvance())
+		int budget = CATCHUP_BUDGET;
+
+		while (clock.ShouldAdvance() && budget > 0)
 		{
+			budget--;
+
 			for (const Net::Command &command : clock.Due())
 			{
 				if (command.orders.value("kind", String{"order"}) == "order")
@@ -357,9 +390,12 @@ void Game::Update()
 
 			digestTick++;
 
-			if (clock.IsSanityTick())
+			// Not while replaying: the report would be about a tick the rest of
+			// the room went past long ago, and there would be one every sixty
+			// ticks of a replay that runs thousands in a frame.
+			if (clock.IsSanityTick() && clock.IsCaughtUp())
 			{
-				session.ReportDigest(WorldDigest());
+				session.ReportDigest(WorldDigest(), commandDigest.Value());
 			}
 
 			clock.Advance();
@@ -496,6 +532,7 @@ void Game::Draw()
 	}
 
 	DrawOutcome();
+	DrawNetworkState();
 
 	if ((frame % Globals::targetFPS) == 0)
 	{
@@ -618,12 +655,7 @@ std::uint64_t Game::WorldDigest() const
 {
 	WorldState &world = WorldState::GetInstance();
 
-	std::uint64_t fold = DIGEST_OFFSET;
-
-	const auto mix = [&fold](std::uint64_t value) {
-		fold ^= value;
-		fold *= 0x100000001B3ULL;
-	};
+	Net::Digest fold;
 
 	// Folded in uid order, not in whatever order the containers happen to hold,
 	// so the sort the two lists are kept in cannot colour the answer.
@@ -643,72 +675,80 @@ std::uint64_t Game::WorldDigest() const
 		return a->GetUid() < b->GetUid();
 	});
 
-	const auto mixFloat = [&mix](float value) {
-		std::uint32_t bits = 0;
-		std::memcpy(&bits, &value, sizeof(bits));
-		mix(bits);
-	};
-
-	const auto mixText = [&mix](const String &text) {
-		for (unsigned char letter : text)
-		{
-			mix(letter);
-		}
-	};
-
 	for (const ItemInstance *entry : ordered)
 	{
-		mix(static_cast<std::uint64_t>(entry->GetUid()));
+		fold.Mix(static_cast<std::uint64_t>(entry->GetUid()));
 
 		// What the unit is, not only where. Two clients that disagreed about a
 		// unit's kind or its side while it stood in the same place would
 		// otherwise fold to the same number and look in step.
-		mixText(entry->GetName());
-		mixText(entry->GetType());
-		mixText(entry->GetTeam());
+		fold.MixText(entry->GetName());
+		fold.MixText(entry->GetType());
+		fold.MixText(entry->GetTeam());
 
-		// The raw bits, because two clients in step agree exactly. Rounding
-		// here would hide the drift this is here to find.
-		mixFloat(entry->GetX());
-		mixFloat(entry->GetY());
-		mixFloat(entry->GetDirection());
-		mixFloat(entry->GetLife());
+		fold.MixFloat(entry->GetX());
+		fold.MixFloat(entry->GetY());
+		fold.MixFloat(entry->GetDirection());
+		fold.MixFloat(entry->GetLife());
 
 		// What it is doing and to whom, so a unit that is fighting on one
 		// client and idle on the other is caught before the two worlds part.
-		mix(static_cast<std::uint64_t>(entry->GetState()));
-		mix(static_cast<std::uint64_t>(entry->GetTargetUid()));
+		fold.Mix(static_cast<std::uint64_t>(entry->GetState()));
+		fold.Mix(static_cast<std::uint64_t>(entry->GetTargetUid()));
 	}
 
-	return fold;
-}
+	// The treasuries, in team order. Income has always been worked out the same
+	// way on every client; what a player spends now arrives as a command too, so
+	// both clients take the same amount off the same purse on the same tick and
+	// a balance that has drifted is a desync worth reporting.
+	Vector<const EconomyInstance *> treasuries;
 
-void Game::MixDigest(std::uint64_t value)
-{
-	digest ^= value;
-	digest *= 0x100000001B3ULL;
-}
+	treasuries.reserve(world.economies.size());
 
-void Game::MixDigestText(const String &text)
-{
-	for (unsigned char letter : text)
+	for (const auto &economy : world.economies)
 	{
-		MixDigest(letter);
+		if (economy)
+		{
+			treasuries.push_back(economy.get());
+		}
 	}
+
+	std::ranges::sort(treasuries, [](const EconomyInstance *a, const EconomyInstance *b) {
+		return a->GetTeam() < b->GetTeam();
+	});
+
+	for (const EconomyInstance *treasury : treasuries)
+	{
+		fold.MixText(treasury->GetTeam());
+		fold.Mix(static_cast<std::uint64_t>(treasury->GetCash()));
+
+		// Resource progress as well as the balance. A client whose extractors
+		// have been counted differently reads the same cash for a while before
+		// the difference reaches a threshold and turns into money.
+		for (const auto &[resource, progress] : treasury->OrderedProgress())
+		{
+			fold.MixText(resource);
+			fold.MixFloat(progress);
+		}
+	}
+
+	return fold.Value();
 }
+
+
 
 void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 {
 	// Folded in the same order the server folds it: the tick, then each uid,
 	// then the orders as text.
-	MixDigest(static_cast<std::uint64_t>(digestTick));
+	commandDigest.Mix(static_cast<std::uint64_t>(digestTick));
 
 	for (int uid : uids)
 	{
-		MixDigest(static_cast<std::uint64_t>(uid));
+		commandDigest.Mix(static_cast<std::uint64_t>(uid));
 	}
 
-	MixDigestText(orders.dump());
+	commandDigest.MixText(orders.dump());
 
 	// A queued action the server has stamped, replayed here so every client
 	// adds or removes the item on the same tick.
@@ -942,6 +982,57 @@ void Game::DrawOutcome()
 		exitButton.left + ((buttonWidth - label.getLocalBounds().width) / 2.0f),
 		exitButton.top + 8.0f);
 	window.Draw(label);
+}
+
+void Game::DrawNetworkState()
+{
+	if (!MultiplayerSetup::active)
+	{
+		return;
+	}
+
+	Net::Session &session = Net::Session::GetInstance();
+	Net::Lockstep &clock = session.Clock();
+
+	String message;
+	sf::Color colour(0xFF, 0x9F, 0x43);
+
+	if (session.IsResuming())
+	{
+		message = session.Notice();
+	}
+	else if (session.IsHeld())
+	{
+		message = "Waiting for a player to reconnect...";
+	}
+	else if (clock.IsRunning() && !clock.IsCaughtUp())
+	{
+		message = "Catching up: " + std::to_string(clock.Lag()) + " tick(s) behind";
+		colour = sf::Color(0x00, 0xA7, 0xFF);
+	}
+	else
+	{
+		return;
+	}
+
+	Window &window = Window::GetInstance();
+
+	const sf::Vector2f view = window.GetViewSize();
+
+	sf::Text text(message, font, 18);
+
+	const float width = text.getLocalBounds().width + 40.0f;
+
+	sf::RectangleShape panel({width, 44.0f});
+	panel.setPosition((view.x - width) / 2.0f, 60.0f);
+	panel.setFillColor(sf::Color(18, 22, 30, 220));
+	panel.setOutlineColor(colour);
+	panel.setOutlineThickness(1.0f);
+	window.Draw(panel);
+
+	text.setPosition((view.x - text.getLocalBounds().width) / 2.0f, 70.0f);
+	text.setFillColor(colour);
+	window.Draw(text);
 }
 
 void Game::SampleEconomy()

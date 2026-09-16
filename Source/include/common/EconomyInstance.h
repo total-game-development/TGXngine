@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include "Core.h"
 
 namespace TGX
@@ -39,6 +40,20 @@ public:
 	void ConsumeResourceProgress(const String &resName, float threshold)
 	{
 		resources[resName] -= threshold;
+	}
+
+	// Sorted by name, because the container behind it is hashed and hands its
+	// entries back in whatever order it likes. A digest folded in that order
+	// would differ between two clients holding identical progress.
+	Vector<Pair<String, float>> OrderedProgress() const
+	{
+		Vector<Pair<String, float>> ordered(resources.begin(), resources.end());
+
+		std::sort(ordered.begin(), ordered.end(), [](const auto &a, const auto &b) {
+			return a.first < b.first;
+		});
+
+		return ordered;
 	}
 };
 } // namespace TGX

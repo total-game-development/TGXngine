@@ -81,6 +81,12 @@ public:
 	Vector<Pair<float, float>> activeItemPositions;
 	Vector<Pair<UIAction, String>> gameEvents;
 
+	// Purchases that have been paid for, waiting to be picked up by whatever
+	// raised them. A purchase leaves the machine that clicked and comes back
+	// stamped for a tick, so the button cannot start its own timer: it waits
+	// here for the tick that took the money.
+	Vector<String> settledPurchases;
+
 	// One stream of chance for the whole match, living where every module can
 	// reach it. A generator held static inside a header is a separate stream
 	// per module, seeded from the machine, which under lockstep sends the same
@@ -595,6 +601,48 @@ public:
 		cash = std::max(0, inCash);
 	}
 
+	EconomyInstance *FindEconomy(const String &inTeam)
+	{
+		for (const auto &economy : economies)
+		{
+			if (economy && economy->GetTeam() == inTeam)
+			{
+				return economy.get();
+			}
+		}
+
+		return nullptr;
+	}
+
+	int GetTeamCash(const String &inTeam)
+	{
+		const EconomyInstance *treasury = FindEconomy(inTeam);
+
+		return treasury != nullptr ? treasury->GetCash() : 0;
+	}
+
+	// The team's purse, not the number on the local player's HUD. Under lockstep
+	// every client runs this for every team at the same tick, so the treasury is
+	// a value a digest can hold two clients to.
+	bool SpendTeamCash(const String &inTeam, int amount)
+	{
+		EconomyInstance *treasury = FindEconomy(inTeam);
+
+		if (treasury == nullptr || treasury->GetCash() < amount)
+		{
+			return false;
+		}
+
+		treasury->SetCash(treasury->GetCash() - amount);
+
+		if (inTeam == team)
+		{
+			SetCash(treasury->GetCash());
+		}
+
+		return true;
+	}
+
 	int GetPowerUsage(const String &inTeam) const
 	{
 		auto it = powerUsage.find(inTeam);
@@ -739,6 +787,7 @@ public:
 		// Clear other structures
 		activeItemPositions.clear();
 		gameEvents.clear();
+		settledPurchases.clear();
 		pendingQueue.clear();
 		commandQueue.clear();
 		projectileRegistry.clear();

@@ -140,7 +140,7 @@ void SidebarButton::Update()
 					buttonState = States::On;
 					drawState = States::On;
 				}
-				else if (buttonState == States::Progress)
+				else if (buttonState == States::Progress || buttonState == States::Pending)
 				{
 					drawState = States::Progress;
 				}
@@ -354,6 +354,20 @@ void SidebarButton::ResetButtonState()
 
 void SidebarButton::ResetDrawState()
 {
+	drawState = States::Off;
+}
+
+void SidebarButton::BeginProgress()
+{
+	durationCounter = 0.0f;
+	buttonState = States::Progress;
+	drawState = States::Progress;
+}
+
+void SidebarButton::CancelPending()
+{
+	durationCounter = 0.0f;
+	buttonState = States::Off;
 	drawState = States::Off;
 }
 
