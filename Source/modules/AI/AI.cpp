@@ -1,7 +1,5 @@
 #include "AI.h"
 #include <algorithm>
-#include <filesystem>
-#include <fstream>
 #include "Core.h"
 #include "Logs.h"
 #include "module_interface.h"
@@ -19,39 +17,15 @@ extern "C"
 {
 	MODULE_API void Init() {}
 
-	MODULE_API void Awake(const String &name)
+	MODULE_API void Awake(const String &name, const String &level)
 	{
 		Log::Success("AI Core Awake Invoked.");
 
-		WorldState &world = WorldState::GetInstance();
-		int currentLevel = world.GetCurrentLevel();
+		const nlohmann::json levelData = nlohmann::json::parse(level, nullptr, false);
 
-		String mapsPath = "Resources/maps.json";
-		if (!std::filesystem::exists(mapsPath))
+		if (!levelData.is_object() || !levelData.contains("ai") || !levelData["ai"].is_array() || levelData["ai"].empty())
 		{
-			Log::Error("AI initialization cancelled. Maps configuration missing: " + mapsPath);
-			return;
-		}
-
-		nlohmann::json mapsJson;
-		std::ifstream mapsStream(mapsPath);
-		if (!(mapsStream >> mapsJson))
-		{
-			Log::Error("AI module failed to parse maps JSON file layout.");
-			return;
-		}
-
-		if (!mapsJson.contains("singleplayer") || !mapsJson["singleplayer"].is_array() ||
-			static_cast<size_t>(currentLevel) >= mapsJson["singleplayer"].size())
-		{
-			Log::Error("AI Awake: Current level index out of bounds inside configuration matrices.");
-			return;
-		}
-
-		const auto &levelData = mapsJson["singleplayer"][currentLevel];
-		if (!levelData.contains("ai") || !levelData["ai"].is_array() || levelData["ai"].empty())
-		{
-			Log::Print("No AI operational profiles assigned for level " + std::to_string(currentLevel));
+			Log::Print("No AI operational profiles assigned for this level");
 			return;
 		}
 

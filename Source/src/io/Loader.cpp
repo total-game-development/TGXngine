@@ -517,7 +517,7 @@ void Loader::AssignAI(json &level)
 			(FNPTR_AI_CLEAR)GET_PROC(dllHandle, "Clear"),
 			(FNPTR_AI_DELETE)GET_PROC(dllHandle, "Delete")));
 
-	gameAis.back()->Awake(ai[0].value("name", String{"builder"}));
+	gameAis.back()->Awake(ai[0].value("name", String{"builder"}), level.dump());
 	gameAis.back()->Start();
 }
 

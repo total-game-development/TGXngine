@@ -45,13 +45,17 @@ void BuilderAIState::Update()
 		buildCounter++;
 		stallReason.clear();
 
-		if (buildCounter >= pending->buildTime)
+		if (buildCounter >= pending->buildTime && Settled())
 		{
 			Issue(pending, pendingX, pendingY);
 
 			pending = nullptr;
 			buildCounter = 0;
 		}
+	}
+	else if (!Settled())
+	{
+		stallReason = "waiting for its last order to land";
 	}
 	else
 	{
@@ -81,7 +85,7 @@ void BuilderAIState::Update()
 			{
 				stallReason = StringConcat("no room for ", next->name);
 			}
-			else if (!Spend(next->cost))
+			else if (!Spend(next))
 			{
 				stallReason = StringConcat("cannot afford ", next->name);
 			}
@@ -168,23 +172,53 @@ int BuilderAIState::Funds() const
 {
 	const EconomyInstance *treasury = Treasury();
 
-	return treasury ? treasury->GetCash() : cash;
+	if (!treasury)
+	{
+		return cash;
+	}
+
+	WorldState &world = WorldState::GetInstance();
+	const auto unsettled = world.aiUnsettled.find(team);
+
+	return treasury->GetCash() - (unsettled == world.aiUnsettled.end() ? 0 : unsettled->second);
 }
 
-bool BuilderAIState::Spend(int amount)
+bool BuilderAIState::Settled() const
 {
-	EconomyInstance *treasury = Treasury();
+	WorldState &world = WorldState::GetInstance();
 
-	if (treasury)
+	const auto unsettled = world.aiUnsettled.find(team);
+	const auto inFlight = world.aiInFlight.find(team);
+
+	return (unsettled == world.aiUnsettled.end() || unsettled->second <= 0) &&
+		   (inFlight == world.aiInFlight.end() || inFlight->second <= 0);
+}
+
+bool BuilderAIState::Spend(const Ref<BuildNode> &node)
+{
+	const int amount = node->cost;
+
+	if (Treasury())
 	{
-		if (treasury->GetCash() < amount)
+		if (Funds() < amount)
 		{
 			return false;
 		}
 
-		treasury->SetCash(treasury->GetCash() - amount);
-		cash = treasury->GetCash();
+		WorldState &world = WorldState::GetInstance();
+
+		world.aiUnsettled[team] += amount;
 		cashSpent += amount;
+
+		const nlohmann::json orders = {
+			{"kind", "event"},
+			{"action", static_cast<int>(UIAction::PlayerPurchase)},
+			{"value", StringConcat("team:", team, ",cost:", std::to_string(amount), ",key:", node->name)},
+			{"ai", true},
+			{"team", team},
+			{"cost", amount}};
+
+		world.aiCommands.emplace_back(Vector<int>{}, orders.dump());
 
 		return true;
 	}
@@ -354,7 +388,15 @@ void BuilderAIState::Issue(const Ref<BuildNode> &node, int x, int y) const
 
 	Log::Print(StringConcat("AI Command Generated: ", command));
 
-	world.gameEvents.emplace_back(UIAction::AddGameItem, command);
+	const nlohmann::json orders = {
+		{"kind", "event"},
+		{"action", static_cast<int>(UIAction::AddGameItem)},
+		{"value", command},
+		{"ai", true},
+		{"team", team}};
+
+	world.aiInFlight[team]++;
+	world.aiCommands.emplace_back(Vector<int>{}, orders.dump());
 }
 
 // Only the units still waiting at the barracks make up a wave. Counting the
@@ -452,12 +494,16 @@ void BuilderAIState::CommandArmy()
 		return;
 	}
 
+	Vector<int> uids;
+
 	for (ItemInstance *soldier : muster)
 	{
-		soldier->SetState(ItemStates::Attacking);
-		soldier->SetTargetUid(targetUid);
-		soldier->SetOrders(Orders::Order::Move);
+		uids.push_back(soldier->GetUid());
 	}
+
+	const nlohmann::json orders = {{"kind", "wave"}, {"targetUid", targetUid}};
+
+	world.aiCommands.emplace_back(uids, orders.dump());
 
 	wavesSent++;
 

@@ -47,6 +47,8 @@ int RunHost(const String &url, int room, const String &token)
 	// be under it.
 	WorldState &world = WorldState::GetInstance();
 	world.SetHeadless(true);
+
+	MultiplayerSetup::host = true;
 	world.SetGameX(-1.0e6f);
 	world.SetGameY(-1.0e6f);
 

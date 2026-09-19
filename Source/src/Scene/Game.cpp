@@ -240,15 +240,24 @@ void Game::Init()
 	// their owner does, from every client at once.
 	if (MultiplayerSetup::active)
 	{
-		level.erase("ai");
+		// The sides nobody sits on are commanded from the host alone, and what
+		// it decides reaches every client as commands, the host included.
+		const bool commanding = MultiplayerSetup::host && !MultiplayerSetup::aiSides.empty();
+
+		if (!commanding)
+		{
+			level.erase("ai");
+		}
 
 		if (level.contains("teams"))
 		{
 			for (auto &teamEntry : level["teams"])
 			{
-				const bool mine = teamEntry.value("name", String{}) == MultiplayerSetup::team;
+				const String side = teamEntry.value("name", String{});
+				const bool mine = side == MultiplayerSetup::team;
+				const bool commanded = commanding && std::ranges::find(MultiplayerSetup::aiSides, side) != MultiplayerSetup::aiSides.end();
 
-				teamEntry["type"] = mine ? "player" : "remote";
+				teamEntry["type"] = mine ? "player" : (commanded ? "ai" : "remote");
 			}
 		}
 
@@ -586,6 +595,8 @@ void Game::Step()
 		gameAi->Update();
 	}
 
+	DispatchAI();
+
 	for (const auto &gameProjectile : gameProjectiles)
 	{
 		gameProjectile->Update();
@@ -786,6 +797,40 @@ void Game::RightClick()
 	ApplyCommand(world.selected, orders);
 }
 
+void Game::DispatchAI()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	if (world.aiCommands.empty())
+	{
+		return;
+	}
+
+	Vector<Pair<Vector<int>, String>> decided;
+	decided.swap(world.aiCommands);
+
+	for (const auto &[uids, text] : decided)
+	{
+		const json orders = json::parse(text, nullptr, false);
+
+		if (!orders.is_object())
+		{
+			continue;
+		}
+
+		// Stamped like a player's, so the host's world only changes when every
+		// client's does. Applied at once in single player.
+		if (MultiplayerSetup::active)
+		{
+			Net::Session::GetInstance().SendCommand(uids, orders);
+		}
+		else
+		{
+			ApplyCommand(uids, orders);
+		}
+	}
+}
+
 void Game::PumpShell()
 {
 	if (!shellModule)
@@ -935,6 +980,46 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 		Log::Info("NET apply event at tick " + std::to_string(digestTick) + ": " + value);
 
 		Renderer::GetInstance().RunAction(static_cast<UIAction>(orders.value("action", 0)), value);
+
+		// A commander's order has landed. A purchase's money is gone from the
+		// purse itself now, and a build is in the world where it can see it.
+		if (orders.value("ai", false))
+		{
+			WorldState &world = WorldState::GetInstance();
+			const String side = orders.value("team", String{});
+
+			if (orders.contains("cost"))
+			{
+				int &unsettled = world.aiUnsettled[side];
+				unsettled = std::max(0, unsettled - orders.value("cost", 0));
+			}
+			else
+			{
+				int &inFlight = world.aiInFlight[side];
+				inFlight = std::max(0, inFlight - 1);
+			}
+		}
+
+		return;
+	}
+
+	// A commander's wave: the units it mustered set on the target it chose,
+	// exactly as the commander used to set them itself.
+	if (orders.value("kind", String{"order"}) == "wave")
+	{
+		const int target = orders.value("targetUid", -1);
+
+		for (const auto &entry : WorldState::GetInstance().items)
+		{
+			if (!entry || entry->GetLife() <= 0.0f || std::ranges::find(uids, entry->GetUid()) == uids.end())
+			{
+				continue;
+			}
+
+			entry->SetState(ItemStates::Attacking);
+			entry->SetTargetUid(target);
+			entry->SetOrders(Orders::Order::Move);
+		}
 
 		return;
 	}

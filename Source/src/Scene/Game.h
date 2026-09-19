@@ -135,6 +135,10 @@ private:
 	// Hands the shell what other players' consoles sent, lets it time out what
 	// went unanswered, and turns the buildings it asked to stop into commands.
 	void PumpShell();
+
+	// Takes what the AI commanders decided this tick and applies it, or sends
+	// it to be stamped in a networked match.
+	void DispatchAI();
 	void HandlePanning();
 	void DrawOutcome();
 

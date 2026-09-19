@@ -22,6 +22,13 @@ struct MultiplayerSetup
 
 	static inline bool observer = false;
 
+	// The sides nobody sits on, which the match's host commands. Every other
+	// client treats them as it treats any other player it cannot see.
+	static inline Vector<String> aiSides;
+
+	// True only in the process hosting the match: the one place its AI runs.
+	static inline bool host = false;
+
 	static void Clear()
 	{
 		active = false;
@@ -30,6 +37,7 @@ struct MultiplayerSetup
 		startTick = 0;
 		level = nlohmann::json();
 		observer = false;
+		aiSides.clear();
 	}
 };
 } // namespace TGX

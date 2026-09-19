@@ -26,11 +26,11 @@ AI::~AI()
 	Log::Info("Delete AI");
 }
 
-void AI::Awake(const String &name)
+void AI::Awake(const String &name, const String &level)
 {
 	Log::Info("AI Awake " + name);
 
-	awake(name);
+	awake(name, level);
 }
 
 void AI::Start()

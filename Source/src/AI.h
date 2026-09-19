@@ -4,7 +4,7 @@
 
 namespace TGX
 {
-using FNPTR_AI_AWAKE = void (*)(const String &);
+using FNPTR_AI_AWAKE = void (*)(const String &, const String &);
 using FNPTR_AI_START = void (*)();
 using FNPTR_AI_UPDATE = void (*)();
 using FNPTR_AI_CLEAR = void (*)();
@@ -28,7 +28,7 @@ public:
 		FNPTR_AI_DELETE);
 	~AI();
 
-	void Awake(const String &name);
+	void Awake(const String &name, const String &level);
 	void Start();
 	void Update();
 	void Clear();

@@ -335,6 +335,7 @@ void Session::EnterMatch(const nlohmann::json &message, bool resuming)
 	MultiplayerSetup::startTick = message.value("tick", std::int64_t{0});
 	MultiplayerSetup::level = message.value("currentLevel", nlohmann::json::object());
 	MultiplayerSetup::observer = observer;
+	MultiplayerSetup::aiSides = message.value("ai", Vector<String>{});
 
 	replay.clear();
 

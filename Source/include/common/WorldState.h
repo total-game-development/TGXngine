@@ -82,6 +82,21 @@ public:
 	Vector<Pair<float, float>> activeItemPositions;
 	Vector<Pair<UIAction, String>> gameEvents;
 
+	// What the AI commanders decided this tick, as commands: the uids each is
+	// for, and its orders as JSON. A commander never changes the world itself.
+	// Single player applies these at once; a networked match's host sends them
+	// to be stamped, so every client applies them on the same tick.
+	Vector<Pair<Vector<int>, String>> aiCommands;
+
+	// Money a commander has committed to purchases that have not been applied
+	// yet. Counted as spent until they land, so it is not committed twice.
+	Map<String, int> aiUnsettled;
+
+	// Builds a commander has ordered that have not been applied yet. Until they
+	// are, the building is not in the world, and a commander that could not see
+	// it would order the same one again.
+	Map<String, int> aiInFlight;
+
 	// Purchases that have been paid for, waiting to be picked up by whatever
 	// raised them. A purchase leaves the machine that clicked and comes back
 	// stamped for a tick, so the button cannot start its own timer: it waits
@@ -822,6 +837,9 @@ public:
 		// Clear other structures
 		activeItemPositions.clear();
 		gameEvents.clear();
+		aiCommands.clear();
+		aiUnsettled.clear();
+		aiInFlight.clear();
 		settledPurchases.clear();
 		pendingQueue.clear();
 		commandQueue.clear();

@@ -129,7 +129,8 @@ private:
 	// so income and spending land in the same purse the player's does.
 	EconomyInstance *Treasury() const;
 	int Funds() const;
-	bool Spend(int amount);
+	bool Spend(const Ref<BuildNode> &node);
+	bool Settled() const;
 
 	Ref<BuildNode> NextBuild();
 	bool IsPlotClear(int x, int y) const;
