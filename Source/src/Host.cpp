@@ -42,11 +42,11 @@ Vector<String> Standing()
 
 int RunHost(const String &url, int room, const String &token)
 {
-	MultiplayerSetup::headless = true;
-
+	// Set before the renderer exists, since building it builds the window.
 	// Nothing moves a pointer here, so park it off the map where no unit can
 	// be under it.
 	WorldState &world = WorldState::GetInstance();
+	world.SetHeadless(true);
 	world.SetGameX(-1.0e6f);
 	world.SetGameY(-1.0e6f);
 
@@ -56,9 +56,6 @@ int RunHost(const String &url, int room, const String &token)
 	Log::Info("Hosting room " + std::to_string(room + 1) + " on " + url);
 
 	session.Connect(url);
-
-	// Connect clears the setup a previous match left, headless with it.
-	MultiplayerSetup::headless = true;
 
 	bool joined = false;
 	bool played = false;

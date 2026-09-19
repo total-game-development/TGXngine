@@ -43,16 +43,17 @@ int RunReplay(const String &path)
 	// Built as an observer's client builds a match: the level and seed the
 	// server dealt, from the first tick, with no side of its own.
 	MultiplayerSetup::active = true;
-	MultiplayerSetup::headless = true;
 	MultiplayerSetup::observer = true;
 	MultiplayerSetup::team = "observer";
 	MultiplayerSetup::seed = record.value("seed", std::uint32_t{0});
 	MultiplayerSetup::startTick = 0;
 	MultiplayerSetup::level = record["level"];
 
+	// Set before the renderer exists, since building it builds the window.
 	// Nothing moves a pointer here, so park it off the map where no unit can
 	// be under it.
 	WorldState &world = WorldState::GetInstance();
+	world.SetHeadless(true);
 	world.SetGameX(-1.0e6f);
 	world.SetGameY(-1.0e6f);
 

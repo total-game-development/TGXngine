@@ -16,6 +16,11 @@ Window::Window() : _shouldClose(false)
 {
 	WorldState &world = WorldState::GetInstance();
 
+	if (world.IsHeadless())
+	{
+		return;
+	}
+
 	if (world.IsProduction())
 	{
 		_window.create(sf::VideoMode::getDesktopMode(), "TGXngine", sf::Style::Fullscreen);

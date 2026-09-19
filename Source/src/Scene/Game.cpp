@@ -360,7 +360,10 @@ void Game::Init()
 	gameInterfaces = std::move(loader->GetGameInterfaces());
 	uiModule = std::move(loader->GetUI());
 
-	if (!MultiplayerSetup::headless)
+	// A process with no window and nobody at it -- a replay, or a match's
+	// host -- has no console, and must not load or save the one the players
+	// on this machine use.
+	if (!WorldState::GetInstance().IsHeadless())
 	{
 		shellModule = std::move(loader->GetShell());
 	}

@@ -22,11 +22,6 @@ struct MultiplayerSetup
 
 	static inline bool observer = false;
 
-	// A process with no window and nobody at it: a replay, or the host that
-	// simulates a match beside its players. It has no console of its own, and
-	// must not load or save the one the players on this machine use.
-	static inline bool headless = false;
-
 	static void Clear()
 	{
 		active = false;

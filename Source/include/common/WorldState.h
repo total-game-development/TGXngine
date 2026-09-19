@@ -58,6 +58,7 @@ private:
 	bool built = false;
 	bool triggered = false;
 	bool production = true;
+	bool headless = false;
 	bool debugOnScreen = false;
 	bool fogOfWarEnabled = true;
 	bool closed = false;
@@ -434,6 +435,16 @@ public:
 	bool IsProduction() const
 	{
 		return production;
+	}
+
+	bool IsHeadless() const
+	{
+		return headless;
+	}
+
+	void SetHeadless(bool inHeadless)
+	{
+		headless = inHeadless;
 	}
 
 	void SetProduction(bool inProduction)
