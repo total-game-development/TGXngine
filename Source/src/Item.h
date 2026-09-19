@@ -31,6 +31,10 @@ private:
 	ItemInstance *itemInstance = nullptr;
 	int removeUID = 0;
 
+	// A sprite is only put where its item stands by the module's Update, so
+	// one drawn before the first Update is at the corner of the screen.
+	bool placed = false;
+
 	Vector<Unique<sf::Sprite>> sprites;
 	Vector<Unique<sf::Texture>> textures;
 	Vector<sf::Sprite *> spritePtrs;

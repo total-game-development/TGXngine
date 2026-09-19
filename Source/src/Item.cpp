@@ -135,7 +135,7 @@ void Item::ProcessOrders()
 
 void Item::Draw()
 {
-	if (draw && itemInstance && !spritePtrs.empty())
+	if (draw && itemInstance && placed && !spritePtrs.empty())
 	{
 		draw(itemInstance, &spritePtrs);
 	}
@@ -149,6 +149,8 @@ void Item::Update()
 	}
 
 	update(itemInstance, &spritePtrs);
+
+	placed = true;
 }
 
 ItemInstance *Item::GetItemInstance()
