@@ -120,8 +120,8 @@ void Multiplayer::DrawHeading()
 	if (arena)
 	{
 		hint = InRoom()
-				   ? "Waiting for the next match in this arena.  ESC leaves."
-				   : "Click a room to watch the AI play itself there.  An empty room starts a match.  ESC returns.";
+				   ? "Waiting for the match.  An arena starts once two people are watching.  ESC leaves."
+				   : "Click a room to watch the AI play itself there.  A match starts once two people are watching.  ESC returns.";
 	}
 
 	sf::Text line(hint, font, 13);
