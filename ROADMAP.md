@@ -25,7 +25,7 @@ This document tracks TGXngine's development targets: what has shipped, what was 
 
 ## Version 0.4 — Multiplayer Networking
 
-Version 0.4 promotes networking from long-term scope to the primary development target. The layer is built from the transport up: `Source/src/Net/` on the client, and the separate TGXngineServer repository on the other side of the socket.
+Version 0.4 promotes networking from long-term scope to the primary development target. The layer is built from the transport up: `Source/src/Net/` on the client, and the separate TGXngineServer repository on the other side of the socket. It also puts the shell on the network: every player's console is a computer the others can reach, and a player's buildings are processes running on it.
 
 The reference implementation is the War of Salvation server, which runs the original RTS over deterministic lockstep. Its architecture sets the shape of this work.
 
@@ -75,15 +75,42 @@ An AI commander need not run on the machine it plays from. Because decisions ent
 
 Not started, and carried into 0.5. A networked match currently erases the level's `ai` block outright, because a local commander would command the remote player's units as well as their owner does, from every client at once. Reaching the match over the command path instead depends on the headless host above.
 
+### Remote Filesystems
+
+Every player's console is a computer on the match's network, named for the side it plays. `hosts` lists the others, and `connect <side>` opens a session on one: `ls`, `tree`, `cd`, `mkdir`, `mk`, `del`, `rn` and `edit` then work on that player's filesystem rather than the local one, and the owner's console says who connected and when they left.
+
+Delivered:
+
+* Console traffic travels beside the command path, not on it. The server relays a `shell` message to the player seated on the side it names and never reads the body; nothing is stamped, nothing is folded, and nothing reaches the simulation, so no amount of it can desynchronize a match.
+* Requests carry the working directory they were typed in, and the owner answers against that without moving their own. A request that goes unanswered times out, and one the server will not deliver is reported with the reason.
+* Editing a remote file fetches it, opens it in the local editor, and writes it back on save.
+* Limits that protect the socket a match is also travelling on: files up to 32 KB, and 20 messages a second per player. An observer has no computer and reaches none.
+* The portal no longer pauses a networked match. A client that stopped polling while its console was open fell behind the room, and could not answer the other players' consoles.
+* Cheats are refused in a networked match.
+
+Access control, and running programs on another player's computer, are 0.6.
+
+### Processes
+
+A player's buildings are processes. Each one placed from the sidebar is given a PID when it goes up, in the order it was built, and is gone when it is destroyed. `ps` lists them with their state and what each supplies to or draws from the grid, alongside the programs `spawn` started. `kill` stops either.
+
+Delivered:
+
+* Stopping a building takes it off its side's power grid. In a networked match the stop is a stamped command like any order, applied on the same tick by every client, and a building's running state is folded into the world digest.
+* Stopping a program interrupts it. Programs started by `spawn` ran on the task pool without a step budget, so a runaway one could not be ended; closing the shell also waited on it forever.
+* Only a player's own buildings are listed, and only from their own console.
+
+Power has no consequence beyond the grid readout yet; that arrives with 0.6, where cutting it is the point of a hack. Turrets are not processes until their behaviour depends on power.
+
 ### Prerequisite
 
 Deterministic lockstep requires a deterministic update order. The `gameItems` and `world.items` consolidation is done: both are ordered by one total comparator and the two containers are no longer paired by index.
 
 ---
 
-## Version 0.5 — The Headless Host
+## Version 0.5 — Arena Mode
 
-What 0.4 built is a clock and a command path with no world behind them. Version 0.5 puts one there.
+An arena is a room where AI commanders play one another and people watch. What 0.4 built is a clock and a command path with no world behind them, and an arena needs a world with nobody at a keyboard to supply one. Version 0.5 puts a world on the server, and the commanders beside it.
 
 ### Hosting the Modules Headlessly
 
@@ -103,7 +130,16 @@ With a world on the server, a commander can run beside it and enter its decision
 Planned functionality:
 
 * `modules/AI/` reachable over the command path.
-* AI versus AI matches in a room flagged as an arena.
+
+### Arena Rooms
+
+The protocol already carries the flag: `join_arena` joins a room and marks it AI versus AI, and `start_game` says so. Nothing yet plays in one.
+
+Planned functionality:
+
+* A room flagged as an arena seats a commander on every side and starts without anybody saying they are ready.
+* Spectating as the way in: observers join, watch, and can join late through the replay path 0.4 built.
+* A server-decided outcome, reported to everyone watching.
 
 ### Per-Team Production
 
@@ -113,6 +149,38 @@ Planned functionality:
 
 * A production model per team rather than per sidebar.
 * Build queues folded into the digest alongside the treasuries.
+
+---
+
+## Version 0.6 — Access and Hacking
+
+Version 0.4 lets a player into another's filesystem freely and keeps processes to their own console. Version 0.6 puts a lock on the door and makes getting through it worth something: a player who breaks into another's computer can run programs there, and those programs can reach the match.
+
+### Access
+
+Planned functionality:
+
+* Credentials on every player's computer, set from its own console, and checked by the owner before a session opens.
+* The `hacker` platform the server already accepts, given a meaning.
+
+### Remote Execution
+
+Planned functionality:
+
+* A program started on another player's computer runs there, on that console's task pool against that filesystem, with its output streamed back to whoever started it.
+* `ps` and `kill` on a computer a player has broken into.
+
+### Hacking
+
+A program can reach the match only by asking for a command. It is stamped by the server and applied by every client on the same tick, exactly as an order is, so a hack can change the match without being able to desynchronize it. Nothing a program does is applied where it runs.
+
+Planned functionality:
+
+* A `hack` command kind beside `order`, `event` and `kill`, carrying its effect and the side it targets. The first effect is cutting a side's power.
+* Power with consequences. A side without enough, whether its grid is short or a hack has cut it, has its defences go offline, loses its radar and minimap, and builds at a reduced rate rather than stopping. The consequences are simulation state, so they are the same on every client and folded into the digest.
+* A cut stays cut until it is restored, by the owner from their own console or by raising a new powerplant.
+* Turrets become processes once their behaviour depends on power.
+* The server accepts a hack against a side only from that side's own connection, and only while an authorised session into its computer is open. A tampered client could still ignore hacks against itself; closing that needs the headless host from 0.5 to decide them instead.
 
 ---
 
@@ -188,6 +256,8 @@ Version 0.4 set out to establish:
 * Client/server match hosting, including reconnection, late-join and optional TLS. **Done.**
 * Networked lobby infrastructure: seats, sides, maps and readiness. **Done.**
 * A single deterministic item update sequence underpinning all of the above. **Done.**
+* Every player's console reachable as a computer on the match's network. **Done.**
+* Buildings and programs as processes a player can list and stop. **Done.**
 * AI commanders reachable over the command path. **Carried into 0.5**, with the headless host it depends on.
 
 Version 0.5 aims to establish:
@@ -195,6 +265,13 @@ Version 0.5 aims to establish:
 * The engine's modules hosted headlessly, so the server drives a world rather than a clock.
 * A server-decided outcome, and a client's world checked against the server's rather than against another client's.
 * AI commanders reachable over the command path.
+* Arena rooms, where commanders play one another and people watch.
 * Production as shared state rather than local interface state.
+
+Version 0.6 aims to establish:
+
+* Access control on every player's computer.
+* Programs run on another player's computer, with their output returned.
+* Hacks that reach the match through the command path, starting with a side's power, and power that matters when it is gone.
 
 Together these extend TGXngine from a single-machine engine to a networked one while preserving its modular and data-driven design philosophy.
