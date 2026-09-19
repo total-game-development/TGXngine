@@ -8,6 +8,7 @@
 #include "Mouse.h"
 #include "Physics.h"
 #include "Renderer.h"
+#include "Replay.h"
 #include "Settings.h"
 #include "WorldState.h"
 
@@ -42,8 +43,13 @@ void Init()
 }
 } // namespace TGX
 
-int main()
+int main(int argc, char **argv)
 {
+	if (argc >= 3 && TGX::String(argv[1]) == "--replay")
+	{
+		return TGX::RunReplay(argv[2]);
+	}
+
 	TGX::Init();
 
 	return 0;

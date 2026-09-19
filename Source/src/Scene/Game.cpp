@@ -493,21 +493,7 @@ void Game::Update()
 		{
 			budget--;
 
-			for (const Net::Command &command : clock.Due())
-			{
-				if (command.orders.value("kind", String{"order"}) == "order")
-				{
-					Log::Info("NET apply order at tick " + std::to_string(digestTick) + " for " + std::to_string(command.uids.size()) + " unit(s)");
-				}
-
-				ApplyCommand(command.uids, command.orders);
-			}
-
-			world.SetDeltaTime(TICK_SECONDS);
-
-			Step();
-
-			digestTick++;
+			RunTick(clock.Due());
 
 			// Not while replaying: the report would be about a tick the rest of
 			// the room went past long ago, and there would be one every sixty
@@ -526,6 +512,25 @@ void Game::Update()
 	}
 
 	Step();
+}
+
+void Game::RunTick(const Vector<Net::Command> &due)
+{
+	for (const Net::Command &command : due)
+	{
+		if (command.orders.value("kind", String{"order"}) == "order")
+		{
+			Log::Info("NET apply order at tick " + std::to_string(digestTick) + " for " + std::to_string(command.uids.size()) + " unit(s)");
+		}
+
+		ApplyCommand(command.uids, command.orders);
+	}
+
+	WorldState::GetInstance().SetDeltaTime(TICK_SECONDS);
+
+	Step();
+
+	digestTick++;
 }
 
 void Game::Step()

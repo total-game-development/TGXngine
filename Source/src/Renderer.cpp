@@ -63,6 +63,11 @@ Renderer &Renderer::GetInstance()
 	return renderer;
 }
 
+Ref<Game> Renderer::GetGame()
+{
+	return std::static_pointer_cast<Game>(scenes[SceneType::Game]);
+}
+
 void Renderer::Log(const Any &msg) const
 {
 	if (msg.type() == typeid(String))

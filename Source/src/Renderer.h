@@ -11,9 +11,13 @@ using namespace nlohmann;
 
 namespace TGX
 {
+class Game;
+
 class Renderer
 {
 public:
+	Ref<Game> GetGame();
+
 	// Runs one queued action now. A networked match replays an action the
 	// server has stamped through it, rather than the one it queued locally.
 	void RunAction(UIAction action, const String &value);

@@ -81,13 +81,24 @@ protected:
 
 	std::int64_t digestTick = 0;
 
+public:
 	// The world as this client holds it. Two clients that have stayed in step
 	// fold to the same number; any difference in a unit's position, however
 	// small, changes it. Compared against the other client's, since the server
 	// has no world of its own yet.
 	std::uint64_t WorldDigest() const;
 
-public:
+	// The fold over every command applied, held against the server's own.
+	std::uint64_t CommandDigest() const
+	{
+		return commandDigest.Value();
+	}
+
+	// One networked tick: the commands stamped for it, then one step. The live
+	// client and a headless replay both run matches through here, so the order
+	// they do it in cannot drift apart.
+	void RunTick(const Vector<Net::Command> &due);
+
 	Game();
 	~Game() override;
 	void Init() override;
