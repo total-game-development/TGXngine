@@ -327,7 +327,7 @@
 			},
 			"notes": {
 				"title": "",
-				"body": "TGXngine portal.\n\nF10 or Tab opens and closes this portal. It pauses a single-player match while it is up, so nothing moves underneath you. A multiplayer match carries on.\n\nConsole opens the engine shell: a filesystem, a scripting language and an editor, all running in-process. Type 'help' there for the command list, 'ps' for your running buildings and programs, and 'exit' to leave the portal. In multiplayer, 'hosts' lists the other players' computers and 'connect' reaches their files.\n\nThe globe opens the unit reference.\n\nEscape closes the focused window. The button in the bottom right leaves the portal and resumes the match.",
+				"body": "TGXngine portal.\n\nF10 or Tab opens and closes this portal. It pauses a single-player match while it is up, so nothing moves underneath you. A multiplayer match carries on.\n\nConsole opens the engine shell: a filesystem, a scripting language and an editor, all running in-process. Type 'help' there for the command list, 'ps' for your running buildings and programs, 'kill' and 'start' to stop and restart them, and 'exit' to leave the portal. In multiplayer, 'hosts' lists the other players' computers and 'connect' reaches their files.\n\nThe globe opens the unit reference.\n\nEscape closes the focused window. The button in the bottom right leaves the portal and resumes the match.",
 				"window": "vNotes"
 			},
 			"shell": {

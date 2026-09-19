@@ -51,19 +51,20 @@ struct FakeBase
 			Building(12, "barracks", 30)})}};
 
 	Vector<int> killed;
+	Vector<int> started;
 
 	void Attach(Terminal &terminal)
 	{
 		terminal.SetProcessHandlers(
 			[this]() { return listing; },
-			[this](int uid) {
-				killed.push_back(uid);
+			[this](int uid, bool running) {
+				(running ? started : killed).push_back(uid);
 
 				for (auto &entry : listing["processes"])
 				{
 					if (entry["uid"] == uid)
 					{
-						entry["running"] = false;
+						entry["running"] = running;
 					}
 				}
 
@@ -113,6 +114,43 @@ TEST(ShellProcesses, KillStopsABuilding)
 	terminal.Submit("kill 2");
 	EXPECT_TRUE(Printed(terminal, "Process 2 is already stopped"));
 	EXPECT_EQ(base.killed.size(), 1u);
+}
+
+TEST(ShellProcesses, StartRunsAStoppedBuildingAgain)
+{
+	Terminal terminal;
+	FakeBase base;
+	base.Attach(terminal);
+
+	terminal.Submit("start 2");
+	EXPECT_TRUE(Printed(terminal, "Process 2 is already running"));
+	EXPECT_TRUE(base.started.empty());
+
+	terminal.Submit("kill 2");
+	terminal.Submit("start 2");
+
+	ASSERT_EQ(base.started.size(), 1u);
+	EXPECT_EQ(base.started[0], 9);
+	EXPECT_TRUE(Printed(terminal, "Starting powerplant (2)"));
+
+	terminal.Submit("clear");
+	terminal.Submit("ps");
+	EXPECT_TRUE(Printed(terminal, "    2  running    +400  powerplant"));
+}
+
+TEST(ShellProcesses, StartRejectsWhatIsNotAProcess)
+{
+	Terminal terminal;
+	FakeBase base;
+	base.Attach(terminal);
+
+	terminal.Submit("start 99");
+	EXPECT_TRUE(Printed(terminal, "No such process 99"));
+
+	terminal.Submit("start");
+	EXPECT_TRUE(Printed(terminal, "Usage: start <pid>"));
+
+	EXPECT_TRUE(base.started.empty());
 }
 
 TEST(ShellProcesses, KillRejectsWhatIsNotAProcess)

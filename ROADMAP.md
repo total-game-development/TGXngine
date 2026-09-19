@@ -92,11 +92,11 @@ Access control, and running programs on another player's computer, are 0.6.
 
 ### Processes
 
-A player's buildings are processes. Each one placed from the sidebar is given a PID when it goes up, in the order it was built, and is gone when it is destroyed. `ps` lists them with their state and what each supplies to or draws from the grid, alongside the programs `spawn` started. `kill` stops either.
+A player's buildings are processes. Each one placed from the sidebar is given a PID when it goes up, in the order it was built, and is gone when it is destroyed. `ps` lists them with their state and what each supplies to or draws from the grid, alongside the programs `spawn` started. `kill` stops either, and `start` puts a stopped building back on the grid.
 
 Delivered:
 
-* Stopping a building takes it off its side's power grid. In a networked match the stop is a stamped command like any order, applied on the same tick by every client, and a building's running state is folded into the world digest.
+* Stopping a building takes it off its side's power grid, and starting it puts it back. In a networked match each is a stamped command like any order, applied on the same tick by every client, and a building's running state is folded into the world digest.
 * Stopping a program interrupts it. Programs started by `spawn` ran on the task pool without a step budget, so a runaway one could not be ended; closing the shell also waited on it forever.
 * Only a player's own buildings are listed, and only from their own console.
 

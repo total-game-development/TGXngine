@@ -41,9 +41,9 @@ void HandleShellToggle(const char *name, const char *value, bool active)
 // back through a C pointer, which has to outlive the call.
 String shellProcesses;
 
-// Buildings the console has asked to stop. Drained by the game scene, which is
-// what decides whether a stop is applied now or stamped by the server first.
-Vector<int> shellKills;
+// Buildings the console has asked to stop or start, and which. Drained by the
+// game scene, which decides whether each is applied now or stamped first.
+Vector<Pair<int, bool>> shellSwitches;
 
 const ItemInstance *FindProcess(WorldState &world, int uid)
 {
@@ -98,16 +98,16 @@ const char *ListShellProcesses()
 	return shellProcesses.c_str();
 }
 
-bool KillShellProcess(int uid)
+bool SwitchShellProcess(int uid, bool running)
 {
 	const ItemInstance *building = FindProcess(WorldState::GetInstance(), uid);
 
-	if (!building || !building->IsRunning())
+	if (!building || building->IsRunning() == running)
 	{
 		return false;
 	}
 
-	shellKills.push_back(uid);
+	shellSwitches.emplace_back(uid, running);
 
 	return true;
 }
@@ -361,7 +361,7 @@ void Game::Init()
 	uiModule = std::move(loader->GetUI());
 	shellModule = std::move(loader->GetShell());
 
-	shellKills.clear();
+	shellSwitches.clear();
 
 	if (shellModule)
 	{
@@ -375,7 +375,7 @@ void Game::Init()
 
 		if (!watching)
 		{
-			shellModule->SetProcessHandler(&ListShellProcesses, &KillShellProcess);
+			shellModule->SetProcessHandler(&ListShellProcesses, &SwitchShellProcess);
 		}
 
 		// Every other player's console is a computer this one can reach. An
@@ -774,7 +774,7 @@ void Game::PumpShell()
 {
 	if (!shellModule)
 	{
-		shellKills.clear();
+		shellSwitches.clear();
 		return;
 	}
 
@@ -788,15 +788,15 @@ void Game::PumpShell()
 
 	shellModule->Update();
 
-	Vector<int> kills;
-	kills.swap(shellKills);
+	Vector<Pair<int, bool>> switches;
+	switches.swap(shellSwitches);
 
-	for (int uid : kills)
+	for (const auto &[uid, running] : switches)
 	{
-		const json orders = {{"kind", "kill"}};
+		const json orders = {{"kind", running ? "start" : "kill"}};
 
-		// Stamped like any order in a networked match, so the stop lands on the
-		// same tick everywhere; applied at once in single player.
+		// Stamped like any order in a networked match, so the change lands on
+		// the same tick everywhere; applied at once in single player.
 		if (MultiplayerSetup::active)
 		{
 			Net::Session::GetInstance().SendCommand({uid}, orders);
@@ -923,24 +923,37 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 		return;
 	}
 
-	// A building its owner stopped from the console. Its power leaves the grid
-	// here, on the stamped tick, so every client's grid loses it at once.
-	if (orders.value("kind", String{"order"}) == "kill")
+	// A building its owner stopped or started from the console. Its power
+	// leaves or rejoins the grid here, on the stamped tick, so every client's
+	// grid changes at once.
+	const String kind = orders.value("kind", String{"order"});
+
+	if (kind == "kill" || kind == "start")
 	{
+		const bool start = kind == "start";
+
 		WorldState &world = WorldState::GetInstance();
 
 		for (const auto &entry : world.items)
 		{
-			if (!entry || entry->GetLife() <= 0.0f || !entry->IsRunning() || entry->GetType() != "buildings" ||
+			if (!entry || entry->GetLife() <= 0.0f || entry->IsRunning() == start || entry->GetType() != "buildings" ||
 				std::ranges::find(uids, entry->GetUid()) == uids.end())
 			{
 				continue;
 			}
 
-			entry->SetRunning(false);
-			world.DisconnectPower(entry->GetTeam(), entry->GetPowerUsage());
+			entry->SetRunning(start);
 
-			Log::Info("Stopped " + entry->GetName() + " " + std::to_string(entry->GetUid()) + " at tick " + std::to_string(digestTick));
+			if (start)
+			{
+				world.ConnectPower(entry->GetTeam(), entry->GetPowerUsage());
+			}
+			else
+			{
+				world.DisconnectPower(entry->GetTeam(), entry->GetPowerUsage());
+			}
+
+			Log::Info(String(start ? "Started " : "Stopped ") + entry->GetName() + " " + std::to_string(entry->GetUid()) + " at tick " + std::to_string(digestTick));
 		}
 
 		return;
@@ -1636,7 +1649,7 @@ void Game::Close()
 		shellModule->Clear();
 	}
 
-	shellKills.clear();
+	shellSwitches.clear();
 
 	// Consumed by the match it set up. Left standing it would hijack the next
 	// launch, which reads startLevel.

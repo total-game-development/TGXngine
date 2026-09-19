@@ -20,8 +20,8 @@ using FNPTR_SHELL_SEND = void (*)(const char *, const char *);
 using FNPTR_SHELL_SET_NETWORK = void (*)(FNPTR_SHELL_SEND, const char *);
 using FNPTR_SHELL_DELIVER = void (*)(const char *);
 using FNPTR_SHELL_LIST_PROCESSES = const char *(*)();
-using FNPTR_SHELL_KILL_PROCESS = bool (*)(int);
-using FNPTR_SHELL_SET_PROCESS_HANDLER = void (*)(FNPTR_SHELL_LIST_PROCESSES, FNPTR_SHELL_KILL_PROCESS);
+using FNPTR_SHELL_SWITCH_PROCESS = bool (*)(int, bool);
+using FNPTR_SHELL_SET_PROCESS_HANDLER = void (*)(FNPTR_SHELL_LIST_PROCESSES, FNPTR_SHELL_SWITCH_PROCESS);
 using FNPTR_SHELL_CLEAR = void (*)();
 using FNPTR_SHELL_DELETE = void (*)();
 
@@ -79,7 +79,7 @@ public:
 	void SetNetwork(FNPTR_SHELL_SEND send, const String &identity);
 	void ClearNetwork();
 	void Deliver(const String &message);
-	void SetProcessHandler(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_KILL_PROCESS kill);
+	void SetProcessHandler(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle);
 	void Clear();
 	void Delete();
 };

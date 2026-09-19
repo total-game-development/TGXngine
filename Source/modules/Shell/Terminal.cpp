@@ -339,7 +339,11 @@ void Terminal::Submit(const String &line)
 	}
 	else if (head == "kill")
 	{
-		Kill(args);
+		Signal(args, false);
+	}
+	else if (head == "start")
+	{
+		Signal(args, true);
 	}
 	else if (head == "cheat")
 	{
@@ -372,6 +376,7 @@ void Terminal::Help()
 	Print(" - run: program (Executes a program)");
 	Print(" - ps: Lists the running processes: your buildings and the programs you spawned");
 	Print(" - kill: pid (Stops a running process)");
+	Print(" - start: pid (Starts a stopped building again)");
 	Print(" - hosts: Lists the other players' computers you can connect to");
 	Print(" - connect: remote_computer_name [firstname.lastname pin] (Connects to the remote computer)");
 	Print(" - disconnect: Disconnects from remote computer");
@@ -868,7 +873,7 @@ bool Terminal::Remote(const String &head, const Vector<String> &args)
 		return true;
 	}
 
-	if (head == "ps" || head == "kill")
+	if (head == "ps" || head == "kill" || head == "start")
 	{
 		Print("Processes on " + current->name + " can only be seen from its own console");
 		return true;
@@ -1240,12 +1245,12 @@ void Terminal::Update()
 	}
 }
 
-void Terminal::SetProcessHandlers(ProcessLister lister, ProcessKiller killer)
+void Terminal::SetProcessHandlers(ProcessLister lister, ProcessSwitch switcher)
 {
 	std::lock_guard<std::recursive_mutex> lock(mutex);
 
 	processLister = std::move(lister);
-	processKiller = std::move(killer);
+	processSwitch = std::move(switcher);
 	processes = nlohmann::json::object();
 	buildingPids.clear();
 }
@@ -1358,11 +1363,11 @@ void Terminal::ListProcesses()
 	}
 }
 
-void Terminal::Kill(const Vector<String> &args)
+void Terminal::Signal(const Vector<String> &args, bool start)
 {
 	if (args.size() != 2)
 	{
-		Print("Invalid command. Usage: kill <pid>");
+		Print("Invalid command. Usage: " + args[0] + " <pid>");
 		return;
 	}
 
@@ -1389,7 +1394,7 @@ void Terminal::Kill(const Vector<String> &args)
 		return;
 	}
 
-	if (pool.Kill(pid))
+	if (!start && pool.Kill(pid))
 	{
 		Print("Killed " + std::to_string(pid));
 		return;
@@ -1410,7 +1415,9 @@ void Terminal::Kill(const Vector<String> &args)
 
 	if (uid < 0)
 	{
-		Print("No such process " + std::to_string(pid));
+		const bool program = start && std::ranges::any_of(pool.List(), [pid](const ProcessInfo &process) { return process.pid == pid; });
+
+		Print(program ? "Process " + std::to_string(pid) + " is already running" : "No such process " + std::to_string(pid));
 		return;
 	}
 
@@ -1426,19 +1433,19 @@ void Terminal::Kill(const Vector<String> &args)
 		}
 	}
 
-	if (!running)
+	if (running == start)
 	{
-		Print("Process " + std::to_string(pid) + " is already stopped");
+		Print("Process " + std::to_string(pid) + (start ? " is already running" : " is already stopped"));
 		return;
 	}
 
-	if (!processKiller || !processKiller(uid))
+	if (!processSwitch || !processSwitch(uid, start))
 	{
-		Print("Process " + std::to_string(pid) + " could not be stopped");
+		Print("Process " + std::to_string(pid) + (start ? " could not be started" : " could not be stopped"));
 		return;
 	}
 
-	Print("Stopping " + name + " (" + std::to_string(pid) + ")");
+	Print((start ? "Starting " : "Stopping ") + name + " (" + std::to_string(pid) + ")");
 }
 
 void Terminal::Seed()

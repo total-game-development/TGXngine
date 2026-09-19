@@ -144,11 +144,11 @@ void ShellModule::Deliver(const String &message)
 	}
 }
 
-void ShellModule::SetProcessHandler(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_KILL_PROCESS kill)
+void ShellModule::SetProcessHandler(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle)
 {
 	if (setProcessHandler)
 	{
-		setProcessHandler(list, kill);
+		setProcessHandler(list, toggle);
 	}
 }
 

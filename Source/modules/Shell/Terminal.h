@@ -26,7 +26,7 @@ struct Session
 using ToggleHandler = void (*)(const char *, const char *, bool);
 using NetworkSender = Function<void(const String &, const nlohmann::json &)>;
 using ProcessLister = Function<nlohmann::json()>;
-using ProcessKiller = Function<bool(int)>;
+using ProcessSwitch = Function<bool(int, bool)>;
 
 enum class TerminalMode : std::uint8_t
 {
@@ -91,7 +91,7 @@ private:
 	Optional<EditTarget> editTarget;
 
 	ProcessLister processLister;
-	ProcessKiller processKiller;
+	ProcessSwitch processSwitch;
 	nlohmann::json processes = nlohmann::json::object();
 	std::map<int, int> buildingPids;
 	int nextPid = 1;
@@ -118,7 +118,7 @@ private:
 
 	void RefreshProcesses();
 	void ListProcesses();
-	void Kill(const Vector<String> &args);
+	void Signal(const Vector<String> &args, bool start);
 
 	static Vector<String> Split(const String &text, char delimiter);
 
@@ -140,7 +140,7 @@ public:
 	void ClearNetwork();
 	void Deliver(const nlohmann::json &message);
 
-	void SetProcessHandlers(ProcessLister lister, ProcessKiller killer);
+	void SetProcessHandlers(ProcessLister lister, ProcessSwitch switcher);
 
 	void Update();
 
