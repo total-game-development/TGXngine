@@ -113,36 +113,30 @@ void SidebarButton::DrawPlacement()
 void SidebarButton::Update()
 {
 	WorldState &world = WorldState::GetInstance();
-	float deltaTime = world.GetDeltaTime();
 
-	if (buttonState == States::Progress)
+	if (!value.empty())
 	{
-		buttonState = States::Progress;
-		durationCounter += deltaTime;
+		const ProductionOrder *order = world.FindProduction(world.GetTeam(), value);
 
-		if (durationCounter >= duration)
+		if (order != nullptr)
 		{
-			// A button with a buildable grid is put down by the player, so it
-			// waits for the click that says where whatever its own flag claims.
-			// BuildImmediately sends no coordinates -- a unit is deployed from
-			// the building that made it and does not need any -- so a building
-			// that took this path would be raised at the origin.
-			if (this->waitForClick || placeable)
-			{
-				buttonState = States::Wait;
-				drawState = States::Wait;
-				durationCounter = 0.0f;
+			States now = States::Progress;
 
-				return;
+			if (order->ready)
+			{
+				now = buttonState == States::Placement ? States::Placement : States::Wait;
 			}
 
-			BuildImmediately();
-
-			durationCounter = 0.0f;
-
+			if (now != buttonState)
+			{
+				buttonState = now;
+				drawState = now;
+			}
+		}
+		else if (buttonState == States::Progress || buttonState == States::Wait || buttonState == States::Placement)
+		{
 			buttonState = States::Off;
-
-			return;
+			drawState = States::Off;
 		}
 	}
 
@@ -218,7 +212,6 @@ void SidebarButton::SetButton(
 	this->attached = std::move(newAttached);
 	this->waitForClick = wait;
 
-	this->durationCounter = 0.0f;
 
 	this->x = newX;
 	this->y = newY;
@@ -256,9 +249,9 @@ void SidebarButton::SetFrames(int inFrames)
 	frames = inFrames;
 }
 
-void SidebarButton::SetDuration(float inDuration)
+void SidebarButton::SetTicks(int inTicks)
 {
-	duration = inDuration;
+	ticks = inTicks;
 }
 
 void SidebarButton::SetCost(int inCost)
@@ -359,28 +352,6 @@ bool SidebarButton::HasFreeDeployBerth() const
 	return false;
 }
 
-void SidebarButton::BuildImmediately()
-{
-	Log::Print("BuildImmediately");
-
-	WorldState &world = WorldState::GetInstance();
-
-	Log::Print(std::to_string(world.GetPrimaryItem(world.GetTeam(), attached)));
-
-	Log::Print(world.pendingQueue);
-
-	String builtCommand = StringConcat("command:", "build");
-	builtCommand += ",";
-	String builtName = StringConcat("name:", GetValue());
-	builtCommand += builtName + ",";
-	String builtType = StringConcat("type:", GetType());
-	builtCommand += builtType + ",";
-	String builtTeam = StringConcat("team:", world.GetTeam());
-	builtCommand += builtTeam;
-
-	world.gameEvents.emplace_back(UIAction::PlayerBuild, builtCommand);
-}
-
 void SidebarButton::ResetButtonState()
 {
 	buttonState = States::Off;
@@ -391,18 +362,15 @@ void SidebarButton::ResetDrawState()
 	drawState = States::Off;
 }
 
-void SidebarButton::BeginProgress()
-{
-	durationCounter = 0.0f;
-	buttonState = States::Progress;
-	drawState = States::Progress;
-}
-
 void SidebarButton::CancelPending()
 {
-	durationCounter = 0.0f;
 	buttonState = States::Off;
 	drawState = States::Off;
+}
+
+String SidebarButton::ProduceRequest(const String &team) const
+{
+	return "team:" + team + ",key:" + value + ",type:" + type + ",cost:" + std::to_string(cost) + ",ticks:" + std::to_string(ticks);
 }
 
 void SidebarButton::Clear()

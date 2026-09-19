@@ -74,8 +74,7 @@ void Sidebar::Load(const String &name)
 			world.GetCanvasOffsetWidth(),
 			world.GetCanvasOffsetHeight());
 
-		float durationInSeconds = static_cast<float>(json_button["duration"]) / static_cast<float>(world.GetTargetFPS());
-		sidebarButton.SetDuration(durationInSeconds);
+		sidebarButton.SetTicks(json_button["duration"]);
 
 		sidebarButton.SetFrame(json_button["frame"]);
 		sidebarButton.SetFrames(json_button["frames"]);
@@ -141,26 +140,20 @@ void Sidebar::Settle()
 			continue;
 		}
 
+		if (StringField(entry, "paid") == "true")
+		{
+			continue;
+		}
+
 		const String key = StringField(entry, "key");
-		const bool paid = StringField(entry, "paid") == "true";
 
 		for (auto &button : buttons)
 		{
-			if (button.buttonState != SidebarButton::States::Pending || button.GetValue() != key)
-			{
-				continue;
-			}
-
-			if (paid)
-			{
-				button.BeginProgress();
-			}
-			else
+			if (button.buttonState == SidebarButton::States::Pending && button.GetValue() == key)
 			{
 				button.CancelPending();
+				break;
 			}
-
-			break;
 		}
 	}
 }
@@ -234,9 +227,7 @@ void Sidebar::Click()
 					{
 						Log::Success("Buy!");
 
-						world.gameEvents.emplace_back(
-							UIAction::PlayerPurchase,
-							"team:" + owner + ",cost:" + std::to_string(button.GetCost()) + ",key:" + button.GetValue());
+						world.gameEvents.emplace_back(UIAction::PlayerProduce, button.ProduceRequest(owner));
 
 						button.buttonState = SidebarButton::States::Pending;
 						button.drawState = SidebarButton::States::Progress;

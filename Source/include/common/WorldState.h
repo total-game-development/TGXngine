@@ -16,6 +16,20 @@
 
 namespace TGX
 {
+// One thing a side is making: paid for when the order landed, advanced a tick
+// at a time by every client, and folded into the digest. A unit deploys itself
+// when it is done; a building or turret waits, ready, for its owner to say
+// where it goes.
+struct ProductionOrder
+{
+	String team;
+	String key;
+	String type;
+	int ticks = 0;
+	int progress = 0;
+	bool ready = false;
+};
+
 class WorldState
 {
 private:
@@ -88,14 +102,41 @@ public:
 	// to be stamped, so every client applies them on the same tick.
 	Vector<Pair<Vector<int>, String>> aiCommands;
 
-	// Money a commander has committed to purchases that have not been applied
-	// yet. Counted as spent until they land, so it is not committed twice.
-	Map<String, int> aiUnsettled;
-
-	// Builds a commander has ordered that have not been applied yet. Until they
-	// are, the building is not in the world, and a commander that could not see
-	// it would order the same one again.
+	// Orders a commander has sent that have not been applied yet. Until they
+	// are, the world does not show them, and a commander that could not see its
+	// own order would give it again.
 	Map<String, int> aiInFlight;
+
+	// What every side is making, in the order it was ordered. Shared state: it
+	// changes only when a command lands or a tick is run, the same on every
+	// client.
+	Vector<ProductionOrder> productionOrders;
+
+	ProductionOrder *FindProduction(const String &inTeam, const String &inKey)
+	{
+		for (ProductionOrder &order : productionOrders)
+		{
+			if (order.team == inTeam && order.key == inKey)
+			{
+				return &order;
+			}
+		}
+
+		return nullptr;
+	}
+
+	const ProductionOrder *FirstProduction(const String &inTeam) const
+	{
+		for (const ProductionOrder &order : productionOrders)
+		{
+			if (order.team == inTeam)
+			{
+				return &order;
+			}
+		}
+
+		return nullptr;
+	}
 
 	// Purchases that have been paid for, waiting to be picked up by whatever
 	// raised them. A purchase leaves the machine that clicked and comes back
@@ -838,8 +879,8 @@ public:
 		activeItemPositions.clear();
 		gameEvents.clear();
 		aiCommands.clear();
-		aiUnsettled.clear();
 		aiInFlight.clear();
+		productionOrders.clear();
 		settledPurchases.clear();
 		pendingQueue.clear();
 		commandQueue.clear();

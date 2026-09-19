@@ -46,8 +46,8 @@ Renderer::Renderer()
 	functions[UIAction::Log] = &Renderer::Log;
 	functions[UIAction::LoadScene] = &Renderer::LoadScene;
 	functions[UIAction::Print] = &Renderer::Print;
-	functions[UIAction::PlayerBuild] = &Renderer::AddGameItem;
-	functions[UIAction::PlayerPurchase] = &Renderer::Purchase;
+	functions[UIAction::PlayerProduce] = &Renderer::Produce;
+	functions[UIAction::PlayerPlace] = &Renderer::Place;
 	functions[UIAction::AddGameItem] = &Renderer::AddGameItem;
 	functions[UIAction::RemoveGameItem] = &Renderer::RemoveGameItem;
 	functions[UIAction::GameOver] = &Renderer::GameOver;
@@ -323,23 +323,70 @@ void Renderer::AddGameItem(Any item)
 	Log::Print("Name: " + name);
 }
 
-void Renderer::Purchase(const Any &request)
+void Renderer::Produce(const Any &request)
 {
 	const auto entry = std::any_cast<String>(request);
 
 	WorldState &world = WorldState::GetInstance();
 
 	const String team = StringField(entry, "team");
+	const String key = StringField(entry, "key");
 	const int cost = std::atoi(StringField(entry, "cost").c_str());
 
-	const bool paid = world.SpendTeamCash(team, cost);
+	// One of each at a time, as a sidebar button makes one at a time.
+	bool accepted = world.FindProduction(team, key) == nullptr;
 
-	if (!paid)
+	if (!accepted)
 	{
+		Log::Warning("Already making " + key + " for " + team);
+	}
+	else if (!world.SpendTeamCash(team, cost))
+	{
+		accepted = false;
+
 		Log::Warning("Purchase refused for " + team + ": $" + std::to_string(cost) + " of $" + std::to_string(world.GetTeamCash(team)));
 	}
+	else
+	{
+		ProductionOrder order;
+		order.team = team;
+		order.key = key;
+		order.type = StringField(entry, "type");
+		order.ticks = std::max(1, std::atoi(StringField(entry, "ticks").c_str()));
 
-	world.settledPurchases.push_back(entry + ",paid:" + (paid ? "true" : "false"));
+		world.productionOrders.push_back(order);
+	}
+
+	world.settledPurchases.push_back(entry + ",paid:" + (accepted ? "true" : "false"));
+}
+
+void Renderer::Place(const Any &request)
+{
+	const auto entry = std::any_cast<String>(request);
+
+	WorldState &world = WorldState::GetInstance();
+
+	const String team = StringField(entry, "team");
+	const String key = StringField(entry, "key");
+
+	// Only something made and paid for can be put down: a placement with no
+	// finished order behind it builds nothing.
+	const auto found = std::ranges::find_if(world.productionOrders, [&](const ProductionOrder &order) {
+		return order.team == team && order.key == key && order.ready;
+	});
+
+	if (found == world.productionOrders.end())
+	{
+		Log::Warning("Nothing of " + key + " is ready for " + team + " to place");
+		return;
+	}
+
+	const String command = "command:build,name:" + key + ",type:" + found->type + ",team:" + team +
+						   ",x:" + StringField(entry, "x") + ",y:" + StringField(entry, "y");
+
+	world.productionOrders.erase(found);
+
+	RunAction(UIAction::AddGameItem, command);
 }
 
 void Renderer::GameOver(Any outcome)
@@ -411,7 +458,7 @@ void Renderer::DrainEvents()
 		// finishing its extractor -- and every client works out the same thing
 		// on the same tick. Sending those too would have each client raise its
 		// own copy and every client apply all of them.
-		if (networked && (action == UIAction::PlayerBuild || action == UIAction::PlayerPurchase))
+		if (networked && (action == UIAction::PlayerProduce || action == UIAction::PlayerPlace))
 		{
 			Log::Info("NET send " + UIActionToString(action) + ": " + value);
 

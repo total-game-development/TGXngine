@@ -590,6 +590,8 @@ void Game::Step()
 		gameEconomy->Update();
 	}
 
+	AdvanceProduction();
+
 	for (const auto &gameAi : gameAis)
 	{
 		gameAi->Update();
@@ -797,6 +799,49 @@ void Game::RightClick()
 	ApplyCommand(world.selected, orders);
 }
 
+void Game::AdvanceProduction()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	Vector<ProductionOrder> finished;
+
+	for (auto order = world.productionOrders.begin(); order != world.productionOrders.end();)
+	{
+		if (order->ready)
+		{
+			++order;
+			continue;
+		}
+
+		order->progress++;
+
+		if (order->progress < order->ticks)
+		{
+			++order;
+			continue;
+		}
+
+		if (order->type == "buildings" || order->type == "turrets")
+		{
+			order->ready = true;
+			++order;
+			continue;
+		}
+
+		finished.push_back(*order);
+		order = world.productionOrders.erase(order);
+	}
+
+	// A unit is deployed from the building that made it, so it needs nobody to
+	// say where. Raised here, on the tick it finished, on every client alike.
+	for (const ProductionOrder &order : finished)
+	{
+		Renderer::GetInstance().RunAction(
+			UIAction::AddGameItem,
+			"command:build,name:" + order.key + ",type:" + order.type + ",team:" + order.team);
+	}
+}
+
 void Game::DispatchAI()
 {
 	WorldState &world = WorldState::GetInstance();
@@ -953,6 +998,16 @@ std::uint64_t Game::WorldDigest() const
 		}
 	}
 
+	// What every side is making, in the order it was ordered, which is the
+	// order the commands landed in on every client.
+	for (const ProductionOrder &order : world.productionOrders)
+	{
+		fold.MixText(order.team);
+		fold.MixText(order.key);
+		fold.Mix(static_cast<std::uint64_t>(order.progress));
+		fold.Mix(order.ready ? 1u : 0u);
+	}
+
 	return fold.Value();
 }
 
@@ -981,23 +1036,12 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 
 		Renderer::GetInstance().RunAction(static_cast<UIAction>(orders.value("action", 0)), value);
 
-		// A commander's order has landed. A purchase's money is gone from the
-		// purse itself now, and a build is in the world where it can see it.
+		// A commander's order has landed, and what it asked for is now in the
+		// world where it can see it.
 		if (orders.value("ai", false))
 		{
-			WorldState &world = WorldState::GetInstance();
-			const String side = orders.value("team", String{});
-
-			if (orders.contains("cost"))
-			{
-				int &unsettled = world.aiUnsettled[side];
-				unsettled = std::max(0, unsettled - orders.value("cost", 0));
-			}
-			else
-			{
-				int &inFlight = world.aiInFlight[side];
-				inFlight = std::max(0, inFlight - 1);
-			}
+			int &inFlight = WorldState::GetInstance().aiInFlight[orders.value("team", String{})];
+			inFlight = std::max(0, inFlight - 1);
 		}
 
 		return;

@@ -5,6 +5,8 @@
 #include "AIDebug.h"
 #include "Core.h"
 #include "EconomyInstance.h"
+#include "Enums.h"
+#include "WorldState.h"
 
 namespace TGX
 {
@@ -129,13 +131,14 @@ private:
 	// so income and spending land in the same purse the player's does.
 	EconomyInstance *Treasury() const;
 	int Funds() const;
-	bool Spend(const Ref<BuildNode> &node);
 	bool Settled() const;
+	bool Produce(const Ref<BuildNode> &node);
+	void Place(const ProductionOrder &order, int x, int y);
+	void Dispatch(UIAction action, const String &value) const;
 
 	Ref<BuildNode> NextBuild();
 	bool IsPlotClear(int x, int y) const;
 	bool FindPlot(int &outX, int &outY) const;
-	void Issue(const Ref<BuildNode> &node, int x, int y) const;
 	void CommandArmy();
 
 	// The units idling at base, which is what a wave is drawn from.
@@ -148,10 +151,6 @@ private:
 	Vector<Ref<BuildNode>> rootNodes;
 	Vector<Ref<BuildNode>> orderedNodes;
 
-	Ref<BuildNode> pending = nullptr;
-	int pendingX = -1;
-	int pendingY = -1;
-	int buildCounter = 0;
 	int buildLimit = 6;
 	int armyLimit = 12;
 	int waveSize = 5;

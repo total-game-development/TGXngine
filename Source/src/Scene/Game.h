@@ -139,6 +139,10 @@ private:
 	// Takes what the AI commanders decided this tick and applies it, or sends
 	// it to be stamped in a networked match.
 	void DispatchAI();
+
+	// Runs one tick of every side's production: an order advances, a finished
+	// unit deploys itself, and a finished building waits to be placed.
+	void AdvanceProduction();
 	void HandlePanning();
 	void DrawOutcome();
 

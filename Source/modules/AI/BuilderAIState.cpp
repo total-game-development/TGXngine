@@ -40,22 +40,31 @@ void BuilderAIState::Update()
 		return;
 	}
 
-	if (pending)
-	{
-		buildCounter++;
-		stallReason.clear();
+	WorldState &world = WorldState::GetInstance();
+	const ProductionOrder *order = world.FirstProduction(team);
 
-		if (buildCounter >= pending->buildTime && Settled())
-		{
-			Issue(pending, pendingX, pendingY);
+	int x = -1;
+	int y = -1;
 
-			pending = nullptr;
-			buildCounter = 0;
-		}
-	}
-	else if (!Settled())
+	if (!Settled())
 	{
 		stallReason = "waiting for its last order to land";
+	}
+	else if (order != nullptr && order->ready)
+	{
+		if (FindPlot(x, y))
+		{
+			stallReason.clear();
+			Place(*order, x, y);
+		}
+		else
+		{
+			stallReason = StringConcat("no room for ", order->key);
+		}
+	}
+	else if (order != nullptr)
+	{
+		stallReason.clear();
 	}
 	else
 	{
@@ -65,36 +74,17 @@ void BuilderAIState::Update()
 		{
 			stallReason = ArmySize() >= armyLimit ? "army at cap" : "nothing affordable";
 		}
+		else if ((next->type == "buildings" || next->type == "turrets") && !FindPlot(x, y))
+		{
+			stallReason = StringConcat("no room for ", next->name);
+		}
+		else if (!Produce(next))
+		{
+			stallReason = StringConcat("cannot afford ", next->name);
+		}
 		else
 		{
-			bool sited = true;
-
-			if (next->type == "buildings" || next->type == "turrets")
-			{
-				sited = FindPlot(pendingX, pendingY);
-			}
-			else
-			{
-				pendingX = -1;
-				pendingY = -1;
-			}
-
-			// The money leaves the purse the moment the work starts, so the
-			// commander cannot commit the same funds to two orders at once.
-			if (!sited)
-			{
-				stallReason = StringConcat("no room for ", next->name);
-			}
-			else if (!Spend(next))
-			{
-				stallReason = StringConcat("cannot afford ", next->name);
-			}
-			else
-			{
-				stallReason.clear();
-				pending = next;
-				buildCounter = 0;
-			}
+			stallReason.clear();
 		}
 	}
 
@@ -172,66 +162,55 @@ int BuilderAIState::Funds() const
 {
 	const EconomyInstance *treasury = Treasury();
 
-	if (!treasury)
-	{
-		return cash;
-	}
-
-	WorldState &world = WorldState::GetInstance();
-	const auto unsettled = world.aiUnsettled.find(team);
-
-	return treasury->GetCash() - (unsettled == world.aiUnsettled.end() ? 0 : unsettled->second);
+	return treasury ? treasury->GetCash() : cash;
 }
 
 bool BuilderAIState::Settled() const
 {
 	WorldState &world = WorldState::GetInstance();
-
-	const auto unsettled = world.aiUnsettled.find(team);
 	const auto inFlight = world.aiInFlight.find(team);
 
-	return (unsettled == world.aiUnsettled.end() || unsettled->second <= 0) &&
-		   (inFlight == world.aiInFlight.end() || inFlight->second <= 0);
+	return inFlight == world.aiInFlight.end() || inFlight->second <= 0;
 }
 
-bool BuilderAIState::Spend(const Ref<BuildNode> &node)
+bool BuilderAIState::Produce(const Ref<BuildNode> &node)
 {
-	const int amount = node->cost;
-
-	if (Treasury())
-	{
-		if (Funds() < amount)
-		{
-			return false;
-		}
-
-		WorldState &world = WorldState::GetInstance();
-
-		world.aiUnsettled[team] += amount;
-		cashSpent += amount;
-
-		const nlohmann::json orders = {
-			{"kind", "event"},
-			{"action", static_cast<int>(UIAction::PlayerPurchase)},
-			{"value", StringConcat("team:", team, ",cost:", std::to_string(amount), ",key:", node->name)},
-			{"ai", true},
-			{"team", team},
-			{"cost", amount}};
-
-		world.aiCommands.emplace_back(Vector<int>{}, orders.dump());
-
-		return true;
-	}
-
-	if (cash < amount)
+	if (Funds() < node->cost)
 	{
 		return false;
 	}
 
-	cash -= amount;
-	cashSpent += amount;
+	const String request = StringConcat(
+		"team:", team, ",key:", node->name, ",type:", node->type,
+		",cost:", std::to_string(node->cost), ",ticks:", std::to_string(node->buildTime));
+
+	Dispatch(UIAction::PlayerProduce, request);
+
+	cashSpent += node->cost;
 
 	return true;
+}
+
+void BuilderAIState::Place(const ProductionOrder &order, int x, int y)
+{
+	Dispatch(UIAction::PlayerPlace, StringConcat("team:", team, ",key:", order.key, ",x:", std::to_string(x), ",y:", std::to_string(y)));
+}
+
+void BuilderAIState::Dispatch(UIAction action, const String &value) const
+{
+	WorldState &world = WorldState::GetInstance();
+
+	Log::Print(StringConcat("AI Command Generated: ", value));
+
+	const nlohmann::json orders = {
+		{"kind", "event"},
+		{"action", static_cast<int>(action)},
+		{"value", value},
+		{"ai", true},
+		{"team", team}};
+
+	world.aiInFlight[team]++;
+	world.aiCommands.emplace_back(Vector<int>{}, orders.dump());
 }
 
 Ref<BuildNode> BuilderAIState::NextBuild()
@@ -371,33 +350,6 @@ bool BuilderAIState::FindPlot(int &outX, int &outY) const
 	return false;
 }
 
-void BuilderAIState::Issue(const Ref<BuildNode> &node, int x, int y) const
-{
-	WorldState &world = WorldState::GetInstance();
-
-	String command = StringConcat("command:", "build");
-	command += "," + StringConcat("name:", node->name);
-	command += "," + StringConcat("type:", node->type);
-	command += "," + StringConcat("team:", team);
-
-	if (x >= 0 && y >= 0)
-	{
-		command += "," + StringConcat("x:", std::to_string(x));
-		command += "," + StringConcat("y:", std::to_string(y));
-	}
-
-	Log::Print(StringConcat("AI Command Generated: ", command));
-
-	const nlohmann::json orders = {
-		{"kind", "event"},
-		{"action", static_cast<int>(UIAction::AddGameItem)},
-		{"value", command},
-		{"ai", true},
-		{"team", team}};
-
-	world.aiInFlight[team]++;
-	world.aiCommands.emplace_back(Vector<int>{}, orders.dump());
-}
 
 // Only the units still waiting at the barracks make up a wave. Counting the
 // ones already marching would keep the muster permanently full, and every
@@ -531,9 +483,11 @@ void BuilderAIState::PublishDebug()
 	snapshot.muster = static_cast<int>(Muster(musterX, musterY).size());
 	snapshot.waveSize = waveSize;
 	snapshot.wavesSent = wavesSent;
-	snapshot.building = pending ? pending->name : String{};
-	snapshot.buildProgress = pending ? buildCounter : 0;
-	snapshot.buildTime = pending ? pending->buildTime : 0;
+	const ProductionOrder *order = world.FirstProduction(team);
+
+	snapshot.building = order ? order->key : String{};
+	snapshot.buildProgress = order ? order->progress : 0;
+	snapshot.buildTime = order ? order->ticks : 0;
 	snapshot.stalled = stallReason;
 }
 

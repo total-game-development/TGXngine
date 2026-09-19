@@ -48,8 +48,7 @@ private:
 	sf::RectangleShape buildableCells;
 	int frame;
 	int frames;
-	float durationCounter;
-	float duration;
+	int ticks = 0;
 	int cost;
 	int powerUsage;
 	bool waitForClick;
@@ -77,7 +76,7 @@ public:
 	void Clear();
 	void SetFrame(int frame);
 	void SetFrames(int frames);
-	void SetDuration(float duration);
+	void SetTicks(int ticks);
 	void SetCost(int cost);
 	void SetPowerUsage(int powerUsage);
 	void AddBuildableGrid(json buildableGrid);
@@ -89,8 +88,8 @@ public:
 	int GetPowerUsage();
 	void ResetButtonState();
 	void ResetDrawState();
-	void BeginProgress();
 	void CancelPending();
+	String ProduceRequest(const String &team) const;
 
 	// Whether what is being placed would fit where the cursor is now. Asked
 	// again on the click rather than read back from what the last frame drew:
@@ -103,8 +102,5 @@ public:
 		return buttonState == States::Placement;
 	}
 	bool HasFreeDeployBerth() const;
-
-private:
-	void BuildImmediately();
 };
 } // namespace TGX

@@ -77,14 +77,10 @@ extern "C"
 				Log::Success("Successful placement and built");
 				world.SetPlacement(false);
 
-				String command = StringConcat("command:", "build");
+				String command = StringConcat("team:", world.GetTeam());
 				command += ",";
-				String name = StringConcat("name:", StringSplit(world.pendingQueue, ",")[0]);
+				String name = StringConcat("key:", StringSplit(world.pendingQueue, ",")[0]);
 				command += name + ",";
-				String type = StringConcat("type:", StringSplit(world.pendingQueue, ",")[1]);
-				command += type + ",";
-				String team = StringConcat("team:", world.GetTeam());
-				command += team + ",";
 				String x = StringConcat("x:", RoundGridDown(world.GetGameX(), 0, 20));
 				command += x + ",";
 				String y = StringConcat("y:", RoundGridDown(world.GetGameY(), -80, 20));
@@ -97,7 +93,7 @@ extern "C"
 
 				Log::Info("NI Command: " + command);
 
-				world.gameEvents.emplace_back(UIAction::PlayerBuild, command);
+				world.gameEvents.emplace_back(UIAction::PlayerPlace, command);
 
 				GetSidebar().Restore();
 

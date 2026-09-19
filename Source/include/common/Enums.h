@@ -76,7 +76,12 @@ enum class UIAction : std::uint8_t
 	PlayerPurchase,
 	AddGameItem,
 	RemoveGameItem,
-	GameOver
+	GameOver,
+	// What a side asks to make, and where it puts a building once it is made.
+	// Both travel as commands; the timer between them is shared state. Added
+	// at the end, since an action is sent as its number.
+	PlayerProduce,
+	PlayerPlace
 };
 
 inline UIAction UIActionFromString(const String &str)
@@ -95,6 +100,8 @@ inline UIAction UIActionFromString(const String &str)
 	if (str == "AddGameItem") { return UIAction::AddGameItem; }
 	if (str == "RemoveGameItem") { return UIAction::RemoveGameItem; }
 	if (str == "GameOver") { return UIAction::GameOver; }
+	if (str == "PlayerProduce") { return UIAction::PlayerProduce; }
+	if (str == "PlayerPlace") { return UIAction::PlayerPlace; }
 	return UIAction::Unknown;
 }
 
@@ -102,6 +109,10 @@ inline String UIActionToString(UIAction action)
 {
 	switch (action)
 	{
+		case UIAction::PlayerProduce:
+			return "PlayerProduce";
+		case UIAction::PlayerPlace:
+			return "PlayerPlace";
 		case UIAction::SetSelectedGame:
 			return "SetSelectedGame";
 		case UIAction::Build:
