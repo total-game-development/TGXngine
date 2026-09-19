@@ -8,6 +8,28 @@ TGXngine decouples stable engine fundamentals from flexible gameplay rules. The 
 
 The engine's roots trace back to War of Salvation, the original RTS in this ecosystem, which was initially built specifically for the web. TGXngine was subsequently engineered as a major architectural extension to empower and involve the community, providing a high-performance native substrate for advanced development. A live web demo version of the original War of Salvation experience is available to play at https://tgame.dev/wos-game/.
 
+## Version 0.4
+
+Version 0.4 is implemented and tagged. The engine goes onto the network: matches between machines over deterministic lockstep, against the separate TGXngineServer, with a lobby to arrange them in. The shell follows it there -- every player's console is a computer the others can reach, and a player's buildings run on it as processes.
+
+### Deterministic Lockstep (src/Net/)
+
+Only input travels. Every order a player gives becomes a command, the server stamps it with the tick it is to run on, and every client applies it on that tick; the world itself is never sent. `Lockstep` holds each client a fixed buffer behind the last tick the server announced, so a stamped command cannot arrive late, and caps how many ticks one frame may run, which is what lets a client replay a whole match to catch up without freezing. Chance is one stream seeded by the server, held on `WorldState` where every module draws from it, with range reduction written out rather than left to the standard library.
+
+Each client reports two digests on a fixed cadence: the commands it applied, which the server holds against its own fold, and its world, which is held against the other clients'. Either disagreeing is reported as a desync. Orders carry what was under the cursor as well as where the click landed, placement and paying for a unit travel as commands too, and a team's treasury is therefore the same number on every machine.
+
+### Server and Lobby
+
+`Session` is the one place that speaks the server's protocol, and a `Multiplayer` scene drives it before a match. The lobby lists rooms with their occupancy and map; a room offers seats, sides, a map and readiness per seat, and starts when every occupied seat is ready. A seat outlives its socket: a client that drops holds its place and the clock stops for it, and the token it was issued brings it back to replay the match from its seed. Observers join the same way, including part-way through. TLS is available behind `-DTGX_ENABLE_TLS=ON`, and `TGX_SERVER` points a client at a server on another machine.
+
+### The Shell On the Network
+
+A player's console is a computer named for their side. `hosts` lists the others, and `connect <side>` opens a session on one, after which the filesystem commands and `edit` work on that player's files; the owner's console says who connected. The traffic rides beside the command path rather than on it: the server relays it to the named player without reading it, and nothing in it is stamped, folded or seen by the simulation, so it cannot desynchronize a match. Messages are rate-limited and files capped at 32 KB, since they share a socket with the match. Cheats are refused in a networked match, and the portal no longer pauses one -- a client that stopped reading its socket fell behind the room.
+
+### Processes
+
+A player's buildings are processes, each given a PID as it goes up and gone when it is destroyed. `ps` lists them with what each supplies to or draws from the power grid, alongside programs started with `spawn`. `kill` and `start` take a building off the grid and put it back, as stamped commands in a networked match; `kill` also interrupts a program, which could not previously be stopped at all.
+
 ## Version 0.3
 
 Version 0.3 is implemented and tagged. The headline addition is an in-engine shell -- a filesystem, a scripting language and a code editor running in-process -- reachable both from the intro menu and from a portal raised over a live match. The strategy AI also stops keeping its own books.
