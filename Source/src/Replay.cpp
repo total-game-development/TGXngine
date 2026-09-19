@@ -43,6 +43,7 @@ int RunReplay(const String &path)
 	// Built as an observer's client builds a match: the level and seed the
 	// server dealt, from the first tick, with no side of its own.
 	MultiplayerSetup::active = true;
+	MultiplayerSetup::headless = true;
 	MultiplayerSetup::observer = true;
 	MultiplayerSetup::team = "observer";
 	MultiplayerSetup::seed = record.value("seed", std::uint32_t{0});

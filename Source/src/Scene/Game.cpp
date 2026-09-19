@@ -359,7 +359,11 @@ void Game::Init()
 	gameResources = std::move(loader->GetGameResources());
 	gameInterfaces = std::move(loader->GetGameInterfaces());
 	uiModule = std::move(loader->GetUI());
-	shellModule = std::move(loader->GetShell());
+
+	if (!MultiplayerSetup::headless)
+	{
+		shellModule = std::move(loader->GetShell());
+	}
 
 	shellSwitches.clear();
 
@@ -472,46 +476,50 @@ void Game::Update()
 
 	if (MultiplayerSetup::active)
 	{
-		Net::Session &session = Net::Session::GetInstance();
-
-		session.Poll();
-
-		Net::Lockstep &clock = session.Clock();
-
-		WorldState &world = WorldState::GetInstance();
-
-		// Kept so anything drawn after the loop still reads the frame it was
-		// drawn in, rather than a tick of simulated time.
-		const float frameDelta = world.GetDeltaTime();
-
-		// Catch up to where the server has said it is safe to reach, one whole
-		// tick at a time. Running a partial tick, or running past this, would
-		// put this client somewhere no other client is.
-		int budget = CATCHUP_BUDGET;
-
-		while (clock.ShouldAdvance() && budget > 0)
-		{
-			budget--;
-
-			RunTick(clock.Due());
-
-			// Not while replaying: the report would be about a tick the rest of
-			// the room went past long ago, and there would be one every sixty
-			// ticks of a replay that runs thousands in a frame.
-			if (clock.IsSanityTick() && clock.IsCaughtUp())
-			{
-				session.ReportDigest(WorldDigest(), commandDigest.Value());
-			}
-
-			clock.Advance();
-		}
-
-		world.SetDeltaTime(frameDelta);
-
+		AdvanceNetworked();
 		return;
 	}
 
 	Step();
+}
+
+void Game::AdvanceNetworked()
+{
+	Net::Session &session = Net::Session::GetInstance();
+
+	session.Poll();
+
+	Net::Lockstep &clock = session.Clock();
+
+	WorldState &world = WorldState::GetInstance();
+
+	// Kept so anything drawn after the loop still reads the frame it was
+	// drawn in, rather than a tick of simulated time.
+	const float frameDelta = world.GetDeltaTime();
+
+	// Catch up to where the server has said it is safe to reach, one whole
+	// tick at a time. Running a partial tick, or running past this, would
+	// put this client somewhere no other client is.
+	int budget = CATCHUP_BUDGET;
+
+	while (clock.ShouldAdvance() && budget > 0)
+	{
+		budget--;
+
+		RunTick(clock.Due());
+
+		// Not while replaying: the report would be about a tick the rest of
+		// the room went past long ago, and there would be one every sixty
+		// ticks of a replay that runs thousands in a frame.
+		if (clock.IsSanityTick() && clock.IsCaughtUp())
+		{
+			session.ReportDigest(WorldDigest(), commandDigest.Value());
+		}
+
+		clock.Advance();
+	}
+
+	world.SetDeltaTime(frameDelta);
 }
 
 void Game::RunTick(const Vector<Net::Command> &due)

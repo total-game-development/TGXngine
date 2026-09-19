@@ -99,6 +99,11 @@ public:
 	// they do it in cannot drift apart.
 	void RunTick(const Vector<Net::Command> &due);
 
+	// Everything a networked match does in a frame: read the socket, then run
+	// every tick the server has made safe to reach, reporting checksums on the
+	// way. The window's frame and a headless host both drive a match with it.
+	void AdvanceNetworked();
+
 	Game();
 	~Game() override;
 	void Init() override;

@@ -86,6 +86,34 @@ void Session::Join(int roomId, bool asObserver)
 	notice = "Joining room " + std::to_string(roomId + 1) + "...";
 }
 
+void Session::JoinAsHost(int roomId, const String &hostToken)
+{
+	room = roomId;
+	observer = true;
+
+	MultiplayerSetup::observer = true;
+
+	client.Send({
+		{"type", "join_game"},
+		{"id", roomId},
+		{"slot", -1},
+		{"platform", "host"},
+		{"token", hostToken}});
+
+	phase = Phase::Waiting;
+	notice = "Hosting room " + std::to_string(roomId + 1) + "...";
+}
+
+void Session::ReportOutcome(const String &outcome)
+{
+	if (!IsPlaying())
+	{
+		return;
+	}
+
+	client.Send({{"type", "outcome"}, {"outcome", outcome}, {"tick", lockstep.LocalTick()}});
+}
+
 // The same join, with the token that names the seat already held. The server
 // gives the seat back rather than handing out a free one, and answers with the
 // match as it stands instead of refusing a room that is playing.

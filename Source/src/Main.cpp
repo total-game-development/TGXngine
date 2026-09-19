@@ -7,6 +7,7 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Physics.h"
+#include "Host.h"
 #include "Renderer.h"
 #include "Replay.h"
 #include "Settings.h"
@@ -48,6 +49,24 @@ int main(int argc, char **argv)
 	if (argc >= 3 && TGX::String(argv[1]) == "--replay")
 	{
 		return TGX::RunReplay(argv[2]);
+	}
+
+	if (argc >= 2 && TGX::String(argv[1]) == "--host")
+	{
+		TGX::String url = "ws://127.0.0.1:9001";
+		TGX::String token;
+		int room = 0;
+
+		for (int index = 1; index + 1 < argc; index++)
+		{
+			const TGX::String flag = argv[index];
+
+			if (flag == "--host") { url = argv[++index]; }
+			else if (flag == "--room") { room = std::atoi(argv[++index]); }
+			else if (flag == "--token") { token = argv[++index]; }
+		}
+
+		return TGX::RunHost(url, room, token);
 	}
 
 	TGX::Init();

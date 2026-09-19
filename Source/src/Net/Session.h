@@ -144,6 +144,13 @@ public:
 
 	void RequestRooms();
 	void Join(int roomId, bool asObserver);
+
+	// Joins as the room's headless host, with the token the server started it
+	// with. It is handed the match as an observer is, and sits in no seat.
+	void JoinAsHost(int roomId, const String &hostToken);
+
+	// The host's verdict on a match: which side is left standing.
+	void ReportOutcome(const String &outcome);
 	void Leave();
 
 	void ChooseSlot(int index);
