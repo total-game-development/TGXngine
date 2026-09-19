@@ -115,6 +115,10 @@ public:
 
 private:
 	void ReindexItems();
+
+	// Hands the shell what other players' consoles sent, lets it time out what
+	// went unanswered, and turns the buildings it asked to stop into commands.
+	void PumpShell();
 	void HandlePanning();
 	void DrawOutcome();
 

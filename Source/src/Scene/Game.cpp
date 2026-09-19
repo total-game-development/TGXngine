@@ -36,6 +36,86 @@ void HandleShellToggle(const char *name, const char *value, bool active)
 
 	Log::Print(String("toggle ") + name + " " + value);
 }
+
+// Held here rather than returned from the module: the shell reads the listing
+// back through a C pointer, which has to outlive the call.
+String shellProcesses;
+
+// Buildings the console has asked to stop. Drained by the game scene, which is
+// what decides whether a stop is applied now or stamped by the server first.
+Vector<int> shellKills;
+
+const ItemInstance *FindProcess(WorldState &world, int uid)
+{
+	for (const auto &entry : world.items)
+	{
+		if (entry && entry->GetUid() == uid && entry->GetLife() > 0.0f && entry->GetType() == "buildings" && entry->GetTeam() == world.GetTeam())
+		{
+			return entry.get();
+		}
+	}
+
+	return nullptr;
+}
+
+// Every building this player owns is a process: it appears when it is placed
+// and is gone when it is destroyed.
+const char *ListShellProcesses()
+{
+	WorldState &world = WorldState::GetInstance();
+	const String team = world.GetTeam();
+
+	Vector<const ItemInstance *> buildings;
+
+	for (const auto &entry : world.items)
+	{
+		if (entry && entry->GetLife() > 0.0f && entry->GetType() == "buildings" && entry->GetTeam() == team)
+		{
+			buildings.push_back(entry.get());
+		}
+	}
+
+	std::ranges::sort(buildings, [](const ItemInstance *a, const ItemInstance *b) {
+		return a->GetUid() < b->GetUid();
+	});
+
+	json listing = {
+		{"usage", world.GetPowerUsage(team)},
+		{"total", world.GetPowerTotal(team)},
+		{"processes", json::array()}};
+
+	for (const ItemInstance *building : buildings)
+	{
+		listing["processes"].push_back({
+			{"uid", building->GetUid()},
+			{"name", building->GetName()},
+			{"running", building->IsRunning()},
+			{"power", building->GetPowerUsage()}});
+	}
+
+	shellProcesses = listing.dump();
+
+	return shellProcesses.c_str();
+}
+
+bool KillShellProcess(int uid)
+{
+	const ItemInstance *building = FindProcess(WorldState::GetInstance(), uid);
+
+	if (!building || !building->IsRunning())
+	{
+		return false;
+	}
+
+	shellKills.push_back(uid);
+
+	return true;
+}
+
+void SendShellMessage(const char *to, const char *body)
+{
+	Net::Session::GetInstance().SendShell(to, json::parse(body, nullptr, false));
+}
 } // namespace
 
 Game::Game()
@@ -281,11 +361,44 @@ void Game::Init()
 	uiModule = std::move(loader->GetUI());
 	shellModule = std::move(loader->GetShell());
 
+	shellKills.clear();
+
 	if (shellModule)
 	{
 		shellModule->Awake("shell");
 		shellModule->SetToggleHandler(&HandleShellToggle);
 		shellModule->Create();
+
+		// Somebody watching owns no buildings, so has no processes to list.
+		const bool watching = (MultiplayerSetup::active && MultiplayerSetup::observer) ||
+							  (SkirmishSetup::active && SkirmishSetup::spectator);
+
+		if (!watching)
+		{
+			shellModule->SetProcessHandler(&ListShellProcesses, &KillShellProcess);
+		}
+
+		// Every other player's console is a computer this one can reach. An
+		// observer has no computer of its own and reaches none.
+		if (MultiplayerSetup::active)
+		{
+			json machines = json::array();
+
+			if (!MultiplayerSetup::observer && level.contains("teams"))
+			{
+				for (const auto &teamEntry : level["teams"])
+				{
+					if (teamEntry.value("type", String{}) == "remote")
+					{
+						machines.push_back(teamEntry.value("name", String{}));
+					}
+				}
+			}
+
+			const String self = MultiplayerSetup::observer ? String{} : MultiplayerSetup::team;
+
+			shellModule->SetNetwork(&SendShellMessage, json{{"self", self}, {"machines", machines}}.dump());
+		}
 	}
 	gameTriggers = std::move(loader->GetGameTriggers());
 
@@ -324,6 +437,8 @@ void Game::Update()
 		return;
 	}
 
+	PumpShell();
+
 	if (uiModule)
 	{
 		uiModule->Update();
@@ -340,7 +455,11 @@ void Game::Update()
 			uiModule->Clear();
 		}
 
-		if (uiModule->IsPaused())
+		// A networked match cannot stop for one player. The portal still takes
+		// the pointer, but the clock and the socket carry on underneath it:
+		// a client that stopped polling here would fall behind the room, and
+		// would stop answering the other players' consoles while its own was up.
+		if (uiModule->IsPaused() && !MultiplayerSetup::active)
 		{
 			return;
 		}
@@ -651,6 +770,44 @@ void Game::RightClick()
 	ApplyCommand(world.selected, orders);
 }
 
+void Game::PumpShell()
+{
+	if (!shellModule)
+	{
+		shellKills.clear();
+		return;
+	}
+
+	if (MultiplayerSetup::active)
+	{
+		for (const json &message : Net::Session::GetInstance().TakeShell())
+		{
+			shellModule->Deliver(message.dump());
+		}
+	}
+
+	shellModule->Update();
+
+	Vector<int> kills;
+	kills.swap(shellKills);
+
+	for (int uid : kills)
+	{
+		const json orders = {{"kind", "kill"}};
+
+		// Stamped like any order in a networked match, so the stop lands on the
+		// same tick everywhere; applied at once in single player.
+		if (MultiplayerSetup::active)
+		{
+			Net::Session::GetInstance().SendCommand({uid}, orders);
+		}
+		else
+		{
+			ApplyCommand({uid}, orders);
+		}
+	}
+}
+
 std::uint64_t Game::WorldDigest() const
 {
 	WorldState &world = WorldState::GetInstance();
@@ -695,6 +852,9 @@ std::uint64_t Game::WorldDigest() const
 		// client and idle on the other is caught before the two worlds part.
 		fold.Mix(static_cast<std::uint64_t>(entry->GetState()));
 		fold.Mix(static_cast<std::uint64_t>(entry->GetTargetUid()));
+
+		// A building stopped from the console draws or supplies no power.
+		fold.Mix(entry->IsRunning() ? 1u : 0u);
 	}
 
 	// The treasuries, in team order. Income has always been worked out the same
@@ -759,6 +919,29 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 		Log::Info("NET apply event at tick " + std::to_string(digestTick) + ": " + value);
 
 		Renderer::GetInstance().RunAction(static_cast<UIAction>(orders.value("action", 0)), value);
+
+		return;
+	}
+
+	// A building its owner stopped from the console. Its power leaves the grid
+	// here, on the stamped tick, so every client's grid loses it at once.
+	if (orders.value("kind", String{"order"}) == "kill")
+	{
+		WorldState &world = WorldState::GetInstance();
+
+		for (const auto &entry : world.items)
+		{
+			if (!entry || entry->GetLife() <= 0.0f || !entry->IsRunning() || entry->GetType() != "buildings" ||
+				std::ranges::find(uids, entry->GetUid()) == uids.end())
+			{
+				continue;
+			}
+
+			entry->SetRunning(false);
+			world.DisconnectPower(entry->GetTeam(), entry->GetPowerUsage());
+
+			Log::Info("Stopped " + entry->GetName() + " " + std::to_string(entry->GetUid()) + " at tick " + std::to_string(digestTick));
+		}
 
 		return;
 	}
@@ -1452,6 +1635,8 @@ void Game::Close()
 	{
 		shellModule->Clear();
 	}
+
+	shellKills.clear();
 
 	// Consumed by the match it set up. Left standing it would hijack the next
 	// launch, which reads startLevel.

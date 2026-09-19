@@ -667,6 +667,30 @@ public:
 		powerTotal[inTeam] = std::max(0, inPowerTotal);
 	}
 
+	void ConnectPower(const String &inTeam, int inPowerUsage)
+	{
+		if (inPowerUsage < 0)
+		{
+			SetPowerTotal(inTeam, GetPowerTotal(inTeam) - inPowerUsage);
+		}
+		else
+		{
+			SetPowerUsage(inTeam, GetPowerUsage(inTeam) + inPowerUsage);
+		}
+	}
+
+	void DisconnectPower(const String &inTeam, int inPowerUsage)
+	{
+		if (inPowerUsage < 0)
+		{
+			SetPowerTotal(inTeam, GetPowerTotal(inTeam) + inPowerUsage);
+		}
+		else
+		{
+			SetPowerUsage(inTeam, GetPowerUsage(inTeam) - inPowerUsage);
+		}
+	}
+
 	String GetExtendedPath()
 	{
 		return extendedPath;

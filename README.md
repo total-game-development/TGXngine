@@ -22,7 +22,7 @@ Programs reach the engine only through `Host` -- print, read, write, exec, spawn
 
 A second module supplies the in-match interface layer. A `Portal` reads `portal.json` and builds `Screen`s from declared `Element`s -- text, buttons, icon buttons and text inputs -- resolving positions through `Layout` expressions such as `centre-300` and `height-20` so a layout survives any view size. Opening a window attaches a `Panel` bound to a `Page`: a framed, draggable, closable window carrying a title, wrapped body text, an optional image and an optional inbox. The module is bound through `modules.json` as `{"type":"ui", "name":"modules/UI"}`, and maps declare their portal in their own `ui` blocks.
 
-The toggle keys, opening screen, backdrop and console page are all declared in `portal.json` rather than compiled in. The portal pauses the match it covers.
+The toggle keys, opening screen, backdrop and console page are all declared in `portal.json` rather than compiled in. The portal pauses the match it covers in single player. A networked match cannot stop for one player, so there the portal is an overlay and the clock carries on underneath it.
 
 ### The Shell In a Match
 

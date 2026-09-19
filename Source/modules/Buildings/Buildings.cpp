@@ -33,15 +33,9 @@ void Destroyed(BuildingState *building)
 		}
 	}
 
-	const String &owner = building->GetTeam();
-
-	if (building->GetPowerUsage() < 0)
+	if (building->IsRunning())
 	{
-		world.SetPowerTotal(owner, world.GetPowerTotal(owner) + building->GetPowerUsage());
-	}
-	else
-	{
-		world.SetPowerUsage(owner, world.GetPowerUsage(owner) - building->GetPowerUsage());
+		world.DisconnectPower(building->GetTeam(), building->GetPowerUsage());
 	}
 
 	world.deployMap.erase(building->GetUid());
@@ -193,16 +187,7 @@ extern "C"
 		globalItem->SetLife(globalItem->GetHitPoints());
 		world.SetPrimaryItems(globalItem->GetTeam(), globalItem->GetName(), globalItem->GetUid());
 
-		const String &owner = globalItem->GetTeam();
-
-		if (buildingState->GetPowerUsage() < 0)
-		{
-			world.SetPowerTotal(owner, world.GetPowerTotal(owner) - buildingState->GetPowerUsage());
-		}
-		else
-		{
-			world.SetPowerUsage(owner, world.GetPowerUsage(owner) + buildingState->GetPowerUsage());
-		}
+		world.ConnectPower(globalItem->GetTeam(), buildingState->GetPowerUsage());
 	}
 
 	MODULE_API void SendOrders(ItemInstance *itemInstance)

@@ -55,6 +55,7 @@ private:
 	bool training = false;
 	bool isHidden = false;
 	bool visible = true;
+	bool running = true;
 	ItemStates state = ItemStates::Stand;
 	Map<ItemProperty, PropertyValue> extras;
 
@@ -282,6 +283,16 @@ public:
 		return classification.buildable;
 	}
 
+	bool IsRunning() const
+	{
+		return running;
+	}
+
+	void SetRunning(bool inRunning)
+	{
+		running = inRunning;
+	}
+
 	void SetBuildable(bool buildable)
 	{
 		classification.buildable = buildable;
@@ -393,6 +404,11 @@ public:
 	virtual int GetSight() const
 	{
 		return 4;
+	}
+
+	virtual int GetPowerUsage() const
+	{
+		return 0;
 	}
 
 	// How far this thing's own body reaches from its centre. A shooter's range

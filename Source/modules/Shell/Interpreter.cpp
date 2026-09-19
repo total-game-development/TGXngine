@@ -59,6 +59,11 @@ void Interpreter::SetStepLimit(unsigned long long limit)
 	stepLimit = limit;
 }
 
+void Interpreter::SetCancel(const std::atomic<bool> *flag)
+{
+	cancelled = flag;
+}
+
 void Interpreter::Fail(const String &message)
 {
 	if (aborted)
@@ -116,6 +121,12 @@ ValueRef Interpreter::Interpret(const NodeRef &node, Environment *environment)
 	}
 
 	++steps;
+
+	if (cancelled != nullptr && cancelled->load(std::memory_order_relaxed))
+	{
+		aborted = true;
+		return MakeNull();
+	}
 
 	if (stepLimit != 0 && steps > stepLimit)
 	{

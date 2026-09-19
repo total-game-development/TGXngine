@@ -14,6 +14,9 @@ ShellModule::ShellModule(
 	FNPTR_SHELL_IS_EDITING inIsEditing,
 	FNPTR_SHELL_SHOULD_CLOSE inShouldClose,
 	FNPTR_SHELL_SET_TOGGLE_HANDLER inSetToggleHandler,
+	FNPTR_SHELL_SET_NETWORK inSetNetwork,
+	FNPTR_SHELL_DELIVER inDeliver,
+	FNPTR_SHELL_SET_PROCESS_HANDLER inSetProcessHandler,
 	FNPTR_SHELL_CLEAR inClear,
 	FNPTR_SHELL_DELETE inDelete)
 	: awake(inAwake),
@@ -27,6 +30,9 @@ ShellModule::ShellModule(
 	  isEditing(inIsEditing),
 	  shouldClose(inShouldClose),
 	  setToggleHandler(inSetToggleHandler),
+	  setNetwork(inSetNetwork),
+	  deliver(inDeliver),
+	  setProcessHandler(inSetProcessHandler),
 	  clear(inClear),
 	  _delete(inDelete)
 {
@@ -111,6 +117,38 @@ void ShellModule::SetToggleHandler(void (*handler)(const char *, const char *, b
 	if (setToggleHandler)
 	{
 		setToggleHandler(handler);
+	}
+}
+
+void ShellModule::SetNetwork(FNPTR_SHELL_SEND send, const String &identity)
+{
+	if (setNetwork)
+	{
+		setNetwork(send, identity.c_str());
+	}
+}
+
+void ShellModule::ClearNetwork()
+{
+	if (setNetwork)
+	{
+		setNetwork(nullptr, nullptr);
+	}
+}
+
+void ShellModule::Deliver(const String &message)
+{
+	if (deliver)
+	{
+		deliver(message.c_str());
+	}
+}
+
+void ShellModule::SetProcessHandler(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_KILL_PROCESS kill)
+{
+	if (setProcessHandler)
+	{
+		setProcessHandler(list, kill);
 	}
 }
 

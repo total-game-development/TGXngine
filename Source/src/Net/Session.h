@@ -124,6 +124,10 @@ private:
 	// Set when a resume arrives, cleared once the game scene has taken them.
 	Vector<nlohmann::json> replay;
 
+	// What other players' consoles have sent this one, held until the game
+	// scene hands it to the shell.
+	Vector<nlohmann::json> shell;
+
 	void Handle(const nlohmann::json &message);
 	void EnterMatch(const nlohmann::json &message, bool resuming);
 	void Rejoin();
@@ -165,6 +169,12 @@ public:
 	// the tick the rest of the room is on. Taken once, by the game scene, as it
 	// starts the match.
 	Vector<nlohmann::json> TakeReplay();
+
+	// Console traffic between players, relayed by the server to the player on
+	// the named side. It never touches the simulation, so it rides beside the
+	// command path rather than on it: nothing here is stamped or folded.
+	void SendShell(const String &to, const nlohmann::json &body);
+	Vector<nlohmann::json> TakeShell();
 
 	Lockstep &Clock()
 	{

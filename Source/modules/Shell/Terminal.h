@@ -1,6 +1,9 @@
 #pragma once
 
+#include <chrono>
+#include <map>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include "Core.h"
 #include "Editor.h"
 #include "FileSystem.h"
@@ -15,9 +18,15 @@ struct Session
 	String user;
 	String password;
 	FileSystem fileSystem;
+
+	bool networked = false;
+	String directory = "/";
 };
 
 using ToggleHandler = void (*)(const char *, const char *, bool);
+using NetworkSender = Function<void(const String &, const nlohmann::json &)>;
+using ProcessLister = Function<nlohmann::json()>;
+using ProcessKiller = Function<bool(int)>;
 
 enum class TerminalMode : std::uint8_t
 {
@@ -28,12 +37,33 @@ enum class TerminalMode : std::uint8_t
 class Terminal : public Host
 {
 private:
+	using Clock = std::chrono::steady_clock;
+
+	struct Request
+	{
+		String machine;
+		String op;
+		String name;
+		String directory;
+		Clock::time_point sent;
+	};
+
+	struct EditTarget
+	{
+		String machine;
+		String directory;
+	};
+
 	static constexpr std::size_t MAX_OUTPUT = 512;
 	static constexpr std::size_t MAX_HISTORY = 64;
 	static constexpr unsigned long long RUN_STEP_LIMIT = 5000000ULL;
+	static constexpr std::size_t MAX_REMOTE_SOURCE = 32 * 1024;
+	static constexpr std::chrono::milliseconds REQUEST_TIMEOUT{5000};
+	static constexpr std::chrono::milliseconds PROCESS_REFRESH{250};
 
 	Session local;
 	Map<String, Session> remotes;
+	Map<String, Session> machines;
 	Session *current = nullptr;
 
 	Vector<String> output;
@@ -53,14 +83,42 @@ private:
 	String savePath;
 	ToggleHandler toggleHandler = nullptr;
 
+	NetworkSender sender;
+	String self;
+	bool multiplayer = false;
+	int nextRequest = 0;
+	std::map<int, Request> requests;
+	Optional<EditTarget> editTarget;
+
+	ProcessLister processLister;
+	ProcessKiller processKiller;
+	nlohmann::json processes = nlohmann::json::object();
+	std::map<int, int> buildingPids;
+	int nextPid = 1;
+	Clock::time_point refreshed;
+
 	void Help();
 	void Run(const String &command);
 	void Edit(const String &command);
 	void Connect(const String &command);
 	void Disconnect();
+	void Hosts();
 	void Cheat(const String &command);
 	void SaveEditor();
 	void Persist();
+
+	FileSystem &Files();
+
+	bool Remote(const String &head, const Vector<String> &args);
+	void Send(const String &machine, const String &directory, const String &op, const Vector<String> &args, const String &source = String());
+	void Answer(const String &from, const nlohmann::json &body);
+	void Receive(const String &from, const nlohmann::json &body);
+	void Refused(const nlohmann::json &message);
+	void Abandon(const Request &request, const String &reason);
+
+	void RefreshProcesses();
+	void ListProcesses();
+	void Kill(const Vector<String> &args);
 
 	static Vector<String> Split(const String &text, char delimiter);
 
@@ -77,6 +135,14 @@ public:
 	void Toggle(const String &name, const String &value, bool active) override;
 	void SetToggleHandler(ToggleHandler handler);
 	void Spawn(const String &command) override;
+
+	void SetNetwork(const String &name, const Vector<String> &peers, NetworkSender send);
+	void ClearNetwork();
+	void Deliver(const nlohmann::json &message);
+
+	void SetProcessHandlers(ProcessLister lister, ProcessKiller killer);
+
+	void Update();
 
 	void Submit(const String &command);
 	void Character(char character);

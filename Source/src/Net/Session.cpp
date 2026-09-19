@@ -61,6 +61,7 @@ void Session::Disconnect()
 
 	held = false;
 	replay.clear();
+	shell.clear();
 }
 
 void Session::RequestRooms()
@@ -171,6 +172,24 @@ void Session::ReportDigest(std::uint64_t world, std::uint64_t commands)
 		{"tick", lockstep.LocalTick()},
 		{"value", world},
 		{"commands", commands}});
+}
+
+void Session::SendShell(const String &to, const nlohmann::json &body)
+{
+	if (!IsPlaying())
+	{
+		return;
+	}
+
+	client.Send({{"type", "shell"}, {"to", to}, {"body", body}});
+}
+
+Vector<nlohmann::json> Session::TakeShell()
+{
+	Vector<nlohmann::json> taken;
+	taken.swap(shell);
+
+	return taken;
 }
 
 Vector<nlohmann::json> Session::TakeReplay()
@@ -523,6 +542,12 @@ void Session::Handle(const nlohmann::json &message)
 	if (type == "player_left")
 	{
 		notice = "A player left the match.";
+		return;
+	}
+
+	if (type == "shell" || type == "shell_refused")
+	{
+		shell.push_back(message);
 		return;
 	}
 

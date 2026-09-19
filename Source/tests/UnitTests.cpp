@@ -15,6 +15,8 @@
 #include "test_shell/TestHighlight.hpp"
 #include "test_shell/TestInterpreter.hpp"
 #include "test_shell/TestPersistence.hpp"
+#include "test_shell/TestProcesses.hpp"
+#include "test_shell/TestRemote.hpp"
 
 int main(int argc, char **argv)
 {

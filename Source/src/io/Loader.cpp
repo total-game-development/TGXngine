@@ -623,6 +623,9 @@ void Loader::AssignShell()
 		(FNPTR_SHELL_IS_EDITING)GET_PROC(dllHandle, "IsEditing"),
 		(FNPTR_SHELL_SHOULD_CLOSE)GET_PROC(dllHandle, "ShouldClose"),
 		(FNPTR_SHELL_SET_TOGGLE_HANDLER)GET_PROC(dllHandle, "SetToggleHandler"),
+		(FNPTR_SHELL_SET_NETWORK)GET_PROC(dllHandle, "SetNetwork"),
+		(FNPTR_SHELL_DELIVER)GET_PROC(dllHandle, "Deliver"),
+		(FNPTR_SHELL_SET_PROCESS_HANDLER)GET_PROC(dllHandle, "SetProcessHandler"),
 		(FNPTR_SHELL_CLEAR)GET_PROC(dllHandle, "Clear"),
 		(FNPTR_SHELL_DELETE)GET_PROC(dllHandle, "Delete"));
 

@@ -31,6 +31,15 @@ void TaskPool::Stop()
 		return;
 	}
 
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+
+		for (auto &entry : processes)
+		{
+			entry.second.cancelled->store(true);
+		}
+	}
+
 	condition.notify_all();
 
 	for (std::thread &worker : workers)
@@ -49,6 +58,8 @@ void TaskPool::Stop()
 	{
 		queue.pop();
 	}
+
+	processes.clear();
 }
 
 void TaskPool::Enqueue(Task task)
@@ -58,8 +69,15 @@ void TaskPool::Enqueue(Task task)
 		return;
 	}
 
+	if (!task.cancelled)
+	{
+		task.cancelled = std::make_shared<std::atomic<bool>>(false);
+	}
+
 	{
 		std::lock_guard<std::mutex> lock(mutex);
+
+		processes[task.pid] = {task.name, false, task.cancelled};
 		queue.push(std::move(task));
 	}
 
@@ -69,6 +87,41 @@ void TaskPool::Enqueue(Task task)
 bool TaskPool::IsRunning() const
 {
 	return running.load();
+}
+
+Vector<ProcessInfo> TaskPool::List() const
+{
+	std::lock_guard<std::mutex> lock(mutex);
+
+	Vector<ProcessInfo> list;
+
+	for (const auto &[pid, entry] : processes)
+	{
+		list.push_back({pid, entry.name, entry.running});
+	}
+
+	return list;
+}
+
+bool TaskPool::Kill(int pid)
+{
+	std::lock_guard<std::mutex> lock(mutex);
+
+	const auto found = processes.find(pid);
+
+	if (found == processes.end())
+	{
+		return false;
+	}
+
+	found->second.cancelled->store(true);
+
+	if (!found->second.running)
+	{
+		processes.erase(found);
+	}
+
+	return true;
 }
 
 void TaskPool::Work()
@@ -89,10 +142,23 @@ void TaskPool::Work()
 
 			task = std::move(queue.front());
 			queue.pop();
+
+			const auto found = processes.find(task.pid);
+
+			if (found == processes.end() || task.cancelled->load())
+			{
+				continue;
+			}
+
+			found->second.running = true;
 		}
 
 		Interpreter interpreter(host);
+		interpreter.SetCancel(task.cancelled.get());
 		interpreter.Run(task.program, task.args);
+
+		std::lock_guard<std::mutex> lock(mutex);
+		processes.erase(task.pid);
 	}
 }
 } // namespace TGX::Shell

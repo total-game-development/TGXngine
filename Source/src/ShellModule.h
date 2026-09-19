@@ -16,6 +16,12 @@ using FNPTR_SHELL_SET_VIEWPORT = void (*)(float, float, float, float);
 using FNPTR_SHELL_IS_EDITING = bool (*)();
 using FNPTR_SHELL_SHOULD_CLOSE = bool (*)();
 using FNPTR_SHELL_SET_TOGGLE_HANDLER = void (*)(void (*)(const char *, const char *, bool));
+using FNPTR_SHELL_SEND = void (*)(const char *, const char *);
+using FNPTR_SHELL_SET_NETWORK = void (*)(FNPTR_SHELL_SEND, const char *);
+using FNPTR_SHELL_DELIVER = void (*)(const char *);
+using FNPTR_SHELL_LIST_PROCESSES = const char *(*)();
+using FNPTR_SHELL_KILL_PROCESS = bool (*)(int);
+using FNPTR_SHELL_SET_PROCESS_HANDLER = void (*)(FNPTR_SHELL_LIST_PROCESSES, FNPTR_SHELL_KILL_PROCESS);
 using FNPTR_SHELL_CLEAR = void (*)();
 using FNPTR_SHELL_DELETE = void (*)();
 
@@ -33,6 +39,9 @@ private:
 	FNPTR_SHELL_IS_EDITING isEditing;
 	FNPTR_SHELL_SHOULD_CLOSE shouldClose;
 	FNPTR_SHELL_SET_TOGGLE_HANDLER setToggleHandler;
+	FNPTR_SHELL_SET_NETWORK setNetwork;
+	FNPTR_SHELL_DELIVER deliver;
+	FNPTR_SHELL_SET_PROCESS_HANDLER setProcessHandler;
 	FNPTR_SHELL_CLEAR clear;
 	FNPTR_SHELL_DELETE _delete;
 
@@ -49,6 +58,9 @@ public:
 		FNPTR_SHELL_IS_EDITING,
 		FNPTR_SHELL_SHOULD_CLOSE,
 		FNPTR_SHELL_SET_TOGGLE_HANDLER,
+		FNPTR_SHELL_SET_NETWORK,
+		FNPTR_SHELL_DELIVER,
+		FNPTR_SHELL_SET_PROCESS_HANDLER,
 		FNPTR_SHELL_CLEAR,
 		FNPTR_SHELL_DELETE);
 	~ShellModule() = default;
@@ -64,6 +76,10 @@ public:
 	bool IsEditing();
 	bool ShouldClose();
 	void SetToggleHandler(void (*handler)(const char *, const char *, bool));
+	void SetNetwork(FNPTR_SHELL_SEND send, const String &identity);
+	void ClearNetwork();
+	void Deliver(const String &message);
+	void SetProcessHandler(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_KILL_PROCESS kill);
 	void Clear();
 	void Delete();
 };

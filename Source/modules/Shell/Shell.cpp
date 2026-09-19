@@ -181,6 +181,10 @@ extern "C"
 
 	MODULE_API void Update()
 	{
+		if (terminal)
+		{
+			terminal->Update();
+		}
 	}
 
 	MODULE_API void Draw()
@@ -286,11 +290,76 @@ extern "C"
 		}
 	}
 
+	MODULE_API void SetNetwork(void (*send)(const char *, const char *), const char *identity)
+	{
+		if (!terminal)
+		{
+			return;
+		}
+
+		if (send == nullptr || identity == nullptr)
+		{
+			terminal->ClearNetwork();
+			return;
+		}
+
+		const nlohmann::json data = nlohmann::json::parse(identity, nullptr, false);
+
+		Vector<String> peers;
+
+		if (data.is_object() && data.contains("machines") && data["machines"].is_array())
+		{
+			for (const auto &machine : data["machines"])
+			{
+				if (machine.is_string())
+				{
+					peers.push_back(machine.get<String>());
+				}
+			}
+		}
+
+		const String self = data.is_object() ? data.value("self", String()) : String();
+
+		terminal->SetNetwork(self, peers, [send](const String &to, const nlohmann::json &body) {
+			send(to.c_str(), body.dump().c_str());
+		});
+	}
+
+	MODULE_API void Deliver(const char *message)
+	{
+		if (!terminal || message == nullptr)
+		{
+			return;
+		}
+
+		terminal->Deliver(nlohmann::json::parse(message, nullptr, false));
+	}
+
+	MODULE_API void SetProcessHandler(const char *(*list)(), bool (*kill)(int))
+	{
+		if (!terminal)
+		{
+			return;
+		}
+
+		if (list == nullptr || kill == nullptr)
+		{
+			terminal->SetProcessHandlers(nullptr, nullptr);
+			return;
+		}
+
+		terminal->SetProcessHandlers(
+			[list]() { return nlohmann::json::parse(list(), nullptr, false); },
+			[kill](int uid) { return kill(uid); });
+	}
+
 	MODULE_API void Clear()
 	{
 		if (terminal)
 		{
 			terminal->CommitEditor();
+			terminal->ClearNetwork();
+			terminal->SetProcessHandlers(nullptr, nullptr);
 			terminal->Save(savePath);
 			terminal->Stop();
 		}
@@ -301,6 +370,8 @@ extern "C"
 		if (terminal)
 		{
 			terminal->CommitEditor();
+			terminal->ClearNetwork();
+			terminal->SetProcessHandlers(nullptr, nullptr);
 			terminal->Save(savePath);
 			terminal->Stop();
 			terminal.reset();

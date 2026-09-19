@@ -93,7 +93,7 @@ public:
 	{
 	}
 
-	virtual int GetPowerUsage() const = 0;
+	int GetPowerUsage() const override = 0;
 };
 
 // -------------------------------------------------------------------------

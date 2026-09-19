@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include "Ast.h"
 #include "Environment.h"
 #include "Host.h"
@@ -22,6 +23,8 @@ private:
 
 	unsigned long long steps = 0;
 	unsigned long long stepLimit = 0;
+
+	const std::atomic<bool> *cancelled = nullptr;
 
 	void Fail(const String &message);
 
@@ -56,6 +59,7 @@ public:
 	explicit Interpreter(Host *inHost);
 
 	void SetStepLimit(unsigned long long limit);
+	void SetCancel(const std::atomic<bool> *flag);
 
 	ValueRef Interpret(const NodeRef &node, Environment *environment);
 	void Run(const NodeRef &program, const Vector<String> &args);
