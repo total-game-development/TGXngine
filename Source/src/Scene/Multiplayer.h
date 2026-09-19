@@ -9,6 +9,9 @@ namespace TGX
 // and a map, and says when everybody is ready. Which one is drawn follows the
 // session's phase rather than a flag kept here, so a match that starts, ends or
 // is refused moves the scene with it.
+//
+// The arena is the same list with nobody to seat: a room picked there is
+// watched while the host's AI plays every side of it.
 class Multiplayer : public Scene
 {
 private:
@@ -19,6 +22,7 @@ private:
 		None,
 		Room,
 		Observe,
+		Arena,
 		Seat,
 		Team,
 		Level,
@@ -41,6 +45,7 @@ private:
 	int scroll = 0;
 
 	bool loaded = false;
+	bool arena = false;
 
 	void Add(const sf::FloatRect &bounds, Target target, int value);
 
@@ -55,7 +60,7 @@ private:
 	bool InRoom() const;
 
 public:
-	Multiplayer();
+	explicit Multiplayer(bool inArena);
 	~Multiplayer() override;
 
 	void Init() override;

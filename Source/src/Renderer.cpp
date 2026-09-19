@@ -40,7 +40,8 @@ Renderer::Renderer()
 	scenes.insert({SceneType::Skirmish, std::make_shared<Skirmish>()});
 	scenes.insert({SceneType::Game, std::make_shared<Game>()});
 	scenes.insert({SceneType::Shell, std::make_shared<ShellScene>()});
-	scenes.insert({SceneType::Multiplayer, std::make_shared<Multiplayer>()});
+	scenes.insert({SceneType::Multiplayer, std::make_shared<Multiplayer>(false)});
+	scenes.insert({SceneType::Arena, std::make_shared<Multiplayer>(true)});
 
 	functions[UIAction::Log] = &Renderer::Log;
 	functions[UIAction::LoadScene] = &Renderer::LoadScene;

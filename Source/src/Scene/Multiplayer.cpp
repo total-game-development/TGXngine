@@ -32,7 +32,7 @@ String ServerUrl()
 }
 } // namespace
 
-Multiplayer::Multiplayer()
+Multiplayer::Multiplayer(bool inArena) : arena(inArena)
 {
 	Log::Success("Multiplayer Scene Created");
 }
@@ -96,7 +96,9 @@ void Multiplayer::DrawHeading()
 	Window &window = Window::GetInstance();
 	Net::Session &session = Net::Session::GetInstance();
 
-	sf::Text title(InRoom() ? "ROOM " + std::to_string(session.Room().number) : String{"MULTIPLAYER"}, font, 28);
+	const String heading = arena ? String{"ARENA"} : String{"MULTIPLAYER"};
+
+	sf::Text title(InRoom() && !arena ? "ROOM " + std::to_string(session.Room().number) : heading, font, 28);
 	title.setPosition(MARGIN, 50.0f);
 	title.setFillColor(ACCENT);
 	window.Draw(title);
@@ -111,9 +113,16 @@ void Multiplayer::DrawHeading()
 		return;
 	}
 
-	const String hint = InRoom()
-							? "Click a seat to move, a side to change it, a map to pick it.  ESC leaves the room."
-							: "Click a room to join, right-click to watch, A to watch the AI play itself there.  ESC returns.";
+	String hint = InRoom()
+					  ? "Click a seat to move, a side to change it, a map to pick it.  ESC leaves the room."
+					  : "Click a room to join, right-click to watch.  TGX_SERVER overrides the address.  ESC returns.";
+
+	if (arena)
+	{
+		hint = InRoom()
+				   ? "Waiting for the next match in this arena.  ESC leaves."
+				   : "Click a room to watch the AI play itself there.  An empty room starts a match.  ESC returns.";
+	}
 
 	sf::Text line(hint, font, 13);
 	line.setPosition(MARGIN, 112.0f);
@@ -163,7 +172,7 @@ void Multiplayer::DrawRooms()
 
 		const int hit = static_cast<int>(hits.size());
 
-		Add(bounds, room.running ? Target::Observe : Target::Room, static_cast<int>(index));
+		Add(bounds, arena ? Target::Arena : (room.running ? Target::Observe : Target::Room), static_cast<int>(index));
 
 		const bool isHovered = hovered == hit;
 
@@ -374,7 +383,13 @@ void Multiplayer::Draw()
 
 	DrawHeading();
 
-	if (InRoom())
+	// An arena between matches has no seats to show; the notice says it is
+	// waiting for the next.
+	if (InRoom() && arena)
+	{
+		DrawNotice();
+	}
+	else if (InRoom())
 	{
 		DrawRoom();
 	}
@@ -407,6 +422,10 @@ void Multiplayer::Click()
 			// A room that is playing cannot take another player, but it can take
 			// somebody to watch: the server replays the match into them.
 			session.Join(hit.value, true);
+			break;
+
+		case Target::Arena:
+			session.JoinArena(hit.value);
 			break;
 
 		case Target::Seat:
@@ -469,7 +488,11 @@ void Multiplayer::RightClick()
 
 	const Hit hit = hits[static_cast<std::size_t>(hovered)];
 
-	if (hit.target == Target::Room || hit.target == Target::Observe)
+	if (hit.target == Target::Arena)
+	{
+		session.JoinArena(hit.value);
+	}
+	else if (hit.target == Target::Room || hit.target == Target::Observe)
 	{
 		session.Join(hit.value, true);
 	}
@@ -481,32 +504,12 @@ void Multiplayer::Release()
 
 bool Multiplayer::Key(int code)
 {
-	Net::Session &session = Net::Session::GetInstance();
-
-	// Over a room on the list, A opens it as an arena, or watches the one
-	// already running there.
-	if (code == static_cast<int>(sf::Keyboard::A))
-	{
-		if (InRoom() || hovered < 0 || hovered >= static_cast<int>(hits.size()))
-		{
-			return false;
-		}
-
-		const Hit hit = hits[static_cast<std::size_t>(hovered)];
-
-		if (hit.target != Target::Room && hit.target != Target::Observe)
-		{
-			return false;
-		}
-
-		session.JoinArena(hit.value);
-		return true;
-	}
-
 	if (code != static_cast<int>(sf::Keyboard::Escape))
 	{
 		return false;
 	}
+
+	Net::Session &session = Net::Session::GetInstance();
 
 	// Inside a room, escape gives the seat up and goes back to the list. On the
 	// list it closes the session and leaves the lobby.

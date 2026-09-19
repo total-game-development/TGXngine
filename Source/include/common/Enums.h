@@ -27,7 +27,8 @@ enum class SceneType : std::uint8_t
 	Skirmish,
 	Game,
 	Shell,
-	Multiplayer
+	Multiplayer,
+	Arena
 };
 
 inline SceneType SceneTypeFromString(const String &str)
@@ -37,6 +38,7 @@ inline SceneType SceneTypeFromString(const String &str)
 	if (str == "game") { return SceneType::Game; }
 	if (str == "shell") { return SceneType::Shell; }
 	if (str == "multiplayer") { return SceneType::Multiplayer; }
+	if (str == "arena") { return SceneType::Arena; }
 	return SceneType::Unknown;
 }
 
