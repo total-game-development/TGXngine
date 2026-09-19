@@ -149,6 +149,10 @@ public:
 	// with. It is handed the match as an observer is, and sits in no seat.
 	void JoinAsHost(int roomId, const String &hostToken);
 
+	// Watches the room as an arena: the host's AI plays every side. An empty
+	// room starts one; a room already running one is joined part-way through.
+	void JoinArena(int roomId);
+
 	// The host's verdict on a match: which side is left standing.
 	void ReportOutcome(const String &outcome);
 	void Leave();

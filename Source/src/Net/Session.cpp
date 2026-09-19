@@ -104,6 +104,23 @@ void Session::JoinAsHost(int roomId, const String &hostToken)
 	notice = "Hosting room " + std::to_string(roomId + 1) + "...";
 }
 
+void Session::JoinArena(int roomId)
+{
+	room = roomId;
+	observer = true;
+
+	MultiplayerSetup::observer = true;
+
+	client.Send({
+		{"type", "join_arena"},
+		{"id", roomId},
+		{"slot", -1},
+		{"platform", "observer"}});
+
+	phase = Phase::Waiting;
+	notice = "Opening an arena in room " + std::to_string(roomId + 1) + "...";
+}
+
 void Session::ReportOutcome(const String &outcome)
 {
 	if (!IsPlaying())

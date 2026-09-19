@@ -113,7 +113,7 @@ void Multiplayer::DrawHeading()
 
 	const String hint = InRoom()
 							? "Click a seat to move, a side to change it, a map to pick it.  ESC leaves the room."
-							: "Click a room to join, right-click to watch.  TGX_SERVER overrides the address.  ESC returns.";
+							: "Click a room to join, right-click to watch, A to watch the AI play itself there.  ESC returns.";
 
 	sf::Text line(hint, font, 13);
 	line.setPosition(MARGIN, 112.0f);
@@ -481,12 +481,32 @@ void Multiplayer::Release()
 
 bool Multiplayer::Key(int code)
 {
+	Net::Session &session = Net::Session::GetInstance();
+
+	// Over a room on the list, A opens it as an arena, or watches the one
+	// already running there.
+	if (code == static_cast<int>(sf::Keyboard::A))
+	{
+		if (InRoom() || hovered < 0 || hovered >= static_cast<int>(hits.size()))
+		{
+			return false;
+		}
+
+		const Hit hit = hits[static_cast<std::size_t>(hovered)];
+
+		if (hit.target != Target::Room && hit.target != Target::Observe)
+		{
+			return false;
+		}
+
+		session.JoinArena(hit.value);
+		return true;
+	}
+
 	if (code != static_cast<int>(sf::Keyboard::Escape))
 	{
 		return false;
 	}
-
-	Net::Session &session = Net::Session::GetInstance();
 
 	// Inside a room, escape gives the seat up and goes back to the list. On the
 	// list it closes the session and leaves the lobby.
