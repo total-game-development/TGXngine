@@ -682,11 +682,13 @@ void Game::Draw()
 	DrawOutcome();
 	DrawNetworkState();
 
+	const bool fps = Debug::Fps(WorldState::GetInstance().IsDebugOnScreen());
+
 	if ((frame % Globals::targetFPS) == 0)
 	{
 		WorldState &world = WorldState::GetInstance();
 
-		if (world.IsDebugOnScreen())
+		if (fps)
 		{
 			fpsText.setString("FPS: " + std::to_string(floor(world.GetFPS())));
 		}
@@ -694,7 +696,10 @@ void Game::Draw()
 		SampleEconomy();
 	}
 
-	window.Draw(fpsText);
+	if (fps)
+	{
+		window.Draw(fpsText);
+	}
 
 	if (Debug::Economy())
 	{

@@ -376,10 +376,18 @@ def export(project_dir: str, destinations: list, release: bool) -> None:
 
         print(f"EXPORTING to {target}")
 
-        # The whole folder, so a file dropped from the build does not live on
-        # in the export. Only ever the folder this script writes.
-        if os.path.exists(target):
-            shutil.rmtree(target)
+        # Everything in the folder, so a file dropped from the build does not
+        # live on in the export -- but the folder itself stays, since Unreal
+        # holds a handle on it while the project is open and removing it fails
+        # half way, leaving nothing behind.
+        if os.path.isdir(target):
+            for entry in os.listdir(target):
+                inside = os.path.join(target, entry)
+
+                if os.path.isdir(inside) and not os.path.islink(inside):
+                    shutil.rmtree(inside)
+                else:
+                    os.remove(inside)
 
         os.makedirs(os.path.join(target, "modules"), exist_ok=True)
 
@@ -389,7 +397,7 @@ def export(project_dir: str, destinations: list, release: bool) -> None:
         for filename in modules:
             shutil.copy2(os.path.join(module_dir, filename), os.path.join(target, "modules", filename))
 
-        shutil.copytree("Resources", os.path.join(target, "Resources"))
+        shutil.copytree("Resources", os.path.join(target, "Resources"), dirs_exist_ok=True)
 
         resources = sum(len(files) for _, _, files in os.walk(os.path.join(target, "Resources")))
 

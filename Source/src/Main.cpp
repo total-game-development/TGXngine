@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 #include "Controller.h"
+#include "Debug.h"
 #include "ImageLoader.h"
 #include "Keyboard.h"
 #include "Mouse.h"
@@ -44,6 +45,11 @@ void Init(const String &scene, bool production)
 		Settings::UseProduction();
 	}
 
+	if (Debug::showFps)
+	{
+		Log::Info("Frame rate on screen");
+	}
+
 	[[maybe_unused]] Renderer &renderer = Renderer::GetInstance();
 
 	renderer.LoadScene(scene);
@@ -60,6 +66,8 @@ void Usage()
 			  << "  --skirmish [<map>]      start a skirmish instead of the menu\n"
 			  << "  --map <name|number>     which skirmish map, by name or by place\n"
 			  << "  --team <name>           the side to command; left out, the map decides\n"
+			  << "  --production            play fullscreen, whatever settings.json says\n"
+			  << "  --fps                   show the frame rate, in any mode\n"
 			  << "  --replay <file>         replay a recorded match\n"
 			  << "  --host <url>            host a networked match headlessly\n"
 			  << "    --room <number>       the room to host\n"
@@ -90,6 +98,8 @@ int main(int argc, char **argv)
 	}
 
 	const bool production = Asked(argc, argv, "--production");
+
+	TGX::Debug::showFps = Asked(argc, argv, "--fps");
 
 	if (argc >= 3 && TGX::String(argv[1]) == "--replay")
 	{
