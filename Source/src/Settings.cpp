@@ -41,21 +41,7 @@ Settings::Settings()
 
 	if (world.IsProduction())
 	{
-		const sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
-
-		const int width = static_cast<int>(desktopMode.width);
-		const int height = static_cast<int>(desktopMode.height);
-
-		const std::string widthString = std::to_string(width);
-		const std::string heightString = std::to_string(height);
-
-		const std::string extendedPath = "/interface/1920_1080/";
-		world.SetExtendedPath(extendedPath);
-
-		const int canvasWidthOffset = 1920 - Globals::canvasWidth;	 // 1040
-		const int canvasHeightOffset = 1080 - Globals::canvasHeight; // 720
-
-		world.SetCanvasOffsetSize(canvasWidthOffset, canvasHeightOffset);
+		UseProduction();
 	}
 
 	const bool debugOnScreen = json_settings["settings"]["debugOnScreen"];
@@ -63,6 +49,21 @@ Settings::Settings()
 
 	const bool fogOfWar = json_settings["settings"].value("fogOfWar", true);
 	world.SetFogOfWarEnabled(fogOfWar);
+}
+
+void Settings::UseProduction()
+{
+	WorldState &world = WorldState::GetInstance();
+
+	world.SetProduction(true);
+
+	const std::string extendedPath = "/interface/1920_1080/";
+	world.SetExtendedPath(extendedPath);
+
+	const int canvasWidthOffset = 1920 - Globals::canvasWidth;	 // 1040
+	const int canvasHeightOffset = 1080 - Globals::canvasHeight; // 720
+
+	world.SetCanvasOffsetSize(canvasWidthOffset, canvasHeightOffset);
 }
 
 Settings &Settings::GetInstance()
