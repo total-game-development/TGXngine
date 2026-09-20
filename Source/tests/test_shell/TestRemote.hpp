@@ -140,25 +140,98 @@ TEST_F(RemoteFixture, ReportsAMissingRemoteFile)
 	EXPECT_TRUE(Printed(ruby, "File nothing doesn't exist"));
 }
 
-TEST_F(RemoteFixture, DoesNotRunProgramsOnARemoteComputer)
+TEST_F(RemoteFixture, RunsAProgramOnTheComputerItIsConnectedTo)
 {
 	sapphire.WriteFile("hello", "print(\"from sapphire\")");
 
 	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "run hello");
-	Run(ruby, "./hello");
 
-	EXPECT_TRUE(Printed(ruby, "Programs on sapphire can only be run from its own console"));
-	EXPECT_FALSE(Printed(ruby, "from sapphire"));
-	EXPECT_FALSE(Printed(sapphire, "from sapphire"));
+	EXPECT_TRUE(Printed(ruby, "from sapphire"));
+	EXPECT_TRUE(Printed(sapphire, "ruby ran hello on this computer"));
+	EXPECT_TRUE(Printed(sapphire, "from sapphire"));
 }
 
-TEST_F(RemoteFixture, KeepsProcessesToTheirOwnConsole)
+TEST_F(RemoteFixture, TheShorthandRunsThereToo)
 {
+	sapphire.WriteFile("hello", "print(\"from sapphire\")");
+
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "./hello");
+
+	EXPECT_TRUE(Printed(ruby, "from sapphire"));
+}
+
+TEST_F(RemoteFixture, AProgramReadsTheFilesOfTheComputerItRunsOn)
+{
+	sapphire.WriteFile("secret", "orders");
+	sapphire.WriteFile("peek", "print(read(\"secret\"))");
+	ruby.WriteFile("secret", "mine");
+
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "run peek");
+
+	EXPECT_TRUE(Printed(ruby, "orders"));
+	EXPECT_FALSE(Printed(ruby, "mine"));
+}
+
+TEST_F(RemoteFixture, AMissingProgramIsReportedBack)
+{
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "run nothing");
+
+	EXPECT_TRUE(Printed(ruby, "File nothing doesn't exist"));
+}
+
+TEST_F(RemoteFixture, AProgramCannotToggleTheComputerItBrokeInto)
+{
+	sapphire.WriteFile("flip", "toggle(\"fogofwar\", \"show\", 1)");
+
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "run flip");
+
+	EXPECT_TRUE(Printed(sapphire, "Toggles are refused from a remote session"));
+	EXPECT_FALSE(Printed(sapphire, "Unknown toggle"));
+}
+
+TEST_F(RemoteFixture, RunningNeedsASessionLikeAnythingElse)
+{
+	sapphire.WriteFile("hello", "print(\"from sapphire\")");
+
+	Run(ruby, "connect sapphire 9999");
+	Run(ruby, "run hello");
+
+	EXPECT_FALSE(Printed(ruby, "from sapphire"));
+	EXPECT_FALSE(Printed(sapphire, "ruby ran hello on this computer"));
+}
+
+TEST_F(RemoteFixture, ListsAndStopsProcessesOnTheComputerItBrokeInto)
+{
+	FakeBase base;
+	base.Attach(sapphire);
+
 	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "ps");
 
-	EXPECT_TRUE(Printed(ruby, "Processes on sapphire can only be seen from its own console"));
+	EXPECT_TRUE(Printed(ruby, "powerplant"));
+	EXPECT_TRUE(Printed(ruby, "Power 30 / 400"));
+
+	Run(ruby, "kill 2");
+
+	EXPECT_TRUE(Printed(ruby, "Stopping powerplant (2)"));
+	EXPECT_TRUE(Printed(sapphire, "ruby sent kill 2 to this computer"));
+	ASSERT_EQ(base.killed.size(), 1u);
+	EXPECT_EQ(base.killed.front(), 9);
+}
+
+TEST_F(RemoteFixture, ProcessesAreStillYourOwnWhenNobodyIsConnected)
+{
+	FakeBase base;
+	base.Attach(ruby);
+
+	Run(ruby, "ps");
+
+	EXPECT_TRUE(Printed(ruby, "powerplant"));
 }
 
 TEST_F(RemoteFixture, ADirectoryRemovedUnderneathIsReported)

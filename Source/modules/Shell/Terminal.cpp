@@ -99,6 +99,11 @@ void Terminal::Print(const String &message)
 {
 	std::lock_guard<std::recursive_mutex> lock(mutex);
 
+	if (serving != nullptr)
+	{
+		serving->push_back(message);
+	}
+
 	output.push_back(message);
 
 	while (output.size() > MAX_OUTPUT)
@@ -142,6 +147,12 @@ void Terminal::Toggle(const String &name, const String &value, bool active)
 	{
 		std::lock_guard<std::recursive_mutex> lock(mutex);
 		handler = toggleHandler;
+	}
+
+	if (serving != nullptr)
+	{
+		Print("Toggles are refused from a remote session");
+		return;
 	}
 
 	if (handler == nullptr)
@@ -203,13 +214,13 @@ void Terminal::Spawn(const String &command)
 
 void Terminal::Submit(const String &line)
 {
-	const String command = Trim(line);
+	const String typed = Trim(line);
 
-	Print(GetPrompt() + command);
+	Print(GetPrompt() + typed);
 
-	if (!command.empty())
+	if (!typed.empty())
 	{
-		history.push_back(command);
+		history.push_back(typed);
 
 		while (history.size() > MAX_HISTORY)
 		{
@@ -219,17 +230,12 @@ void Terminal::Submit(const String &line)
 
 	historyCursor = history.size();
 
-	if (command.empty())
+	if (typed.empty())
 	{
 		return;
 	}
 
-	if (command.rfind("./", 0) == 0)
-	{
-		Run("run " + command.substr(2));
-		return;
-	}
-
+	const String command = typed.rfind("./", 0) == 0 ? "run " + typed.substr(2) : typed;
 	const Vector<String> args = Split(command, ' ');
 	const String head = args.empty() ? String() : args[0];
 
@@ -399,9 +405,9 @@ void Terminal::Help()
 	Print(" - ls: Lists the contents of the current directory");
 	Print(" - tree: Displays a tree structure of the directories and files starting from the current directory.");
 	Print(" - edit: program (Opens a program in the editor)");
-	Print(" - run: program (Executes a program)");
-	Print(" - ps: Lists the running processes: your buildings and the programs you spawned");
-	Print(" - kill: pid (Stops a running process)");
+	Print(" - run: program (Executes a program. On a computer you are connected to, it runs there and its output comes back)");
+	Print(" - ps: Lists the running processes: your buildings and the programs you spawned. On a computer you are connected to, its own");
+	Print(" - kill: pid (Stops a running process, here or on a computer you are connected to)");
 	Print(" - start: pid (Starts a stopped building again)");
 	Print(" - hosts: Lists the other players' computers you can connect to");
 	Print(" - who: Shows this computer's pin and who is connected to it");
@@ -413,14 +419,11 @@ void Terminal::Help()
 
 void Terminal::Run(const String &command)
 {
-	const Vector<String> args = Split(command, ' ');
+	Execute(current->fileSystem, Split(command, ' '));
+}
 
-	if (current->networked)
-	{
-		Print("Programs on " + current->name + " can only be run from its own console");
-		return;
-	}
-
+void Terminal::Execute(FileSystem &files, const Vector<String> &args)
+{
 	if (args.size() < 2)
 	{
 		Print("Invalid command. Usage: " + (args.empty() ? String("run") : args[0]) + " <fileName>");
@@ -429,7 +432,7 @@ void Terminal::Run(const String &command)
 
 	const String name = args[1];
 
-	if (current->fileSystem.IsDirectory(name))
+	if (files.IsDirectory(name))
 	{
 		Print(name + " is a directory");
 		return;
@@ -437,7 +440,7 @@ void Terminal::Run(const String &command)
 
 	String source;
 
-	if (!current->fileSystem.Read(name, source))
+	if (!files.Read(name, source))
 	{
 		Print("File " + name + " doesn't exist");
 		return;
@@ -957,9 +960,33 @@ bool Terminal::Remote(const String &head, const Vector<String> &args)
 		return true;
 	}
 
-	if (head == "ps" || head == "kill" || head == "start")
+	if (head == "run")
 	{
-		Print("Processes on " + current->name + " can only be seen from its own console");
+		if (args.size() < 2)
+		{
+			Print("Invalid command. Usage: run <fileName>");
+			return true;
+		}
+
+		Send(current->name, current->directory, "run", Vector<String>(args.begin() + 1, args.end()));
+		return true;
+	}
+
+	if (head == "ps")
+	{
+		Send(current->name, current->directory, "ps", {});
+		return true;
+	}
+
+	if (head == "kill" || head == "start")
+	{
+		if (args.size() != 2)
+		{
+			Print("Invalid command. Usage: " + head + " <pid>");
+			return true;
+		}
+
+		Send(current->name, current->directory, head, {args[1]});
 		return true;
 	}
 
@@ -1180,6 +1207,31 @@ void Terminal::Answer(const String &from, const nlohmann::json &body)
 			{
 				reply["source"] = source;
 			}
+		}
+		else if (op == "run" && !args.empty())
+		{
+			Print(from + " ran " + args[0] + " on this computer");
+
+			Vector<String> call{"run"};
+			call.insert(call.end(), args.begin(), args.end());
+
+			serving = &lines;
+			Execute(files, call);
+			serving = nullptr;
+		}
+		else if (op == "ps")
+		{
+			serving = &lines;
+			ListProcesses();
+			serving = nullptr;
+		}
+		else if ((op == "kill" || op == "start") && args.size() == 1)
+		{
+			Print(from + " sent " + op + " " + args[0] + " to this computer");
+
+			serving = &lines;
+			Signal({op, args[0]}, op == "start");
+			serving = nullptr;
 		}
 		else if (op == "write" && args.size() == 1)
 		{

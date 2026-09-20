@@ -67,6 +67,7 @@ private:
 	Session *current = nullptr;
 
 	Set<String> sessions;
+	Vector<String> *serving = nullptr;
 
 	Vector<String> output;
 	Vector<String> history;
@@ -101,6 +102,7 @@ private:
 
 	void Help();
 	void Run(const String &command);
+	void Execute(FileSystem &files, const Vector<String> &args);
 	void Edit(const String &command);
 	void Connect(const String &command);
 	void Disconnect();
