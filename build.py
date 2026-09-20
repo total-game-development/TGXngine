@@ -300,6 +300,103 @@ def test_project(project_dir: str, generator: str, release: bool) -> None:
     print(f"ERROR: {test_binary} not found in {project_dir}")
 
 
+# Where a release goes to be played inside the Unreal project: the editor's
+# content, and the packaged build's. Each gets its own TGXngine folder, since
+# the engine loads modules/ and Resources/ by relative path and cannot be
+# flattened in beside what is already there.
+EXPORT_DIRS = [
+    r"C:\Users\user\Documents\Unreal Engine Projects\Nexus_57 5.8\Content\External",
+    r"C:\Users\user\Documents\Unreal Engine Projects\Nexus_57 5.8\Out\Windows\Nexus\Content\External",
+]
+
+# What the engine needs to run, and nothing a build leaves behind: no .lib,
+# .exp or .pdb, and none of the test binaries.
+EXPORT_SKIP = {"unittests.exe", "gtest.dll", "gtest_main.dll", "gmock.dll", "gmock_main.dll"}
+
+# Debug and Release are built into the same directory, so both sets of vendor
+# libraries sit there at once. A release export carries neither the debug ones
+# nor, the other way round, the release ones a debug build does not load.
+EXPORT_DEBUG_ONLY = {"fmtd.dll", "zlibd1.dll"}
+EXPORT_RELEASE_ONLY = {"fmt.dll", "zlib1.dll"}
+
+
+def debug_library(filename: str) -> bool:
+    name = filename.lower()
+
+    return name in EXPORT_DEBUG_ONLY or name.endswith("-d-2.dll") or name.endswith("-d.dll")
+
+
+def export(project_dir: str, destinations: list, release: bool) -> None:
+    binary = PROJECT_NAME + ("" if IS_POSIX else ".exe")
+
+    if not os.path.exists(os.path.join(project_dir, binary)):
+        print(f"ERROR: {binary} not found in {project_dir}. Build it first (-b).")
+        raise SystemExit(1)
+
+    runtime = [".dll", ".dylib", ".so"]
+
+    carried = []
+
+    for filename in os.listdir(project_dir):
+        if filename.lower() in EXPORT_SKIP:
+            continue
+
+        if debug_library(filename) == release:
+            continue
+
+        if not release and filename.lower() in EXPORT_RELEASE_ONLY:
+            continue
+
+        extension = os.path.splitext(filename)[1].lower()
+
+        if extension in runtime or filename == binary:
+            carried.append(filename)
+
+    module_dir = os.path.join(project_dir, "modules")
+
+    modules = []
+
+    if os.path.isdir(module_dir):
+        modules = [
+            filename
+            for filename in os.listdir(module_dir)
+            if os.path.splitext(filename)[1].lower() in runtime
+            and debug_library(filename) != release
+            and (release or filename.lower() not in EXPORT_RELEASE_ONLY)
+        ]
+
+    for destination in destinations:
+        parent = os.path.abspath(destination)
+
+        if not os.path.isdir(parent):
+            print(f"ERROR: no such directory: {parent}")
+            raise SystemExit(1)
+
+        target = os.path.join(parent, PROJECT_NAME)
+
+        print(f"EXPORTING to {target}")
+
+        # The whole folder, so a file dropped from the build does not live on
+        # in the export. Only ever the folder this script writes.
+        if os.path.exists(target):
+            shutil.rmtree(target)
+
+        os.makedirs(os.path.join(target, "modules"), exist_ok=True)
+
+        for filename in carried:
+            shutil.copy2(os.path.join(project_dir, filename), os.path.join(target, filename))
+
+        for filename in modules:
+            shutil.copy2(os.path.join(module_dir, filename), os.path.join(target, "modules", filename))
+
+        shutil.copytree("Resources", os.path.join(target, "Resources"))
+
+        resources = sum(len(files) for _, _, files in os.walk(os.path.join(target, "Resources")))
+
+        print(f"  {len(carried) - 1} library file(s), {len(modules)} module(s), {resources} resource file(s)")
+
+
+
 def publish(project_dir: str) -> None:
     print("PUBLISHING PROJECT")
 
@@ -408,6 +505,19 @@ def main() -> None:
         "-t", "--test", action="store_true", help="Build and run unit tests"
     )
     parser.add_argument(
+        "-x",
+        "--export",
+        action="store_true",
+        help="Copy the built engine into the Unreal project's External content",
+    )
+    parser.add_argument(
+        "--export-to",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Export to DIR as well; repeat for more than one",
+    )
+    parser.add_argument(
         "-e",
         "--examine",
         action="store_true",
@@ -464,6 +574,9 @@ def main() -> None:
 
     if args.publish:
         publish(project_dir)
+
+    if args.export or args.export_to:
+        export(project_dir, (EXPORT_DIRS if args.export else []) + args.export_to, args.release)
 
     if args.examine:
         # Fail-safe check: verify assets are in place prior to launching debugger attach
