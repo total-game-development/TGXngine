@@ -2,6 +2,7 @@
 #include <SFML/Window.hpp>
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include "Debug.h"
 #include "Globals.h"
 #include "WorldState.h"
 
@@ -45,7 +46,7 @@ Settings::Settings()
 	}
 
 	const bool debugOnScreen = json_settings["settings"]["debugOnScreen"];
-	world.SetDebugOnScreen(debugOnScreen);
+	world.SetDebugOnScreen(debugOnScreen && !world.IsProduction());
 
 	const bool fogOfWar = json_settings["settings"].value("fogOfWar", true);
 	world.SetFogOfWarEnabled(fogOfWar);
@@ -56,6 +57,9 @@ void Settings::UseProduction()
 	WorldState &world = WorldState::GetInstance();
 
 	world.SetProduction(true);
+	world.SetDebugOnScreen(false);
+
+	Debug::suppressed = true;
 
 	const std::string extendedPath = "/interface/1920_1080/";
 	world.SetExtendedPath(extendedPath);
@@ -64,6 +68,8 @@ void Settings::UseProduction()
 	const int canvasHeightOffset = 1080 - Globals::canvasHeight; // 720
 
 	world.SetCanvasOffsetSize(canvasWidthOffset, canvasHeightOffset);
+
+	Log::Info("Production: fullscreen, and nothing debug drawn over it");
 }
 
 Settings &Settings::GetInstance()

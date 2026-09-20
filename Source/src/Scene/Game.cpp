@@ -674,7 +674,7 @@ void Game::Draw()
 		gameInterface->Draw();
 	}
 
-	if (Debug::showGrid)
+	if (Debug::Grid())
 	{
 		grid->Draw();
 	}
@@ -696,7 +696,7 @@ void Game::Draw()
 
 	window.Draw(fpsText);
 
-	if (Debug::showEconomy)
+	if (Debug::Economy())
 	{
 		DrawEconomy();
 	}
