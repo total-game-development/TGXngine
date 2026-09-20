@@ -1,6 +1,7 @@
 #include "Terminal.h"
 #include <algorithm>
 #include <fstream>
+#include <random>
 #include "Interpreter.h"
 
 namespace TGX::Shell
@@ -30,7 +31,24 @@ Terminal::Terminal()
 {
 	local.name = "local";
 	local.user = "naomi";
+	local.password = Pin();
 	current = &local;
+}
+
+String Terminal::Pin()
+{
+	static std::mt19937 source{std::random_device{}()};
+
+	std::uniform_int_distribution<int> digits(0, 9999);
+
+	String pin = std::to_string(digits(source));
+
+	while (pin.size() < 4)
+	{
+		pin.insert(pin.begin(), '0');
+	}
+
+	return pin;
 }
 
 Terminal::~Terminal()
@@ -333,6 +351,14 @@ void Terminal::Submit(const String &line)
 	{
 		Hosts();
 	}
+	else if (head == "passwd")
+	{
+		Passwd(args);
+	}
+	else if (head == "who")
+	{
+		Who();
+	}
 	else if (head == "ps")
 	{
 		ListProcesses();
@@ -378,7 +404,9 @@ void Terminal::Help()
 	Print(" - kill: pid (Stops a running process)");
 	Print(" - start: pid (Starts a stopped building again)");
 	Print(" - hosts: Lists the other players' computers you can connect to");
-	Print(" - connect: remote_computer_name [firstname.lastname pin] (Connects to the remote computer)");
+	Print(" - who: Shows this computer's pin and who is connected to it");
+	Print(" - passwd: pin (Changes this computer's pin, shutting out anybody connected)");
+	Print(" - connect: remote_computer_name pin (Connects to the remote computer)");
 	Print(" - disconnect: Disconnects from remote computer");
 	Print(" - exit: Exit from Desktop emulates the F10 desktop function");
 }
@@ -497,39 +525,42 @@ void Terminal::Connect(const String &command)
 {
 	const Vector<String> args = Split(command, ' ');
 
-	if (args.size() == 2)
+	if (args.size() >= 2 && machines.find(args[1]) != machines.end())
 	{
-		const auto machine = machines.find(args[1]);
+		Session &machine = machines.find(args[1])->second;
 
-		if (machine != machines.end())
+		if (args.size() != 3)
 		{
-			if (current == &machine->second)
-			{
-				Print("Already connected to " + args[1]);
-				return;
-			}
-
-			if (current->networked)
-			{
-				Disconnect();
-			}
-
-			{
-				std::lock_guard<std::recursive_mutex> lock(mutex);
-
-				current = &machine->second;
-				current->directory = "/";
-			}
-
-			Print("Connecting to " + args[1] + "...");
-			Send(current->name, current->directory, "hello", {});
+			Print("Invalid command. Usage: connect <computer> <pin>");
 			return;
 		}
+
+		if (current == &machine)
+		{
+			Print("Already connected to " + args[1]);
+			return;
+		}
+
+		if (current->networked)
+		{
+			Disconnect();
+		}
+
+		{
+			std::lock_guard<std::recursive_mutex> lock(mutex);
+
+			current = &machine;
+			current->directory = "/";
+		}
+
+		Print("Connecting to " + args[1] + "...");
+		Send(current->name, current->directory, "hello", {args[2]});
+		return;
 	}
 
 	if (args.size() != 4)
 	{
-		Print("Invalid command. Usage: connect <computer> [<firstname.lastname> <pin>]");
+		Print("Invalid command. Usage: connect <computer> <pin>");
 		return;
 	}
 
@@ -792,6 +823,56 @@ void Terminal::Hosts()
 	}
 }
 
+void Terminal::Passwd(const Vector<String> &args)
+{
+	if (current->networked)
+	{
+		Print("The pin on " + current->name + " can only be changed from its own console");
+		return;
+	}
+
+	if (args.size() != 2 || args[1].empty())
+	{
+		Print("Invalid command. Usage: passwd <pin>");
+		return;
+	}
+
+	if (args[1].find_first_not_of("0123456789") != String::npos)
+	{
+		Print("A pin is digits only");
+		return;
+	}
+
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex);
+
+		local.password = args[1];
+		sessions.clear();
+	}
+
+	Print("Pin changed. Anybody connected to this computer has been shut out");
+
+	Persist();
+}
+
+void Terminal::Who()
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	Print("This computer's pin is " + local.password);
+
+	if (sessions.empty())
+	{
+		Print("Nobody is connected to it");
+		return;
+	}
+
+	for (const String &name : sessions)
+	{
+		Print(" - " + name + " is connected");
+	}
+}
+
 void Terminal::SetNetwork(const String &name, const Vector<String> &peers, NetworkSender send)
 {
 	std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -801,6 +882,8 @@ void Terminal::SetNetwork(const String &name, const Vector<String> &peers, Netwo
 	self = name;
 	sender = std::move(send);
 	multiplayer = true;
+
+	Print("This computer's pin is " + local.password + ". Change it with passwd <pin>");
 
 	for (const String &peer : peers)
 	{
@@ -835,6 +918,7 @@ void Terminal::ClearNetwork()
 
 	editTarget.reset();
 	machines.clear();
+	sessions.clear();
 	requests.clear();
 	sender = nullptr;
 	self.clear();
@@ -995,11 +1079,21 @@ void Terminal::Answer(const String &from, const nlohmann::json &body)
 
 	if (op == "bye")
 	{
+		std::lock_guard<std::recursive_mutex> lock(mutex);
+
+		sessions.erase(from);
+
 		Print(from + " disconnected from this computer");
 		return;
 	}
 
 	nlohmann::json reply = {{"kind", "response"}, {"id", body.value("id", 0)}};
+
+	if (!Admit(from, op, op == "hello" && !args.empty() ? args[0] : String(), reply))
+	{
+		sender(from, reply);
+		return;
+	}
 
 	Vector<String> lines;
 	bool ok = true;
@@ -1129,6 +1223,43 @@ void Terminal::Answer(const String &from, const nlohmann::json &body)
 	sender(from, reply);
 }
 
+bool Terminal::Admit(const String &from, const String &op, const String &pin, nlohmann::json &reply)
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	const bool known = sessions.find(from) != sessions.end();
+
+	if (op == "hello")
+	{
+		if (pin != local.password)
+		{
+			sessions.erase(from);
+
+			Print(from + " was refused a connection to this computer");
+
+			reply["ok"] = false;
+			reply["lines"] = {"Access denied"};
+			reply["cwd"] = "/";
+
+			return false;
+		}
+
+		sessions.insert(from);
+		return true;
+	}
+
+	if (!known)
+	{
+		reply["ok"] = false;
+		reply["lines"] = {"Access denied"};
+		reply["cwd"] = "/";
+
+		return false;
+	}
+
+	return true;
+}
+
 void Terminal::Receive(const String &from, const nlohmann::json &body)
 {
 	const auto found = requests.find(body.value("id", 0));
@@ -1158,7 +1289,7 @@ void Terminal::Receive(const String &from, const nlohmann::json &body)
 		}
 		else
 		{
-			Abandon(request, "Computer " + from + " refused the connection");
+			Abandon(request, "Computer " + from + " denied access");
 		}
 
 		return;
@@ -1501,6 +1632,11 @@ void Terminal::Load(const String &path)
 		local.fileSystem.Deserialise(data["local"]);
 	}
 
+	if (data.contains("pin") && data["pin"].is_string())
+	{
+		local.password = data["pin"].get<String>();
+	}
+
 	if (data.contains("remotes") && data["remotes"].is_object())
 	{
 		for (const auto &entry : data["remotes"].items())
@@ -1539,6 +1675,7 @@ void Terminal::Save(const String &path) const
 
 	nlohmann::json data;
 	data["local"] = local.fileSystem.Serialise();
+	data["pin"] = local.password;
 	data["remotes"] = nlohmann::json::object();
 
 	for (const auto &entry : remotes)

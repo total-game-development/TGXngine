@@ -66,6 +66,8 @@ private:
 	Map<String, Session> machines;
 	Session *current = nullptr;
 
+	Set<String> sessions;
+
 	Vector<String> output;
 	Vector<String> history;
 	std::size_t historyCursor = 0;
@@ -103,6 +105,8 @@ private:
 	void Connect(const String &command);
 	void Disconnect();
 	void Hosts();
+	void Passwd(const Vector<String> &args);
+	void Who();
 	void Cheat(const String &command);
 	void SaveEditor();
 	void Persist();
@@ -112,6 +116,7 @@ private:
 	bool Remote(const String &head, const Vector<String> &args);
 	void Send(const String &machine, const String &directory, const String &op, const Vector<String> &args, const String &source = String());
 	void Answer(const String &from, const nlohmann::json &body);
+	bool Admit(const String &from, const String &op, const String &pin, nlohmann::json &reply);
 	void Receive(const String &from, const nlohmann::json &body);
 	void Refused(const nlohmann::json &message);
 	void Abandon(const Request &request, const String &reason);
@@ -121,6 +126,7 @@ private:
 	void Signal(const Vector<String> &args, bool start);
 
 	static Vector<String> Split(const String &text, char delimiter);
+	static String Pin();
 
 public:
 	Terminal();

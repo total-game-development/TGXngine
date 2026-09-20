@@ -50,6 +50,9 @@ struct RemoteFixture : ::testing::Test
 	{
 		network.Join(ruby, "ruby", {"ruby", "sapphire"});
 		network.Join(sapphire, "sapphire", {"ruby", "sapphire"});
+
+		ruby.Submit("passwd 1111");
+		sapphire.Submit("passwd 2222");
 	}
 
 	void Run(Terminal &terminal, const String &command)
@@ -69,7 +72,7 @@ TEST_F(RemoteFixture, ListsTheOtherPlayers)
 
 TEST_F(RemoteFixture, ConnectsToAnotherPlayersComputer)
 {
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 
 	EXPECT_TRUE(Printed(ruby, "Connected to sapphire"));
 	EXPECT_TRUE(Printed(sapphire, "ruby connected to this computer"));
@@ -79,7 +82,7 @@ TEST_F(RemoteFixture, ConnectsToAnotherPlayersComputer)
 TEST_F(RemoteFixture, WorksOnTheRemoteFilesystemNotTheLocalOne)
 {
 	Run(sapphire, "mkdir docs");
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 
 	Run(ruby, "ls");
 	EXPECT_TRUE(Printed(ruby, "docs/"));
@@ -108,7 +111,7 @@ TEST_F(RemoteFixture, EditsARemoteFile)
 {
 	sapphire.WriteFile("hello", "print(1)");
 
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "edit hello");
 
 	ASSERT_EQ(ruby.GetMode(), TerminalMode::Editing);
@@ -130,7 +133,7 @@ TEST_F(RemoteFixture, EditsARemoteFile)
 
 TEST_F(RemoteFixture, ReportsAMissingRemoteFile)
 {
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "edit nothing");
 
 	EXPECT_EQ(ruby.GetMode(), TerminalMode::Command);
@@ -141,7 +144,7 @@ TEST_F(RemoteFixture, DoesNotRunProgramsOnARemoteComputer)
 {
 	sapphire.WriteFile("hello", "print(\"from sapphire\")");
 
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "run hello");
 	Run(ruby, "./hello");
 
@@ -152,7 +155,7 @@ TEST_F(RemoteFixture, DoesNotRunProgramsOnARemoteComputer)
 
 TEST_F(RemoteFixture, KeepsProcessesToTheirOwnConsole)
 {
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "ps");
 
 	EXPECT_TRUE(Printed(ruby, "Processes on sapphire can only be seen from its own console"));
@@ -161,7 +164,7 @@ TEST_F(RemoteFixture, KeepsProcessesToTheirOwnConsole)
 TEST_F(RemoteFixture, ADirectoryRemovedUnderneathIsReported)
 {
 	Run(sapphire, "mkdir docs");
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "cd docs");
 	Run(sapphire, "del docs");
 	Run(ruby, "ls");
@@ -171,7 +174,7 @@ TEST_F(RemoteFixture, ADirectoryRemovedUnderneathIsReported)
 
 TEST_F(RemoteFixture, DisconnectingTellsTheOtherComputer)
 {
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 	Run(ruby, "disconnect");
 
 	EXPECT_TRUE(Printed(sapphire, "ruby disconnected from this computer"));
@@ -182,7 +185,7 @@ TEST_F(RemoteFixture, ProgramsKeepTheirOwnFilesWhileConnected)
 {
 	ruby.WriteFile("mine", "1");
 
-	Run(ruby, "connect sapphire");
+	Run(ruby, "connect sapphire 2222");
 
 	String source;
 	EXPECT_TRUE(ruby.ReadFile("mine", source));
@@ -202,7 +205,7 @@ TEST(ShellRemote, AnUnreachableComputerDropsBackToLocal)
 	Terminal terminal;
 	terminal.SetNetwork("ruby", {"sapphire"}, [](const String &, const nlohmann::json &) {});
 
-	terminal.Submit("connect sapphire");
+	terminal.Submit("connect sapphire 2222");
 	terminal.Deliver({{"type", "shell_refused"}, {"to", "sapphire"}, {"id", 1}, {"reason", "is not reachable"}});
 
 	EXPECT_TRUE(Printed(terminal, "Computer sapphire is not reachable"));
@@ -218,6 +221,126 @@ TEST(ShellRemote, AComputerOffTheNetworkIsNotFound)
 
 	EXPECT_TRUE(Printed(terminal, "Not on a network"));
 	EXPECT_TRUE(Printed(terminal, "Usage: connect <computer>"));
+}
+
+TEST_F(RemoteFixture, RefusesAConnectionWithoutThePin)
+{
+	Run(ruby, "connect sapphire");
+
+	EXPECT_TRUE(Printed(ruby, "Usage: connect <computer> <pin>"));
+	EXPECT_FALSE(Printed(sapphire, "ruby connected to this computer"));
+	EXPECT_NE(ruby.GetPrompt().find("@local:"), String::npos);
+}
+
+TEST_F(RemoteFixture, RefusesAConnectionWithTheWrongPin)
+{
+	Run(ruby, "connect sapphire 9999");
+
+	EXPECT_TRUE(Printed(ruby, "Computer sapphire denied access"));
+	EXPECT_TRUE(Printed(sapphire, "ruby was refused a connection to this computer"));
+	EXPECT_FALSE(Printed(sapphire, "ruby connected to this computer"));
+	EXPECT_NE(ruby.GetPrompt().find("@local:"), String::npos);
+}
+
+TEST_F(RemoteFixture, AnUnauthorisedRequestTouchesNothing)
+{
+	Run(sapphire, "mkdir docs");
+
+	sapphire.Deliver({{"type", "shell"},
+					  {"from", "ruby"},
+					  {"body", {{"kind", "request"}, {"id", 7}, {"op", "del"}, {"cwd", "/"}, {"args", {"docs"}}}}});
+
+	network.Pump();
+
+	Run(sapphire, "ls");
+	EXPECT_TRUE(Printed(sapphire, "docs/"));
+}
+
+TEST_F(RemoteFixture, ChangingThePinShutsOutWhoeverIsConnected)
+{
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "ls");
+
+	Run(sapphire, "passwd 3333");
+	EXPECT_TRUE(Printed(sapphire, "Pin changed"));
+
+	Run(ruby, "mkdir docs");
+	EXPECT_TRUE(Printed(ruby, "Access denied"));
+
+	Run(ruby, "disconnect");
+	Run(ruby, "connect sapphire 3333");
+	EXPECT_TRUE(Printed(ruby, "Connected to sapphire"));
+}
+
+TEST_F(RemoteFixture, SaysWhoIsConnected)
+{
+	Run(sapphire, "who");
+	EXPECT_TRUE(Printed(sapphire, "This computer's pin is 2222"));
+	EXPECT_TRUE(Printed(sapphire, "Nobody is connected to it"));
+
+	Run(ruby, "connect sapphire 2222");
+	Run(sapphire, "who");
+
+	EXPECT_TRUE(Printed(sapphire, " - ruby is connected"));
+
+	Run(ruby, "disconnect");
+	Run(sapphire, "who");
+
+	EXPECT_TRUE(Printed(sapphire, "Nobody is connected to it"));
+}
+
+TEST_F(RemoteFixture, ThePinIsChangedFromItsOwnConsoleOnly)
+{
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "passwd 4444");
+
+	EXPECT_TRUE(Printed(ruby, "The pin on sapphire can only be changed from its own console"));
+
+	Run(ruby, "disconnect");
+	Run(ruby, "connect sapphire 2222");
+
+	EXPECT_TRUE(Printed(ruby, "Connected to sapphire"));
+}
+
+TEST_F(RemoteFixture, APinIsDigitsOnly)
+{
+	Run(ruby, "passwd letmein");
+
+	EXPECT_TRUE(Printed(ruby, "A pin is digits only"));
+}
+
+TEST(ShellAccess, EveryComputerStartsWithAPinOfItsOwn)
+{
+	const auto pin = [](const Terminal &terminal) {
+		for (const String &line : terminal.GetOutput())
+		{
+			const std::size_t at = line.find("pin is ");
+
+			if (at != String::npos)
+			{
+				return line.substr(at + 7);
+			}
+		}
+
+		return String();
+	};
+
+	Set<String> seen;
+
+	for (int index = 0; index < 8; index++)
+	{
+		Terminal terminal;
+		terminal.Submit("who");
+
+		const String value = pin(terminal);
+
+		EXPECT_EQ(value.size(), 4u);
+		EXPECT_EQ(value.find_first_not_of("0123456789"), String::npos);
+
+		seen.insert(value);
+	}
+
+	EXPECT_GT(seen.size(), 1u);
 }
 
 TEST(ShellRemote, CheatsStillWorkOffline)
