@@ -1,5 +1,6 @@
 #include "Rules.h"
 
+#include <set>
 #include "Flags.h"
 #include "ItemInstance.h"
 #include "Logs.h"
@@ -16,6 +17,13 @@ struct Cell
 {
 	int x = 0;
 	int y = 0;
+};
+
+struct Body
+{
+	int uid = 0;
+	int mode = 0;
+	String name;
 };
 
 String Key(int x, int y)
@@ -53,29 +61,9 @@ int Mark(const Vector<Vector<int>> &grid, const Cell &cell)
 	return grid[cell.y][cell.x];
 }
 
-String Occupants(const GridTracker &tracker, const Map<int, const ItemInstance *> &live, const Cell &cell)
+String Named(const Body &body)
 {
-	String named;
-
-	for (const auto &[uid, box] : tracker.uids_grid)
-	{
-		if (cell.x < std::get<0>(box) || cell.x > std::get<2>(box))
-		{
-			continue;
-		}
-
-		if (cell.y < std::get<1>(box) || cell.y > std::get<3>(box))
-		{
-			continue;
-		}
-
-		const auto found = live.find(uid);
-		const String name = found == live.end() ? String{"dead"} : found->second->GetName();
-
-		named += (named.empty() ? String{} : String{", "}) + name + "#" + std::to_string(uid);
-	}
-
-	return named.empty() ? String{"no body on the grid"} : named;
+	return body.name + "#" + std::to_string(body.uid);
 }
 } // namespace
 
@@ -97,12 +85,43 @@ Vector<Violation> Check()
 		}
 	}
 
+	// A cell carries what the bodies standing on it are worth, plus what the
+	// bookings over it are worth: a unit reserves the cell it means to stop on
+	// and hands it back once its body is down, so the two are counted the same
+	// way and only both together account for the stack.
+	Map<String, Vector<Body>> standing;
+	Map<String, int> expected;
+
 	for (const auto &[uid, box] : tracker.uids_grid)
 	{
-		if (!live.contains(uid))
+		const auto carried = live.find(uid);
+
+		if (carried == live.end())
 		{
 			found.push_back({"body",
 				"uid " + std::to_string(uid) + " holds " + Key(std::get<0>(box), std::get<1>(box)) + " to " + Key(std::get<2>(box), std::get<3>(box)) + ", but nothing alive carries that uid"});
+
+			continue;
+		}
+
+		const Body body{uid, carried->second->GetCellCollisionMode(), carried->second->GetName()};
+
+		for (int x = std::get<0>(box); x <= std::get<2>(box); x++)
+		{
+			for (int y = std::get<1>(box); y <= std::get<3>(box); y++)
+			{
+				const int mark = Mark(grid, {x, y});
+
+				// A cell hard when the body was placed took none of it, so it is
+				// not the grid's to account for and nothing stands on it.
+				if (mark < 0 || mark >= Flags::CELL_COLLISION_MODE_HARD)
+				{
+					continue;
+				}
+
+				standing[Key(x, y)].push_back(body);
+				expected[Key(x, y)] += body.mode;
+			}
 		}
 	}
 
@@ -112,6 +131,74 @@ Vector<Violation> Check()
 		{
 			found.push_back({"booking",
 				"uid " + std::to_string(uid) + " has booked " + Key(reservation.x1, reservation.y1) + " to " + Key(reservation.x2, reservation.y2) + ", but nothing alive carries that uid"});
+
+			continue;
+		}
+
+		for (int x = reservation.x1; x <= reservation.x2; x++)
+		{
+			for (int y = reservation.y1; y <= reservation.y2; y++)
+			{
+				const int mark = Mark(grid, {x, y});
+
+				if (mark < 0 || mark >= Flags::CELL_COLLISION_MODE_HARD)
+				{
+					continue;
+				}
+
+				expected[Key(x, y)] += reservation.cellMode;
+			}
+		}
+	}
+
+	// Two bodies at rest on one cell. Infantry may share ground; anything that
+	// takes a whole cell may not, whether with another of its own or with the
+	// infantry standing where it came to a stop.
+	std::set<Pair<int, int>> reported;
+
+	for (const auto &[key, bodies] : standing)
+	{
+		if (bodies.size() < 2)
+		{
+			continue;
+		}
+
+		for (std::size_t first = 0; first < bodies.size(); first++)
+		{
+			for (std::size_t second = first + 1; second < bodies.size(); second++)
+			{
+				if (bodies[first].mode < Flags::CELL_COLLISION_MODE_MEDIUM &&
+					bodies[second].mode < Flags::CELL_COLLISION_MODE_MEDIUM)
+				{
+					continue;
+				}
+
+				const Pair<int, int> pair{
+					std::min(bodies[first].uid, bodies[second].uid),
+					std::max(bodies[first].uid, bodies[second].uid)};
+
+				if (reported.contains(pair))
+				{
+					continue;
+				}
+
+				reported.insert(pair);
+
+				found.push_back({"overlap",
+					"cell " + key + " has " + Named(bodies[first]) + " and " + Named(bodies[second]) + " stopped on it"});
+			}
+		}
+	}
+
+	for (const auto &[key, value] : expected)
+	{
+		const auto held = tracker.cells_grid.find(key);
+		const int actual = held == tracker.cells_grid.end() ? 0 : held->second;
+
+		if (actual != value)
+		{
+			found.push_back({"stack",
+				"cell " + key + " holds " + std::to_string(actual) + " but its bodies and bookings come to " + std::to_string(value)});
 		}
 	}
 
@@ -125,121 +212,23 @@ Vector<Violation> Check()
 			continue;
 		}
 
+		const int mark = Mark(grid, cell);
+
 		if (value < 0)
 		{
 			found.push_back({"stack",
-				"cell " + key + " holds " + std::to_string(value) + ", which no body can have put there: " + Occupants(tracker, live, cell)});
+				"cell " + key + " holds " + std::to_string(value) + ", which no body can have put there"});
+
 			continue;
 		}
 
-		const int hard = value / Flags::CELL_COLLISION_MODE_HARD;
-		const int medium = (value % Flags::CELL_COLLISION_MODE_HARD) / Flags::CELL_COLLISION_MODE_MEDIUM;
-		const int soft = value % Flags::CELL_COLLISION_MODE_MEDIUM;
-
-		if (medium > 1)
+		if (value != 0 && !expected.contains(key) && mark < Flags::CELL_COLLISION_MODE_HARD)
 		{
-			found.push_back({"overlap",
-				"cell " + key + " has " + std::to_string(medium) + " vehicles or ships stopped on it: " + Occupants(tracker, live, cell)});
-		}
-
-		if (medium > 0 && soft > 0)
-		{
-			found.push_back({"overlap",
-				"cell " + key + " has infantry stopped where a vehicle or ship stands: " + Occupants(tracker, live, cell)});
-		}
-
-		if (hard > 0 && (medium > 0 || soft > 0))
-		{
-			found.push_back({"overlap",
-				"cell " + key + " has a unit stopped inside a building or turret: " + Occupants(tracker, live, cell)});
-		}
-
-		if (hard > 1)
-		{
-			found.push_back({"overlap",
-				"cell " + key + " has " + std::to_string(hard) + " buildings or turrets on it: " + Occupants(tracker, live, cell)});
-		}
-	}
-
-	Map<String, int> expected;
-
-	for (const auto &[uid, box] : tracker.uids_grid)
-	{
-		const auto carried = live.find(uid);
-
-		if (carried == live.end())
-		{
-			continue;
-		}
-
-		const int mode = carried->second->GetCellCollisionMode();
-
-		for (int x = std::get<0>(box); x <= std::get<2>(box); ++x)
-		{
-			for (int y = std::get<1>(box); y <= std::get<3>(box); ++y)
-			{
-				const Cell cell{x, y};
-				const int mark = Mark(grid, cell);
-
-				// A cell already hard when the body was placed took none of
-				// it, so it is not the grid's to account for here.
-				if (mark < 0 || (mark >= Flags::CELL_COLLISION_MODE_HARD && mode < Flags::CELL_COLLISION_MODE_HARD))
-				{
-					continue;
-				}
-
-				expected[Key(x, y)] += mode;
-			}
-		}
-	}
-
-	for (const auto &[key, value] : expected)
-	{
-		const auto held = tracker.cells_grid.find(key);
-		const int actual = held == tracker.cells_grid.end() ? 0 : held->second;
-
-		if (actual != value)
-		{
-			Cell cell;
-			Parse(key, cell);
-
 			found.push_back({"stack",
-				"cell " + key + " holds " + std::to_string(actual) + " but carries bodies worth " + std::to_string(value) + ": " + Occupants(tracker, live, cell)});
-		}
-	}
+				"cell " + key + " holds " + std::to_string(value) + " with nothing standing on it or booked over it"});
 
-	for (const auto &[key, value] : tracker.cells_grid)
-	{
-		if (value == 0 || expected.contains(key))
-		{
 			continue;
 		}
-
-		Cell cell;
-
-		if (!Parse(key, cell))
-		{
-			continue;
-		}
-
-		if (Mark(grid, cell) >= Flags::CELL_COLLISION_MODE_HARD)
-		{
-			continue;
-		}
-
-		found.push_back({"stack", "cell " + key + " holds " + std::to_string(value) + " with no body on it"});
-	}
-
-	for (const auto &[key, value] : tracker.cells_grid)
-	{
-		Cell cell;
-
-		if (!Parse(key, cell) || value < 0)
-		{
-			continue;
-		}
-
-		const int mark = Mark(grid, cell);
 
 		if (mark < 0 || mark >= Flags::CELL_COLLISION_MODE_HARD)
 		{
