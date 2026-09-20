@@ -27,6 +27,7 @@ struct ProductionOrder
 	String type;
 	int ticks = 0;
 	int progress = 0;
+	int stall = 0;
 	bool ready = false;
 };
 
@@ -245,6 +246,11 @@ public:
 	// powerplant lights the buildings of whoever raised it and nobody else's.
 	Map<String, int> powerUsage;
 	Map<String, int> powerTotal;
+
+	// Sides whose grid a hack has cut. Simulation state like the treasuries: a
+	// command puts a side in here on a stamped tick, and it stays until the
+	// owner restores it or a supplier comes back onto the grid.
+	Set<String> powerCuts;
 	Map<int, int> lookupMap;
 
 	// Published by the AI module, read by the debug overlay.
@@ -760,10 +766,38 @@ public:
 		powerTotal[inTeam] = std::max(0, inPowerTotal);
 	}
 
+	bool IsPowerCut(const String &inTeam) const
+	{
+		return powerCuts.find(inTeam) != powerCuts.end();
+	}
+
+	void SetPowerCut(const String &inTeam, bool inCut)
+	{
+		if (inCut)
+		{
+			powerCuts.insert(inTeam);
+		}
+		else
+		{
+			powerCuts.erase(inTeam);
+		}
+	}
+
+	// What everything that needs power asks. A side is lit when its grid can
+	// carry what is on it and nobody has cut it.
+	bool HasPower(const String &inTeam) const
+	{
+		return !IsPowerCut(inTeam) && GetPowerTotal(inTeam) >= GetPowerUsage(inTeam);
+	}
+
 	void ConnectPower(const String &inTeam, int inPowerUsage)
 	{
 		if (inPowerUsage < 0)
 		{
+			// A supplier coming onto the grid is a grid being rebuilt, which is
+			// the other way back from a cut.
+			SetPowerCut(inTeam, false);
+
 			SetPowerTotal(inTeam, GetPowerTotal(inTeam) - inPowerUsage);
 		}
 		else
@@ -915,6 +949,7 @@ public:
 		aiDebug.clear();
 		powerUsage.clear();
 		powerTotal.clear();
+		powerCuts.clear();
 
 		for (auto &row : currentMapTerrainGrid)
 		{

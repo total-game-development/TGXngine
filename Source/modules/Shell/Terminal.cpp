@@ -361,6 +361,14 @@ void Terminal::Submit(const String &line)
 	{
 		Passwd(args);
 	}
+	else if (head == "hack")
+	{
+		Hack(args);
+	}
+	else if (head == "restore")
+	{
+		Restore();
+	}
 	else if (head == "who")
 	{
 		Who();
@@ -411,6 +419,8 @@ void Terminal::Help()
 	Print(" - start: pid (Starts a stopped building again)");
 	Print(" - hosts: Lists the other players' computers you can connect to");
 	Print(" - who: Shows this computer's pin and who is connected to it");
+	Print(" - hack: power (Cuts the grid of the computer you are connected to)");
+	Print(" - restore: Puts your own grid back after it has been cut");
 	Print(" - passwd: pin (Changes this computer's pin, shutting out anybody connected)");
 	Print(" - connect: remote_computer_name pin (Connects to the remote computer)");
 	Print(" - disconnect: Disconnects from remote computer");
@@ -978,6 +988,12 @@ bool Terminal::Remote(const String &head, const Vector<String> &args)
 		return true;
 	}
 
+	if (head == "restore")
+	{
+		Print("The grid on " + current->name + " is not yours to restore");
+		return true;
+	}
+
 	if (head == "kill" || head == "start")
 	{
 		if (args.size() != 2)
@@ -1225,6 +1241,25 @@ void Terminal::Answer(const String &from, const nlohmann::json &body)
 			ListProcesses();
 			serving = nullptr;
 		}
+		else if (op == "hack" && args.size() == 1 && args[0] == "power")
+		{
+			Print(from + " cut the power on this computer");
+
+			if (!hackRequest)
+			{
+				ok = false;
+				lines.push_back("There is no grid on " + self + " to cut");
+			}
+			else if (!hackRequest("power", true))
+			{
+				ok = false;
+				lines.push_back("The grid on " + self + " is already cut");
+			}
+			else
+			{
+				lines.push_back("The grid on " + self + " is cut");
+			}
+		}
 		else if ((op == "kill" || op == "start") && args.size() == 1)
 		{
 			Print(from + " sent " + op + " " + args[0] + " to this computer");
@@ -1438,6 +1473,53 @@ void Terminal::SetProcessHandlers(ProcessLister lister, ProcessSwitch switcher)
 	buildingPids.clear();
 }
 
+void Terminal::SetHackHandler(HackRequest handler)
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	hackRequest = std::move(handler);
+}
+
+void Terminal::Hack(const Vector<String> &args)
+{
+	if (!current->networked)
+	{
+		Print("There is nothing to hack from your own console. Connect to somebody first");
+		return;
+	}
+
+	if (args.size() != 2 || args[1] != "power")
+	{
+		Print("Invalid command. Usage: hack power");
+		return;
+	}
+
+	Send(current->name, current->directory, "hack", {args[1]});
+}
+
+void Terminal::Restore()
+{
+	if (current->networked)
+	{
+		Print("The grid on " + current->name + " is not yours to restore");
+		return;
+	}
+
+	if (!hackRequest)
+	{
+		Print("There is no grid here to restore");
+		return;
+	}
+
+	if (!hackRequest("power", false))
+	{
+		Print("Your grid has not been cut");
+		return;
+	}
+
+	Print("Restoring the grid");
+}
+
 void Terminal::RefreshProcesses()
 {
 	refreshed = Clock::now();
@@ -1542,7 +1624,8 @@ void Terminal::ListProcesses()
 
 	if (processes.contains("usage") && processes.contains("total"))
 	{
-		Print("Power " + std::to_string(processes.value("usage", 0)) + " / " + std::to_string(processes.value("total", 0)));
+		Print("Power " + std::to_string(processes.value("usage", 0)) + " / " + std::to_string(processes.value("total", 0)) +
+			  (processes.value("cut", false) ? " (cut)" : ""));
 	}
 }
 

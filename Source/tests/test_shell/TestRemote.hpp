@@ -273,6 +273,123 @@ TEST_F(RemoteFixture, CheatsAreDisabledInMultiplayer)
 	EXPECT_TRUE(Printed(ruby, "Cheats are disabled in multiplayer"));
 }
 
+struct Grid
+{
+	bool cut = false;
+	int asked = 0;
+
+	void Attach(Terminal &terminal)
+	{
+		terminal.SetHackHandler([this](const String &effect, bool wanted) {
+			asked++;
+
+			if (effect != "power" || cut == wanted)
+			{
+				return false;
+			}
+
+			cut = wanted;
+
+			return true;
+		});
+	}
+};
+
+TEST_F(RemoteFixture, CutsTheGridOfTheComputerItBrokeInto)
+{
+	Grid grid;
+	grid.Attach(sapphire);
+
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "hack power");
+
+	EXPECT_TRUE(grid.cut);
+	EXPECT_TRUE(Printed(sapphire, "ruby cut the power on this computer"));
+	EXPECT_TRUE(Printed(ruby, "The grid on sapphire is cut"));
+}
+
+TEST_F(RemoteFixture, AGridAlreadyCutIsNotCutTwice)
+{
+	Grid grid;
+	grid.cut = true;
+	grid.Attach(sapphire);
+
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "hack power");
+
+	EXPECT_TRUE(Printed(ruby, "The grid on sapphire is already cut"));
+}
+
+TEST_F(RemoteFixture, AHackNeedsASessionLikeAnythingElse)
+{
+	Grid grid;
+	grid.Attach(sapphire);
+
+	Run(ruby, "connect sapphire 9999");
+	Run(ruby, "hack power");
+
+	EXPECT_EQ(grid.asked, 0);
+	EXPECT_FALSE(grid.cut);
+}
+
+TEST_F(RemoteFixture, ThereIsNothingToHackFromYourOwnConsole)
+{
+	Grid grid;
+	grid.Attach(ruby);
+
+	Run(ruby, "hack power");
+
+	EXPECT_EQ(grid.asked, 0);
+	EXPECT_TRUE(Printed(ruby, "There is nothing to hack from your own console"));
+}
+
+TEST_F(RemoteFixture, TheOwnerPutsItsOwnGridBack)
+{
+	Grid grid;
+	grid.cut = true;
+	grid.Attach(sapphire);
+
+	Run(sapphire, "restore");
+
+	EXPECT_FALSE(grid.cut);
+	EXPECT_TRUE(Printed(sapphire, "Restoring the grid"));
+}
+
+TEST_F(RemoteFixture, AGridNobodyCutNeedsNoRestoring)
+{
+	Grid grid;
+	grid.Attach(sapphire);
+
+	Run(sapphire, "restore");
+
+	EXPECT_TRUE(Printed(sapphire, "Your grid has not been cut"));
+}
+
+TEST_F(RemoteFixture, SomebodyElsesGridIsNotYoursToRestore)
+{
+	Grid grid;
+	grid.cut = true;
+	grid.Attach(sapphire);
+
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "restore");
+
+	EXPECT_TRUE(grid.cut);
+	EXPECT_TRUE(Printed(ruby, "The grid on sapphire is not yours to restore"));
+}
+
+TEST_F(RemoteFixture, ACutGridIsSaidSoInPs)
+{
+	FakeBase base;
+	base.listing["cut"] = true;
+	base.Attach(sapphire);
+
+	Run(ruby, "connect sapphire 2222");
+	Run(ruby, "ps");
+
+	EXPECT_TRUE(Printed(ruby, "Power 30 / 400 (cut)"));
+}
+
 TEST(ShellRemote, AnUnreachableComputerDropsBackToLocal)
 {
 	Terminal terminal;

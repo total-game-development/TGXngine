@@ -45,11 +45,16 @@ String shellProcesses;
 // game scene, which decides whether each is applied now or stamped first.
 Vector<Pair<int, bool>> shellSwitches;
 
+// What a console has asked the match for, drained once a frame and sent as a
+// command. A hack against this side, or this side putting its own grid back.
+Vector<bool> shellHacks;
+
 const ItemInstance *FindProcess(WorldState &world, int uid)
 {
 	for (const auto &entry : world.items)
 	{
-		if (entry && entry->GetUid() == uid && entry->GetLife() > 0.0f && entry->GetType() == "buildings" && entry->GetTeam() == world.GetTeam())
+		if (entry && entry->GetUid() == uid && entry->GetLife() > 0.0f && (entry->GetType() == "buildings" || entry->GetType() == "turrets") &&
+			entry->GetTeam() == world.GetTeam())
 		{
 			return entry.get();
 		}
@@ -69,7 +74,7 @@ const char *ListShellProcesses()
 
 	for (const auto &entry : world.items)
 	{
-		if (entry && entry->GetLife() > 0.0f && entry->GetType() == "buildings" && entry->GetTeam() == team)
+		if (entry && entry->GetLife() > 0.0f && (entry->GetType() == "buildings" || entry->GetType() == "turrets") && entry->GetTeam() == team)
 		{
 			buildings.push_back(entry.get());
 		}
@@ -82,6 +87,7 @@ const char *ListShellProcesses()
 	json listing = {
 		{"usage", world.GetPowerUsage(team)},
 		{"total", world.GetPowerTotal(team)},
+		{"cut", world.IsPowerCut(team)},
 		{"processes", json::array()}};
 
 	for (const ItemInstance *building : buildings)
@@ -108,6 +114,30 @@ bool SwitchShellProcess(int uid, bool running)
 	}
 
 	shellSwitches.emplace_back(uid, running);
+
+	return true;
+}
+
+// A console asking the match to cut or restore this side's grid. It is never
+// applied here: it goes out as a command, is stamped like an order, and lands
+// on every client on the same tick. A side can only ask about its own grid,
+// which is the whole of why a hack cannot be used to reach across the board:
+// the program that wanted it ran on this computer, not on the hacker's.
+bool RequestShellHack(const char *effect, bool cut)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	if (effect == nullptr || String(effect) != "power" || world.GetTeam().empty())
+	{
+		return false;
+	}
+
+	if (world.IsPowerCut(world.GetTeam()) == cut)
+	{
+		return false;
+	}
+
+	shellHacks.push_back(cut);
 
 	return true;
 }
@@ -391,7 +421,7 @@ void Game::Init()
 
 		if (!watching)
 		{
-			shellModule->SetProcessHandler(&ListShellProcesses, &SwitchShellProcess);
+			shellModule->SetMatchHandlers(&ListShellProcesses, &SwitchShellProcess, &RequestShellHack);
 		}
 
 		// Every other player's console is a computer this one can reach. An
@@ -818,6 +848,21 @@ void Game::AdvanceProduction()
 			continue;
 		}
 
+		// A side whose grid is short, or whose grid a hack has cut, still
+		// builds. It builds at half the rate, which is felt rather than
+		// watched: the order does not stop, it falls behind the one across
+		// the map that has its power.
+		if (!world.HasPower(order->team))
+		{
+			order->stall++;
+
+			if ((order->stall % 2) != 0)
+			{
+				++order;
+				continue;
+			}
+		}
+
 		order->progress++;
 
 		if (order->progress < order->ticks)
@@ -886,6 +931,7 @@ void Game::PumpShell()
 	if (!shellModule)
 	{
 		shellSwitches.clear();
+		shellHacks.clear();
 		return;
 	}
 
@@ -898,6 +944,23 @@ void Game::PumpShell()
 	}
 
 	shellModule->Update();
+
+	Vector<bool> hacks;
+	hacks.swap(shellHacks);
+
+	for (const bool cut : hacks)
+	{
+		const json orders = {{"kind", cut ? "hack" : "restore"}, {"effect", "power"}, {"team", WorldState::GetInstance().GetTeam()}};
+
+		if (MultiplayerSetup::active)
+		{
+			Net::Session::GetInstance().SendCommand({}, orders);
+		}
+		else
+		{
+			ApplyCommand({}, orders);
+		}
+	}
 
 	Vector<Pair<int, bool>> switches;
 	switches.swap(shellSwitches);
@@ -1010,7 +1073,16 @@ std::uint64_t Game::WorldDigest() const
 		fold.MixText(order.team);
 		fold.MixText(order.key);
 		fold.Mix(static_cast<std::uint64_t>(order.progress));
+		fold.Mix(static_cast<std::uint64_t>(order.stall));
 		fold.Mix(order.ready ? 1u : 0u);
+	}
+
+	// Whose grid is cut. A hack is simulation state like anything else: every
+	// client applies it on the same tick and folds the same answer, so a
+	// client that ignored one is a client that has left the match.
+	for (const String &team : world.powerCuts)
+	{
+		fold.MixText(team);
 	}
 
 	return fold.Value();
@@ -1073,10 +1145,32 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 		return;
 	}
 
+	const String kind = orders.value("kind", String{"order"});
+
+	// A hack that reached the match. It carries the side it is against and
+	// what it does, and it is applied here like any other command: on the tick
+	// the server stamped it for, by every client, into state the digest folds.
+	// Nothing about it is applied where the program that asked for it ran.
+	if (kind == "hack" || kind == "restore")
+	{
+		const String team = orders.value("team", String{});
+		const String effect = orders.value("effect", String{"power"});
+
+		if (team.empty() || effect != "power")
+		{
+			return;
+		}
+
+		WorldState::GetInstance().SetPowerCut(team, kind == "hack");
+
+		Log::Info(String(kind == "hack" ? "Power cut on " : "Power restored on ") + team + " at tick " + std::to_string(digestTick));
+
+		return;
+	}
+
 	// A building its owner stopped or started from the console. Its power
 	// leaves or rejoins the grid here, on the stamped tick, so every client's
 	// grid changes at once.
-	const String kind = orders.value("kind", String{"order"});
 
 	if (kind == "kill" || kind == "start")
 	{
@@ -1086,7 +1180,8 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 
 		for (const auto &entry : world.items)
 		{
-			if (!entry || entry->GetLife() <= 0.0f || entry->IsRunning() == start || entry->GetType() != "buildings" ||
+			if (!entry || entry->GetLife() <= 0.0f || entry->IsRunning() == start ||
+				(entry->GetType() != "buildings" && entry->GetType() != "turrets") ||
 				std::ranges::find(uids, entry->GetUid()) == uids.end())
 			{
 				continue;

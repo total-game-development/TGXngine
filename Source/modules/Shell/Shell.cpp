@@ -335,7 +335,7 @@ extern "C"
 		terminal->Deliver(nlohmann::json::parse(message, nullptr, false));
 	}
 
-	MODULE_API void SetProcessHandler(const char *(*list)(), bool (*toggle)(int, bool))
+	MODULE_API void SetMatchHandlers(const char *(*list)(), bool (*toggle)(int, bool), bool (*hack)(const char *, bool))
 	{
 		if (!terminal)
 		{
@@ -345,12 +345,21 @@ extern "C"
 		if (list == nullptr || toggle == nullptr)
 		{
 			terminal->SetProcessHandlers(nullptr, nullptr);
+		}
+		else
+		{
+			terminal->SetProcessHandlers(
+				[list]() { return nlohmann::json::parse(list(), nullptr, false); },
+				[toggle](int uid, bool running) { return toggle(uid, running); });
+		}
+
+		if (hack == nullptr)
+		{
+			terminal->SetHackHandler(nullptr);
 			return;
 		}
 
-		terminal->SetProcessHandlers(
-			[list]() { return nlohmann::json::parse(list(), nullptr, false); },
-			[toggle](int uid, bool running) { return toggle(uid, running); });
+		terminal->SetHackHandler([hack](const String &effect, bool cut) { return hack(effect.c_str(), cut); });
 	}
 
 	MODULE_API void Clear()

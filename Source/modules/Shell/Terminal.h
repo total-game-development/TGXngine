@@ -27,6 +27,7 @@ using ToggleHandler = void (*)(const char *, const char *, bool);
 using NetworkSender = Function<void(const String &, const nlohmann::json &)>;
 using ProcessLister = Function<nlohmann::json()>;
 using ProcessSwitch = Function<bool(int, bool)>;
+using HackRequest = Function<bool(const String &, bool)>;
 
 enum class TerminalMode : std::uint8_t
 {
@@ -95,6 +96,7 @@ private:
 
 	ProcessLister processLister;
 	ProcessSwitch processSwitch;
+	HackRequest hackRequest;
 	nlohmann::json processes = nlohmann::json::object();
 	std::map<int, int> buildingPids;
 	int nextPid = 1;
@@ -126,6 +128,8 @@ private:
 	void RefreshProcesses();
 	void ListProcesses();
 	void Signal(const Vector<String> &args, bool start);
+	void Hack(const Vector<String> &args);
+	void Restore();
 
 	static Vector<String> Split(const String &text, char delimiter);
 	static String Pin();
@@ -149,6 +153,7 @@ public:
 	void Deliver(const nlohmann::json &message);
 
 	void SetProcessHandlers(ProcessLister lister, ProcessSwitch switcher);
+	void SetHackHandler(HackRequest handler);
 
 	void Update();
 
