@@ -3,6 +3,7 @@
 		"canvasWidthOffset": 0,
 		"canvasHeightOffset": 0,
 		"production": false,
+		"borderless": true,
 		"debugOnScreen": false,
 		"fogOfWar": false
 	}

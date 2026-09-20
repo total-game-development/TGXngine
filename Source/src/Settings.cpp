@@ -40,6 +40,9 @@ Settings::Settings()
 	const bool production = json_settings["settings"]["production"];
 	world.SetProduction(production);
 
+	const bool borderless = json_settings["settings"].value("borderless", false);
+	world.SetBorderless(borderless);
+
 	if (world.IsProduction())
 	{
 		UseProduction();

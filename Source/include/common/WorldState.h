@@ -80,6 +80,7 @@ private:
 	bool built = false;
 	bool triggered = false;
 	bool production = true;
+	bool borderless = false;
 	bool headless = false;
 	bool debugOnScreen = false;
 	bool fogOfWarEnabled = true;
@@ -508,6 +509,11 @@ public:
 		return production;
 	}
 
+	bool IsBorderless() const
+	{
+		return borderless;
+	}
+
 	bool IsHeadless() const
 	{
 		return headless;
@@ -521,6 +527,11 @@ public:
 	void SetProduction(bool inProduction)
 	{
 		production = inProduction;
+	}
+
+	void SetBorderless(bool inBorderless)
+	{
+		borderless = inBorderless;
 	}
 
 	void SetDebugOnScreen(bool inDebugOnScreen)

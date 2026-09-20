@@ -21,7 +21,12 @@ Window::Window() : _shouldClose(false)
 		return;
 	}
 
-	if (world.IsProduction())
+	if (world.IsProduction() && world.IsBorderless())
+	{
+		_window.create(sf::VideoMode::getDesktopMode(), "TGXngine", sf::Style::None);
+		_window.setPosition(sf::Vector2i(0, 0));
+	}
+	else if (world.IsProduction())
 	{
 		_window.create(sf::VideoMode::getDesktopMode(), "TGXngine", sf::Style::Fullscreen);
 	}
