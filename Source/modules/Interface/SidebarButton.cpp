@@ -53,30 +53,17 @@ bool SidebarButton::PlacementFits() const
 		return false;
 	}
 
-	const int startY = gridY - 4;
-	const int endX = gridX + cellsWide - 1;
-	const int endY = startY + cellsHigh - 1;
+	return BuildSpace::Clear(value, gridX, gridY - 4, cellsWide, cellsHigh, Flags::CELL_COLLISION_MODE_SOFT);
+}
 
-	if (gridX < 0 ||
-		startY < 0 ||
-		endX >= world.GetMapGridWidth() ||
-		endY >= world.GetMapGridHeight())
-	{
-		return false;
-	}
+BuildSpan SidebarButton::PlacementSpan() const
+{
+	constexpr int CELL_SIZE = 20;
 
-	for (int placementY = 0; placementY < cellsHigh; ++placementY)
-	{
-		for (int placementX = 0; placementX < cellsWide; ++placementX)
-		{
-			if (world.currentTerrainMapPassableGrid[startY + placementY][gridX + placementX] >= 1)
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
+	return BuildSpace::Of(
+		value,
+		static_cast<int>(buildableCells.getSize().x) / CELL_SIZE,
+		static_cast<int>(buildableCells.getSize().y) / CELL_SIZE);
 }
 
 void SidebarButton::DrawPlacement()
@@ -102,11 +89,26 @@ void SidebarButton::DrawPlacement()
 
 	world.SetBuilt(canBuild);
 
-	buildableCells.setPosition(
-		std::round((gridX * CELL_SIZE) - world.GetPanX()),
-		std::round((gridY * CELL_SIZE) - world.GetPanY()));
+	const float left = std::round((gridX * CELL_SIZE) - world.GetPanX());
+	const float top = std::round((gridY * CELL_SIZE) - world.GetPanY());
+
+	buildableCells.setPosition(left, top);
 
 	Window &window = Window::GetInstance();
+
+	const BuildSpan span = PlacementSpan();
+	const float footprintHeight = buildableCells.getSize().y;
+	const float deployHeight = (static_cast<float>(span.height) * CELL_SIZE) - footprintHeight;
+
+	if (deployHeight > 0.0f)
+	{
+		deployCells.setSize(sf::Vector2f(static_cast<float>(span.width) * CELL_SIZE, deployHeight));
+		deployCells.setFillColor(canBuild ? sf::Color(0, 255, 0, 38) : sf::Color(255, 0, 0, 38));
+		deployCells.setPosition(left, top + footprintHeight);
+
+		window.Draw(deployCells);
+	}
+
 	window.Draw(buildableCells);
 }
 

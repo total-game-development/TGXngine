@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 #include "Core.h"
 #include "ItemInstance.h"
@@ -83,6 +84,32 @@ public:
 	virtual int GetDeployDirection() const
 	{
 		return 0;
+	}
+
+	static constexpr int deployClearance = 2;
+
+	int GetPlacementWidth() const
+	{
+		int cellsWide = passableGrid.empty() || passableGrid[0].empty() ? 0 : static_cast<int>(passableGrid[0].size());
+
+		for (const auto &berth : GetDeployPositions())
+		{
+			cellsWide = std::max(cellsWide, static_cast<int>(std::ceil(std::get<0>(berth))) + deployClearance);
+		}
+
+		return cellsWide;
+	}
+
+	int GetPlacementHeight() const
+	{
+		int cellsHigh = static_cast<int>(passableGrid.size());
+
+		for (const auto &berth : GetDeployPositions())
+		{
+			cellsHigh = std::max(cellsHigh, static_cast<int>(std::ceil(std::get<1>(berth))) + deployClearance);
+		}
+
+		return cellsHigh;
 	}
 
 	void AddToGrid(Vector<Vector<int>> &grid, GridTracker &gridTracker) const override

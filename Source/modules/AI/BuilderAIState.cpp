@@ -2,6 +2,7 @@
 #include <cmath>
 #include "AI.h"
 #include "AIStates.h"
+#include "BuildSpace.h"
 #include "Core.h"
 #include "Enums.h"
 #include "Flags.h"
@@ -52,7 +53,7 @@ void BuilderAIState::Update()
 	}
 	else if (order != nullptr && order->ready)
 	{
-		if (FindPlot(x, y))
+		if (FindPlot(order->key, x, y))
 		{
 			stallReason.clear();
 			Place(*order, x, y);
@@ -74,7 +75,7 @@ void BuilderAIState::Update()
 		{
 			stallReason = ArmySize() >= armyLimit ? "army at cap" : "nothing affordable";
 		}
-		else if ((next->type == "buildings" || next->type == "turrets") && !FindPlot(x, y))
+		else if ((next->type == "buildings" || next->type == "turrets") && !FindPlot(next->name, x, y))
 		{
 			stallReason = StringConcat("no room for ", next->name);
 		}
@@ -266,40 +267,16 @@ Ref<BuildNode> BuilderAIState::NextBuild()
 	return nullptr;
 }
 
-bool BuilderAIState::IsPlotClear(int x, int y) const
+bool BuilderAIState::IsPlotClear(const String &kind, int x, int y) const
 {
-	WorldState &world = WorldState::GetInstance();
-
-	// The map's size has to come off WorldState, not Globals. Globals is a
-	// header of static inline members with nothing exported, so a module gets
-	// its own copy and only the executable ever writes it: read from here and
-	// the width is still 0, every plot fails the bounds test, and the commander
-	// reports no room on an empty map.
-	const int mapWidth = world.GetMapGridWidth();
-	const int mapHeight = world.GetMapGridHeight();
-
-	if (x < 0 || y < 0 ||
-		x + plotWidth > mapWidth ||
-		y + plotHeight > mapHeight)
-	{
-		return false;
-	}
-
-	for (int cellY = y; cellY < y + plotHeight; cellY++)
-	{
-		for (int cellX = x; cellX < x + plotWidth; cellX++)
-		{
-			if (world.currentTerrainMapPassableGrid[cellY][cellX] >= Flags::CELL_COLLISION_MODE_HARD)
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
+	// The plot a kind needs is the kind's own, published by the module that
+	// defines it: its footprint and the berths it deploys into. A kind with no
+	// span of its own, a turret among them, falls back to the square the
+	// commander has always asked for.
+	return BuildSpace::Clear(kind, x, y, plotWidth, plotHeight, Flags::CELL_COLLISION_MODE_HARD);
 }
 
-bool BuilderAIState::FindPlot(int &outX, int &outY) const
+bool BuilderAIState::FindPlot(const String &kind, int &outX, int &outY) const
 {
 	WorldState &world = WorldState::GetInstance();
 
@@ -336,7 +313,7 @@ bool BuilderAIState::FindPlot(int &outX, int &outY) const
 					continue;
 				}
 
-				if (IsPlotClear(centreX + offsetX, centreY + offsetY))
+				if (IsPlotClear(kind, centreX + offsetX, centreY + offsetY))
 				{
 					outX = centreX + offsetX;
 					outY = centreY + offsetY;

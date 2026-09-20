@@ -30,6 +30,14 @@ struct ProductionOrder
 	bool ready = false;
 };
 
+// The ground a building kind occupies once it is down: its footprint, and the
+// room its deploy berths need below it.
+struct BuildSpan
+{
+	int width = 0;
+	int height = 0;
+};
+
 class WorldState
 {
 private:
@@ -222,6 +230,13 @@ public:
 	Set<Point> terrainMarkers;
 	Map<String, Unique<ProjectileInstance>> projectileRegistry;
 	Map<int, Vector<Tuple<float, float, int>>> deployMap;
+
+	// How much ground a building kind needs: its own footprint, and the berths
+	// it deploys into. Published by the Buildings module from the states
+	// themselves, so the sidebar and the AI ask the building rather than each
+	// keeping a figure of their own. Kind data, not world data: a level ending
+	// does not clear it.
+	Map<String, BuildSpan> buildSpans;
 	Map<String, Vector<int>> static_cells;
 	Map<String, int> primaryItems;
 

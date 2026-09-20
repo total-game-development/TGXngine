@@ -137,8 +137,8 @@ private:
 	void Dispatch(UIAction action, const String &value) const;
 
 	Ref<BuildNode> NextBuild();
-	bool IsPlotClear(int x, int y) const;
-	bool FindPlot(int &outX, int &outY) const;
+	bool IsPlotClear(const String &kind, int x, int y) const;
+	bool FindPlot(const String &kind, int &outX, int &outY) const;
 	void CommandArmy();
 
 	// The units idling at base, which is what a wave is drawn from.

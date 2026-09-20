@@ -43,6 +43,36 @@ void Destroyed(BuildingState *building)
 	String removeItem = StringConcat("uid:", building->GetUid());
 	world.gameEvents.emplace_back(UIAction::RemoveGameItem, removeItem);
 }
+
+template <typename State>
+void PublishSpan(const String &name)
+{
+	const State state;
+
+	WorldState::GetInstance().buildSpans[name] = {state.GetPlacementWidth(), state.GetPlacementHeight()};
+}
+
+void PublishSpans()
+{
+	PublishSpan<ConstructionFacilityState>("construction_facility");
+	PublishSpan<PowerplantState>("powerplant");
+	PublishSpan<SciencePostState>("science_post");
+	PublishSpan<BarracksState>("barracks");
+	PublishSpan<VehicleAssemblyTunnelState>("vehicle_assembly_tunnel");
+	PublishSpan<ShipyardState>("shipyard");
+	PublishSpan<AirportState>("airport");
+	PublishSpan<OilExtractor>("oil_extractor");
+	PublishSpan<WaterExtractor>("water_extractor");
+
+	String published;
+
+	for (const auto &[kind, span] : WorldState::GetInstance().buildSpans)
+	{
+		published += (published.empty() ? "" : ", ") + kind + " " + std::to_string(span.width) + "x" + std::to_string(span.height);
+	}
+
+	Log::Info("Buildings need: " + published);
+}
 } // namespace
 
 extern "C"
@@ -55,6 +85,8 @@ extern "C"
 	MODULE_API void Init()
 	{
 		Log::Info("Buildings init function");
+
+		PublishSpans();
 	}
 
 	MODULE_API ItemInstance *Awake(const String &name)

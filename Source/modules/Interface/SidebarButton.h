@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <Common.hpp>
 #include <cstdint>
+#include "BuildSpace.h"
 #include "Core.h"
 
 using namespace nlohmann;
@@ -46,6 +47,7 @@ private:
 	Vector<sf::Sprite> sprites;
 	Vector<Unique<sf::Texture>> spriteTextures;
 	sf::RectangleShape buildableCells;
+	sf::RectangleShape deployCells;
 	int frame;
 	int frames;
 	int ticks = 0;
@@ -96,6 +98,7 @@ public:
 	// the pointer moves between the two, and the answer the frame arrived at
 	// was for where it used to be.
 	bool PlacementFits() const;
+	BuildSpan PlacementSpan() const;
 
 	bool IsPlacing() const
 	{
