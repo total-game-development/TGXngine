@@ -15,6 +15,11 @@ inline bool suppressed = false;
 // alone and only the flag decides.
 inline bool showFps = false;
 
+// Frame times reported to the log every few seconds, asked for with
+// --frametimes. The readout answers "how fast"; this answers "how evenly",
+// which is the question a stutter asks.
+inline bool traceFrames = false;
+
 inline bool Grid()
 {
 	return showGrid && !suppressed;

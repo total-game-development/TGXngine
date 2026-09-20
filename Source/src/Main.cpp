@@ -68,6 +68,7 @@ void Usage()
 			  << "  --team <name>           the side to command; left out, the map decides\n"
 			  << "  --production            play fullscreen, whatever settings.json says\n"
 			  << "  --fps                   show the frame rate, in any mode\n"
+			  << "  --frametimes            report frame times to the log every five seconds\n"
 			  << "  --replay <file>         replay a recorded match\n"
 			  << "  --host <url>            host a networked match headlessly\n"
 			  << "    --room <number>       the room to host\n"
@@ -100,6 +101,7 @@ int main(int argc, char **argv)
 	const bool production = Asked(argc, argv, "--production");
 
 	TGX::Debug::showFps = Asked(argc, argv, "--fps");
+	TGX::Debug::traceFrames = Asked(argc, argv, "--frametimes");
 
 	if (argc >= 3 && TGX::String(argv[1]) == "--replay")
 	{

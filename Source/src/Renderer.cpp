@@ -5,7 +5,9 @@
 #include <typeinfo>
 #include <utility>
 #include "Controller.h"
+#include "Debug.h"
 #include "Enums.h"
+#include "FrameTrace.h"
 #include "Globals.h"
 #include "Keyboard.h"
 #include "Logs.h"
@@ -188,8 +190,15 @@ void Renderer::Start()
 	window.SetEventCallbacks(keyboardCallback, mouseCallback);
 	window.SetTextCallback(textCallback);
 
+	FrameTrace frames;
+
 	while (!window.ShouldClose() && !world.IsClosed())
 	{
+		if (Debug::traceFrames)
+		{
+			frames.Begin();
+		}
+
 		float dt = clock.restart().asSeconds();
 
 		world.SetDeltaTime(std::min(dt, 0.05f));
@@ -249,7 +258,18 @@ void Renderer::Start()
 		scene->Draw();
 		mouse.Draw();
 		mouse.DrawCursor(cursors);
+
+		if (Debug::traceFrames)
+		{
+			frames.Work();
+		}
+
 		window.Display();
+
+		if (Debug::traceFrames)
+		{
+			frames.End(1000.0f / static_cast<float>(Globals::targetFPS));
+		}
 	}
 
 	scene->Close();
