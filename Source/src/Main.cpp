@@ -56,6 +56,7 @@ int main(int argc, char **argv)
 		TGX::String url = "ws://127.0.0.1:9001";
 		TGX::String token;
 		int room = 0;
+		int audit = 60;
 
 		for (int index = 1; index + 1 < argc; index++)
 		{
@@ -64,9 +65,10 @@ int main(int argc, char **argv)
 			if (flag == "--host") { url = argv[++index]; }
 			else if (flag == "--room") { room = std::atoi(argv[++index]); }
 			else if (flag == "--token") { token = argv[++index]; }
+			else if (flag == "--audit") { audit = std::atoi(argv[++index]); }
 		}
 
-		return TGX::RunHost(url, room, token);
+		return TGX::RunHost(url, room, token, audit);
 	}
 
 	TGX::Init();

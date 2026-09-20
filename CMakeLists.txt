@@ -431,7 +431,11 @@ if(BUILD_UNIT_TESTS)
 	# and Session.cpp stay out -- one owns a socket, the other drives the renderer.
 	set(NET_TESTABLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Source/src/Net/Lockstep.cpp")
 
-	add_executable(UnitTests ${TEST_SOURCES} ${SHELL_TESTABLE_SOURCES} ${NET_TESTABLE_SOURCES})
+	# The rule audit the headless host runs reads the occupancy grid and nothing
+	# else, so the test binary can hand it a grid of its own.
+	set(RULES_TESTABLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Source/src/Rules.cpp")
+
+	add_executable(UnitTests ${TEST_SOURCES} ${SHELL_TESTABLE_SOURCES} ${NET_TESTABLE_SOURCES} ${RULES_TESTABLE_SOURCES})
 
 	# The test binary links Common as a shared library, so it has to sit beside
 	# the Common.dll this build just produced. Left in the generator's own Debug/

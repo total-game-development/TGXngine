@@ -4,6 +4,7 @@
 #include "MultiplayerSetup.h"
 #include "Net/Session.h"
 #include "Renderer.h"
+#include "Rules.h"
 #include "Scene/Game.h"
 #include "WorldState.h"
 
@@ -40,7 +41,7 @@ Vector<String> Standing()
 }
 } // namespace
 
-int RunHost(const String &url, int room, const String &token)
+int RunHost(const String &url, int room, const String &token, int audit)
 {
 	// Set before the renderer exists, since building it builds the window.
 	// Nothing moves a pointer here, so park it off the map where no unit can
@@ -62,6 +63,10 @@ int RunHost(const String &url, int room, const String &token)
 	bool joined = false;
 	bool played = false;
 	bool decided = false;
+
+	int violations = 0;
+	int checks = 0;
+	std::int64_t audited = -1;
 
 	while (true)
 	{
@@ -90,6 +95,18 @@ int RunHost(const String &url, int room, const String &token)
 
 		renderer.GetGame()->AdvanceNetworked();
 
+		if (audit > 0 && session.IsPlaying() && session.Clock().IsCaughtUp())
+		{
+			const std::int64_t tick = session.Clock().LocalTick();
+
+			if (tick != audited && (tick % audit) == 0)
+			{
+				audited = tick;
+				checks++;
+				violations += Rules::Audit(tick);
+			}
+		}
+
 		// Once a side has nothing left, the match is over for it. With one
 		// standing that side has won; with none, nobody has.
 		if (!decided && session.IsPlaying() && session.Clock().IsCaughtUp())
@@ -109,6 +126,20 @@ int RunHost(const String &url, int room, const String &token)
 		}
 
 		std::this_thread::sleep_for(IDLE);
+	}
+
+	if (played && audit > 0)
+	{
+		const String tally = "Rules: " + std::to_string(violations) + " violations over " + std::to_string(checks) + " checks";
+
+		if (violations > 0)
+		{
+			Log::Error(tally);
+		}
+		else
+		{
+			Log::Success(tally);
+		}
 	}
 
 	Log::Info("Host for room " + std::to_string(room + 1) + " stopping: " + session.Notice());

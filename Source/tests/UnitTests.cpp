@@ -11,6 +11,7 @@
 #include "test_library/TestNavalAStar.hpp"
 #include "test_net/TestDigest.hpp"
 #include "test_net/TestLockstep.hpp"
+#include "test_rules/TestRules.hpp"
 #include "test_shell/TestFileSystem.hpp"
 #include "test_shell/TestHighlight.hpp"
 #include "test_shell/TestInterpreter.hpp"
