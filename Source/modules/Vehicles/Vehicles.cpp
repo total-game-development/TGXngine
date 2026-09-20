@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "Collision/Collision.h"
 #include "DeployBerths.h"
+#include "Cells.h"
 #include "Enums.h"
 #include "ImageLoader.h"
 #include "Logs.h"
@@ -647,6 +648,16 @@ void Standing(VehicleState *itemInstance)
 {
 	WorldState &world = WorldState::GetInstance();
 	Physics &physics = Physics::GetInstance();
+
+	GridTracker &tracker = physics.GetGridTracker();
+
+	const Pair<float, float> rest = Cells::Settle(
+		itemInstance->GetUid(), itemInstance->GetX(), itemInstance->GetY(),
+		itemInstance->GetRadius() / 20.0f, itemInstance->GetCellCollisionMode(),
+		world.currentTerrainMapPassableGrid, tracker.tactical_uids_grid, tracker.cells_grid);
+
+	itemInstance->SetX(rest.first);
+	itemInstance->SetY(rest.second);
 
 	itemInstance->AddToGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 	itemInstance->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());

@@ -1,6 +1,7 @@
 #include "Infantry.h"
 #include "Collision/Collision.h"
 #include "DeployBerths.h"
+#include "Cells.h"
 #include "Enums.h"
 #include "ImageLoader.h"
 #include "Logs.h"
@@ -162,8 +163,18 @@ extern "C"
 					// it clear; with no position at all it appears in the map corner.
 					const size_t berth = (i < deploys.size()) ? i : deploys.size() - 1;
 
-					globalItem->SetX(world.items[index]->GetX() + std::get<0>(deploys[berth]));
-					globalItem->SetY(world.items[index]->GetY() + std::get<1>(deploys[berth]));
+					Physics &deployPhysics = Physics::GetInstance();
+					GridTracker &deployTracker = deployPhysics.GetGridTracker();
+
+					const Pair<float, float> stand = Cells::Settle(
+						globalItem->GetUid(),
+						world.items[index]->GetX() + std::get<0>(deploys[berth]),
+						world.items[index]->GetY() + std::get<1>(deploys[berth]),
+						globalItem->GetRadius() / 20.0f, globalItem->GetCellCollisionMode(),
+						world.currentTerrainMapPassableGrid, deployTracker.tactical_uids_grid, deployTracker.cells_grid);
+
+					globalItem->SetX(stand.first);
+					globalItem->SetY(stand.second);
 				}
 			}
 			else
@@ -761,6 +772,16 @@ void Standing(InfantryState *itemInstance)
 
 	WorldState &world = WorldState::GetInstance();
 	Physics &physics = Physics::GetInstance();
+
+	GridTracker &tracker = physics.GetGridTracker();
+
+	const Pair<float, float> rest = Cells::Settle(
+		itemInstance->GetUid(), itemInstance->GetX(), itemInstance->GetY(),
+		itemInstance->GetRadius() / 20.0f, itemInstance->GetCellCollisionMode(),
+		world.currentTerrainMapPassableGrid, tracker.tactical_uids_grid, tracker.cells_grid);
+
+	itemInstance->SetX(rest.first);
+	itemInstance->SetY(rest.second);
 
 	itemInstance->AddToGrid(
 		world.currentTerrainMapPassableGrid,

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include "CollisionStructures.h"
+#include "GridTracker.h"
 #include "Core.h"
 #include "Flags.h"
 #include "Globals.h"
@@ -20,6 +21,115 @@ public:
 	{
 		tactical_uids_grid.clear();
 		tactical_grid.clear();
+	}
+
+	// Ground a unit may come to rest on. Infantry may share a cell with
+	// infantry; anything that takes a whole cell needs one nobody holds, and
+	// nothing at all may stop where such a thing already stands. The unit's own
+	// booking is discounted, since the cell it booked is the one it is stopping
+	// on.
+	static bool Standable(
+		int cellX, int cellY, int cellMode, int ownBooking,
+		const Vector<Vector<int>> &passableGrid,
+		const Map<String, int> &cells_grid)
+	{
+		if (cellY < 0 || cellY >= static_cast<int>(passableGrid.size()))
+		{
+			return false;
+		}
+
+		if (cellX < 0 || cellX >= static_cast<int>(passableGrid[cellY].size()))
+		{
+			return false;
+		}
+
+		if (passableGrid[cellY][cellX] >= Flags::CELL_COLLISION_MODE_HARD)
+		{
+			return false;
+		}
+
+		const auto held = cells_grid.find(std::to_string(cellX) + " " + std::to_string(cellY));
+		const int stack = (held == cells_grid.end() ? 0 : held->second) - ownBooking;
+
+		if (cellMode >= Flags::CELL_COLLISION_MODE_MEDIUM)
+		{
+			return stack <= Flags::CELL_COLLISION_MODE_OFF;
+		}
+
+		return stack < Flags::CELL_COLLISION_MODE_MEDIUM;
+	}
+
+	// Where a unit stopping at (item_x, item_y) may put its body down: the spot
+	// it asked for when that is free, otherwise the nearest that is, searched
+	// outwards in a fixed order so every client settles it the same way. A unit
+	// hemmed in altogether keeps the spot it asked for, and the rule audit says
+	// so.
+	static Pair<float, float> Settle(
+		int uid, float item_x, float item_y, float radius, int cellMode,
+		const Vector<Vector<int>> &passableGrid,
+		const Map<int, TacticalReservation> &bookings,
+		const Map<String, int> &cells_grid,
+		int reach = 4)
+	{
+		const auto booked = bookings.find(uid);
+
+		const auto clear = [&](float atX, float atY) {
+			const int x1 = static_cast<int>(std::floor(atX - radius));
+			const int x2 = static_cast<int>(std::floor(atX + radius));
+			const int y1 = static_cast<int>(std::floor(atY - radius));
+			const int y2 = static_cast<int>(std::floor(atY + radius));
+
+			for (int x = x1; x <= x2; ++x)
+			{
+				for (int y = y1; y <= y2; ++y)
+				{
+					int ownBooking = 0;
+
+					if (booked != bookings.end() &&
+						x >= booked->second.x1 && x <= booked->second.x2 &&
+						y >= booked->second.y1 && y <= booked->second.y2)
+					{
+						ownBooking = booked->second.cellMode;
+					}
+
+					if (!Standable(x, y, cellMode, ownBooking, passableGrid, cells_grid))
+					{
+						return false;
+					}
+				}
+			}
+
+			return true;
+		};
+
+		if (clear(item_x, item_y))
+		{
+			return {item_x, item_y};
+		}
+
+		for (int ring = 1; ring <= reach; ring++)
+		{
+			for (int offsetY = -ring; offsetY <= ring; offsetY++)
+			{
+				for (int offsetX = -ring; offsetX <= ring; offsetX++)
+				{
+					if (std::abs(offsetX) != ring && std::abs(offsetY) != ring)
+					{
+						continue;
+					}
+
+					const float atX = item_x + static_cast<float>(offsetX);
+					const float atY = item_y + static_cast<float>(offsetY);
+
+					if (clear(atX, atY))
+					{
+						return {atX, atY};
+					}
+				}
+			}
+		}
+
+		return {item_x, item_y};
 	}
 
 	static void Add(
