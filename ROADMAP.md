@@ -32,51 +32,19 @@ This document tracks TGXngine's development targets: what has shipped, what was 
 * Processes — a player's buildings are processes, listed by `ps` with their power and stopped or restarted by `kill` and `start` through stamped commands; `kill` also interrupts a runaway program.
 * The portal no longer pauses a networked match, and cheats are refused in one.
 
-Carried into 0.5: a world on the server, AI commanders over the command path, and production as shared state.
+Carried into 0.5, and delivered there: a world on the server, AI commanders over the command path, and production as shared state.
 
----
+### Version 0.5 — Arena Mode
 
-## Version 0.5 — Arena Mode
+* Headless hosting (`src/Host.cpp`, `src/Replay.cpp`) — `TGXngine --host URL --room N --token T` joins a room as its host, runs every tick the players run and reports its checksums, with no window at any point: `WorldState::SetHeadless` stops `Window` creating one, and a headless run takes no console, so it cannot overwrite the players' `Resources/shell.json`. `TGXngine --replay FILE` runs a match the server recorded the same way, and holds its world against every checksum the clients reported. A networked frame is one method, `Game::AdvanceNetworked`, and a networked tick another, `Game::RunTick`, so a live client, the host and a replay cannot drift apart in the order they run a tick.
+* The host's world as the reference — a server started with `--engine PATH` runs an engine for every match, and holds each player's world fold against the host's rather than against another player's, checking whichever of the two reports second. The players are still held against one another as well, so a room whose host is late or gone is no less checked than before. This closes the world-fold half carried from 0.4.
+* A server-decided outcome — the host reads what is still standing, reports who won or that nobody did, and the server ends the match with it. Everybody watching is told.
+* Rules auditing (`src/Rules.h`) — the digest catches a world that differs from another machine's, not one that is illegal on every machine at once. The host audits the occupancy grid every 60 ticks, `--audit` setting the interval, for units come to rest on ground another holds, stacks nothing accounts for, and bodies or tactical bookings held by uids nothing alive carries, and closes with a tally. A player's client is untouched: this is the authoritative world checking itself.
+* Networked AI — an AI commander no longer changes the world. What it decides goes into `WorldState::aiCommands` as a command and travels the command path: applied at once in single player, stamped by the server in a networked match, so it reaches every client on the same tick like a player's order. Only the match's host runs the commander, for the sides nobody sits on. Money a purchase has committed stays counted against the purse until the purchase lands, so a commander reading a world behind its own orders cannot decide the same thing twice.
+* Arena rooms — `join_arena` on an empty room opens it as an arena, seats the host's AI on every side and asks nobody whether they are ready. A match is dealt once two people are watching, the next after an eight-second break, and the room is an ordinary room again when the last viewer leaves. Anybody arriving later watches part-way through, by the replay path 0.4 built; nobody can take a seat. `A` over a room in the lobby opens one, and the arena has its own place on the main menu.
+* Per-team production — what a side is making is `WorldState::productionOrders`, not a float on the button of the player who clicked. Every client advances every side's orders; `PlayerProduce` pays for an order and refuses one the side cannot afford or is already making; a finished unit deploys itself from the building that made it, and a finished building waits, ready, until `PlayerPlace` says where it goes, so a placement with no finished order behind it builds nothing. The orders are folded into the world digest beside the treasuries. This closes the last of the 0.4 carry.
 
-An arena is a room where AI commanders play one another and people watch. What 0.4 built is a clock and a command path with no world behind them, and an arena needs a world with nobody at a keyboard to supply one. Version 0.5 puts a world on the server, and the commanders beside it.
-
-### Hosting the Modules Headlessly
-
-The whole contract is the five calls in `Simulation.h`: `Load`, `Apply`, `Advance`, `Digest`, `Outcome`. Anything satisfying them can drive a match, provided `Advance` is a pure function of the ticks and commands it has been given and `Digest` folds the same fields in the same order on every machine.
-
-Planned functionality:
-
-* Run the engine's modules without a `Window`, which they all currently require.
-* Drive the authoritative tick from a real world rather than from the commands alone.
-* Decide a match's outcome server-side.
-* Check a client's world fold against the server's own rather than against another client's.
-
-### Networked AI
-
-With a world on the server, a commander can run beside it and enter its decisions as ordinary commands. Nothing about that can desynchronize a match: a remote AI is only ever a player with high latency.
-
-Planned functionality:
-
-* `modules/AI/` reachable over the command path.
-
-### Arena Rooms
-
-The protocol already carries the flag: `join_arena` joins a room and marks it AI versus AI, and `start_game` says so. Nothing yet plays in one.
-
-Planned functionality:
-
-* A room flagged as an arena seats a commander on every side and starts without anybody saying they are ready.
-* Spectating as the way in: observers join, watch, and can join late through the replay path 0.4 built.
-* A server-decided outcome, reported to everyone watching.
-
-### Per-Team Production
-
-Production is the last thing a player does that is not shared state. The sidebar is the local player's alone, so a match has no model of what another side is building until the unit appears.
-
-Planned functionality:
-
-* A production model per team rather than per sidebar.
-* Build queues folded into the digest alongside the treasuries.
+Beyond the plan, 0.5 carries the first work aimed at running the engine inside Unreal: `build.py -R -b --export` writes a release into the Unreal project's external content; `--skirmish`, `--map` and `--team` start a match from the command line instead of the menu; `--fps` and `--frametimes` separate what the engine spends from what presentation does; and a borderless windowed mode composites through the DWM rather than taking the display outright, which is what a match drawn beside an editor needs.
 
 ---
 
@@ -108,7 +76,7 @@ Planned functionality:
 * Power with consequences. A side without enough, whether its grid is short or a hack has cut it, has its defences go offline, loses its radar and minimap, and builds at a reduced rate rather than stopping. The consequences are simulation state, so they are the same on every client and folded into the digest.
 * A cut stays cut until it is restored, by the owner from their own console or by raising a new powerplant.
 * Turrets become processes once their behaviour depends on power.
-* The server accepts a hack against a side only from that side's own connection, and only while an authorised session into its computer is open. A tampered client could still ignore hacks against itself; closing that needs the headless host from 0.5 to decide them instead.
+* The server accepts a hack against a side only from that side's own connection, and only while an authorised session into its computer is open. A tampered client could still ignore hacks against itself; closing that means having 0.5's headless host decide them instead.
 
 ---
 
@@ -178,10 +146,11 @@ The Shell module's `TaskPool` is the engine's first multi-threaded workload and 
 
 ## Version Goals
 
-Version 0.5 aims to establish:
+Version 0.5 established:
 
 * The engine's modules hosted headlessly, so the server drives a world rather than a clock.
-* A server-decided outcome, and a client's world checked against the server's rather than against another client's.
+* A server-decided outcome, and a client's world checked against the host's rather than against another client's.
+* The authoritative world audited against the game's own rules, not only against the other clients.
 * AI commanders reachable over the command path.
 * Arena rooms, where commanders play one another and people watch.
 * Production as shared state rather than local interface state.

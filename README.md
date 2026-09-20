@@ -8,6 +8,38 @@ TGXngine decouples stable engine fundamentals from flexible gameplay rules. The 
 
 The engine's roots trace back to War of Salvation, the original RTS in this ecosystem, which was initially built specifically for the web. TGXngine was subsequently engineered as a major architectural extension to empower and involve the community, providing a high-performance native substrate for advanced development. A live web demo version of the original War of Salvation experience is available to play at https://tgame.dev/wos-game/.
 
+## Version 0.5
+
+Version 0.5 is implemented and tagged. The engine gets a world with nobody at a keyboard behind it: the server runs a headless copy of the game beside every match, holds the players to it, and decides how the match ends. With a world there, the AI can play from it -- an arena is a room where commanders play one another and people watch.
+
+### Headless Hosting (src/Host.cpp, src/Replay.cpp)
+
+`TGXngine --host URL --room N --token T` joins a room as its host. It takes the match the way an observer does, runs every tick the players run, reports its checksums for the server to hold theirs against, and tells the server who won once only one side has anything left standing. The server starts it; nobody runs it by hand. `TGXngine --replay FILE` runs a match the server recorded the same way, and exits 0 only if it arrives at every world the clients reported.
+
+Neither opens a window. `WorldState::SetHeadless` is read by `Window` before it creates one, and the same flag keeps a headless run off the console, so a host cannot overwrite the `Resources/shell.json` the players on that machine are using. A networked frame is one method, `Game::AdvanceNetworked`, and a networked tick another, `Game::RunTick`, so the live client, the host and a replay cannot drift apart in the order they do things.
+
+A server started with `--engine PATH` runs one of these per match. Every player's world fold is now held against the host's rather than against another player's -- whichever of the two reports second is the one checked, since the host replays its way in and can report either side of them. The players are still checked against one another as well, so a room whose host is late or gone is no less checked than before.
+
+### Rules Auditing (src/Rules.h)
+
+A digest catches a world that differs from another machine's. It cannot catch one that is illegal on every machine at once: infantry that comes to rest inside a vehicle folds to the same number everywhere and passes. `Rules::Check` reads the occupancy grid, which carries a body only while its unit stands still, and reports two vehicles in one cell, anything stopped inside a building or turret, a stack no body accounts for, and a body or tactical booking held by a uid nothing alive carries. The host audits every 60 ticks and closes with what it found over how many checks; `--audit` sets the interval. A player's client is untouched -- this is the authoritative world checking itself, where a match with nobody at a keyboard runs long enough for the drift to show.
+
+### Networked AI
+
+An AI commander no longer changes the world. What it decides -- a purchase, a build, a wave -- goes into `WorldState::aiCommands` as a command, and the game takes it from there: applied at once in single player, sent to be stamped in a networked match, so it reaches every client on the same tick like a player's order. Only the match's host runs the commander, and only for the sides nobody sits on; every other client sees those sides as players it cannot see. A command takes a few ticks to come back stamped, so money a purchase has committed stays counted against the purse until it lands and a build is in flight until the building is in the world, which is what stops a commander reading a world behind its own orders from deciding the same thing twice.
+
+### Arena Rooms
+
+`A` over a room in the lobby sends `join_arena`, and the arena has its own place on the main menu. An empty room opens as an arena: the host's AI takes every side and nobody is asked whether they are ready. A match is dealt once two people are watching, since a match dealt to one viewer is a match nobody shares, and the next follows an eight-second break, long enough to read who won. Anybody arriving later watches part-way through, by the same replay path a dropped player comes back on; nobody can take a seat. When the last viewer leaves the match ends and the room is an ordinary room again. A server with no `--engine` refuses to open one.
+
+### Per-Team Production
+
+What a side was making lived on one machine's sidebar: a float on the button of the player who clicked, run on that client's frame time. It is now `WorldState::productionOrders`, one order per side and item, advanced every tick by every client. `PlayerProduce` pays for an order and starts it, refusing one the side cannot afford or is already making; a finished unit deploys itself from the building that made it, and a finished building or turret waits, ready, until `PlayerPlace` says where it goes, so a placement with no finished order behind it builds nothing. The orders are folded into the world digest beside the treasuries. The sidebar keeps its buttons but no timers -- a button reads its side's order from the world.
+
+### Running a Match Without the Menu
+
+`--skirmish` starts a match instead of the intro, taking a map by name or by its place among the skirmish maps, with `--map` saying the same when the flag is left bare and `--team` picking the side to command. `--fps` and `--frametimes` report the frame rate and trace where a frame went, in production as well as debug. `--production` plays fullscreen whatever `settings.json` says, and a `borderless` key composites a desktop-sized window through the DWM instead of taking the display outright, which is what a match drawn beside another application needs. `build.py -R -b --export` writes a release into the Unreal project's external content.
+
 ## Version 0.4
 
 Version 0.4 is implemented and tagged. The engine goes onto the network: matches between machines over deterministic lockstep, against the separate TGXngineServer, with a lobby to arrange them in. The shell follows it there -- every player's console is a computer the others can reach, and a player's buildings run on it as processes.

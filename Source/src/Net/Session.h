@@ -170,7 +170,8 @@ public:
 	void SendCommand(const Vector<int> &uids, const nlohmann::json &orders);
 
 	// Two folds, checked against different things. The world fold is held
-	// against the other clients', since the server has no world to hold it to.
+	// against the host's, which runs the same world beside the match; a room
+	// with no host falls back to holding the clients against one another.
 	// The command fold is held against the server's own, which it can produce
 	// without a world: it folds the commands it stamped at the ticks it stamped
 	// them for, so a client that applied a different set is caught outright.
