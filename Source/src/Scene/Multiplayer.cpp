@@ -115,7 +115,7 @@ void Multiplayer::DrawHeading()
 
 	String hint = InRoom()
 					  ? "Click a seat to move, a side to change it, a map to pick it.  ESC leaves the room."
-					  : "Click a room to join, right-click to watch.  TGX_SERVER overrides the address.  ESC returns.";
+					  : "Click a room to join, right-click to watch, H to break into one.  TGX_SERVER overrides the address.  ESC returns.";
 
 	if (arena)
 	{
@@ -504,12 +504,25 @@ void Multiplayer::Release()
 
 bool Multiplayer::Key(int code)
 {
+	Net::Session &session = Net::Session::GetInstance();
+
+	// H over a room on the list joins it to break in rather than to play: no
+	// seat, no side, and every player's computer on the list of hosts.
+	if (code == static_cast<int>(sf::Keyboard::H) && !arena && !InRoom() && hovered >= 0 && hovered < static_cast<int>(hits.size()))
+	{
+		const Hit hit = hits[static_cast<std::size_t>(hovered)];
+
+		if (hit.target == Target::Room || hit.target == Target::Observe)
+		{
+			session.JoinAsHacker(hit.value);
+			return true;
+		}
+	}
+
 	if (code != static_cast<int>(sf::Keyboard::Escape))
 	{
 		return false;
 	}
-
-	Net::Session &session = Net::Session::GetInstance();
 
 	// Inside a room, escape gives the seat up and goes back to the list. On the
 	// list it closes the session and leaves the lobby.

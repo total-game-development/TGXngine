@@ -75,6 +75,7 @@ void Session::Join(int roomId, bool asObserver)
 	observer = asObserver;
 
 	MultiplayerSetup::observer = asObserver;
+	MultiplayerSetup::hacker = false;
 
 	client.Send({
 		{"type", "join_game"},
@@ -84,6 +85,24 @@ void Session::Join(int roomId, bool asObserver)
 
 	phase = Phase::Waiting;
 	notice = "Joining room " + std::to_string(roomId + 1) + "...";
+}
+
+void Session::JoinAsHacker(int roomId)
+{
+	room = roomId;
+	observer = true;
+
+	MultiplayerSetup::observer = true;
+	MultiplayerSetup::hacker = true;
+
+	client.Send({
+		{"type", "join_game"},
+		{"id", roomId},
+		{"slot", -1},
+		{"platform", "hacker"}});
+
+	phase = Phase::Waiting;
+	notice = "Breaking into room " + std::to_string(roomId + 1) + "...";
 }
 
 void Session::JoinAsHost(int roomId, const String &hostToken)
@@ -110,6 +129,7 @@ void Session::JoinArena(int roomId)
 	observer = true;
 
 	MultiplayerSetup::observer = true;
+	MultiplayerSetup::hacker = false;
 
 	client.Send({
 		{"type", "join_arena"},
@@ -352,6 +372,7 @@ void Session::EnterMatch(const nlohmann::json &message, bool resuming)
 	MultiplayerSetup::startTick = message.value("tick", std::int64_t{0});
 	MultiplayerSetup::level = message.value("currentLevel", nlohmann::json::object());
 	MultiplayerSetup::observer = observer;
+	MultiplayerSetup::console = message.value("console", String{});
 	MultiplayerSetup::aiSides = message.value("ai", Vector<String>{});
 
 	replay.clear();

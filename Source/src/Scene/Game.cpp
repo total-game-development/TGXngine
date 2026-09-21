@@ -425,12 +425,15 @@ void Game::Init()
 		}
 
 		// Every other player's console is a computer this one can reach. An
-		// observer has no computer of its own and reaches none.
+		// observer has no computer of its own and reaches none; a hacker is
+		// the exception, with a console the room named and nothing to play.
 		if (MultiplayerSetup::active)
 		{
+			const bool reaches = !MultiplayerSetup::observer || MultiplayerSetup::hacker;
+
 			json machines = json::array();
 
-			if (!MultiplayerSetup::observer && level.contains("teams"))
+			if (reaches && level.contains("teams"))
 			{
 				for (const auto &teamEntry : level["teams"])
 				{
@@ -441,7 +444,8 @@ void Game::Init()
 				}
 			}
 
-			const String self = MultiplayerSetup::observer ? String{} : MultiplayerSetup::team;
+			const String self = MultiplayerSetup::hacker ? MultiplayerSetup::console
+														 : (MultiplayerSetup::observer ? String{} : MultiplayerSetup::team);
 
 			shellModule->SetNetwork(&SendShellMessage, json{{"self", self}, {"machines", machines}}.dump());
 		}

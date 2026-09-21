@@ -22,6 +22,15 @@ struct MultiplayerSetup
 
 	static inline bool observer = false;
 
+	// Joined to break in rather than to play. A hacker holds no side and owns
+	// nothing on the board, but it has a console the room gave a name to, and
+	// the other players' computers are reachable from it.
+	static inline bool hacker = false;
+
+	// What this client answers to on the shell network: the side it holds, or
+	// the name the room handed a hacker.
+	static inline String console;
+
 	// The sides nobody sits on, which the match's host commands. Every other
 	// client treats them as it treats any other player it cannot see.
 	static inline Vector<String> aiSides;
@@ -37,6 +46,8 @@ struct MultiplayerSetup
 		startTick = 0;
 		level = nlohmann::json();
 		observer = false;
+		hacker = false;
+		console.clear();
 		aiSides.clear();
 	}
 };
