@@ -37,6 +37,8 @@ enum class TokenType : std::uint8_t
 	Write,
 	Exec,
 	Spawn,
+	Hash,
+	Reveal,
 	If,
 	Else,
 	While,

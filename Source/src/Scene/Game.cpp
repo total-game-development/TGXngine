@@ -3,6 +3,8 @@
 #include <SFML/Window/Mouse.hpp>
 #include <Debug.h>
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -140,6 +142,49 @@ bool RequestShellHack(const char *effect, bool cut)
 	shellHacks.push_back(cut);
 
 	return true;
+}
+
+// Where this side's own things stand, for the radar its console publishes
+// hashed. Every client knows every position already -- this is a lock drawn
+// for a hacker to pick, not a secret kept from anybody.
+String shellRadar;
+
+const char *ListShellRadar()
+{
+	WorldState &world = WorldState::GetInstance();
+	const String team = world.GetTeam();
+
+	json listing = {
+		{"width", world.GetMapGridWidth()},
+		{"height", world.GetMapGridHeight()},
+		{"cut", world.IsPowerCut(team)},
+		{"cells", json::array()}};
+
+	for (const auto &entry : world.items)
+	{
+		if (entry && entry->GetLife() > 0.0f && entry->GetTeam() == team)
+		{
+			listing["cells"].push_back({static_cast<int>(std::floor(entry->GetCenterX())), static_cast<int>(std::floor(entry->GetCenterY()))});
+		}
+	}
+
+	shellRadar = listing.dump();
+
+	return shellRadar.c_str();
+}
+
+// How far round a cracked cell the fog lifts, and for how long. Set per match
+// by the level's "radar" block, beside what the console is told about salts.
+int radarRadius = 3;
+int radarMilliseconds = 5000;
+
+// A cell a program on this console has proved it cracked. The console checked
+// the hash; all that is left is to show the ground it names.
+void RevealShellRadar(int x, int y, int cell)
+{
+	const int half = cell / 2;
+
+	WorldState::GetInstance().Reveal(x * cell + half, y * cell + half, radarRadius + half, std::chrono::milliseconds(radarMilliseconds));
 }
 
 void SendShellMessage(const char *to, const char *body)
@@ -352,6 +397,15 @@ void Game::Init()
 		world.SetTeam(level["teams"][0].value("name", String{}));
 	}
 
+	// A hacker borrows that perspective to draw with, but not its sight: it
+	// sees the board only where a radar it cracked says something stands.
+	world.SetBlindView(MultiplayerSetup::active && MultiplayerSetup::hacker);
+
+	if (world.IsBlindView())
+	{
+		world.SetFogOfWarEnabled(true);
+	}
+
 	world.SetBackgroundOffsetX(level["backgroundOffsetX"]);
 	world.SetBackgroundOffsetY(level["backgroundOffsetY"]);
 	world.SetBackgroundOffsetWidth(level["backgroundOffsetWidth"]);
@@ -419,10 +473,28 @@ void Game::Init()
 		const bool watching = (MultiplayerSetup::active && MultiplayerSetup::observer) ||
 							  (SkirmishSetup::active && SkirmishSetup::spectator);
 
+		// A radar is only worth publishing where somebody else could crack it,
+		// and only a console with a view of its own can be shown what it cracked.
+		const bool radar = MultiplayerSetup::active && (!MultiplayerSetup::observer || MultiplayerSetup::hacker);
+
 		if (!watching)
 		{
-			shellModule->SetMatchHandlers(&ListShellProcesses, &SwitchShellProcess, &RequestShellHack);
+			shellModule->SetMatchHandlers(
+				&ListShellProcesses,
+				&SwitchShellProcess,
+				&RequestShellHack,
+				radar ? &ListShellRadar : nullptr,
+				radar ? &RevealShellRadar : nullptr);
 		}
+		else if (radar)
+		{
+			shellModule->SetMatchHandlers(nullptr, nullptr, nullptr, nullptr, &RevealShellRadar);
+		}
+
+		const json radarSettings = level.contains("radar") && level["radar"].is_object() ? level["radar"] : json::object();
+
+		radarRadius = std::max(0, radarSettings.value("revealRadius", 3));
+		radarMilliseconds = static_cast<int>(std::max(0.0, radarSettings.value("revealSeconds", 5.0)) * 1000.0);
 
 		// Every other player's console is a computer this one can reach. An
 		// observer has no computer of its own and reaches none; a hacker is
@@ -447,7 +519,7 @@ void Game::Init()
 			const String self = MultiplayerSetup::hacker ? MultiplayerSetup::console
 														 : (MultiplayerSetup::observer ? String{} : MultiplayerSetup::team);
 
-			shellModule->SetNetwork(&SendShellMessage, json{{"self", self}, {"machines", machines}}.dump());
+			shellModule->SetNetwork(&SendShellMessage, json{{"self", self}, {"machines", machines}, {"radar", radarSettings}}.dump());
 		}
 	}
 	gameTriggers = std::move(loader->GetGameTriggers());
@@ -686,7 +758,7 @@ void Game::Draw()
 	for (const auto &gameItem : gameItems)
 	{
 		ItemInstance *instance = gameItem->GetItemInstance();
-		if (instance && instance->GetTeam() != WorldState::GetInstance().GetTeam() && !instance->isVisible())
+		if (instance && (instance->GetTeam() != WorldState::GetInstance().GetTeam() || WorldState::GetInstance().IsBlindView()) && !instance->isVisible())
 		{
 			continue;
 		}

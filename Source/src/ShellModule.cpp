@@ -144,11 +144,11 @@ void ShellModule::Deliver(const String &message)
 	}
 }
 
-void ShellModule::SetMatchHandlers(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle, FNPTR_SHELL_HACK hack)
+void ShellModule::SetMatchHandlers(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle, FNPTR_SHELL_HACK hack, FNPTR_SHELL_RADAR radar, FNPTR_SHELL_REVEAL reveal)
 {
 	if (setMatchHandlers)
 	{
-		setMatchHandlers(list, toggle, hack);
+		setMatchHandlers(list, toggle, hack, radar, reveal);
 	}
 }
 

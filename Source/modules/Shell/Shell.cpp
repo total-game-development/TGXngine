@@ -320,6 +320,20 @@ extern "C"
 
 		const String self = data.is_object() ? data.value("self", String()) : String();
 
+		RadarSettings radar;
+
+		if (data.is_object() && data.contains("radar") && data["radar"].is_object())
+		{
+			const nlohmann::json &settings = data["radar"];
+
+			radar.saltDigits = settings.value("saltDigits", radar.saltDigits);
+			radar.cell = settings.value("cell", radar.cell);
+			radar.publish = std::chrono::milliseconds(static_cast<long long>(settings.value("publishSeconds", 5.0) * 1000.0));
+			radar.rotate = std::chrono::milliseconds(static_cast<long long>(settings.value("rotateSeconds", 120.0) * 1000.0));
+		}
+
+		terminal->SetRadar(radar);
+
 		terminal->SetNetwork(self, peers, [send](const String &to, const nlohmann::json &body) {
 			send(to.c_str(), body.dump().c_str());
 		});
@@ -335,12 +349,21 @@ extern "C"
 		terminal->Deliver(nlohmann::json::parse(message, nullptr, false));
 	}
 
-	MODULE_API void SetMatchHandlers(const char *(*list)(), bool (*toggle)(int, bool), bool (*hack)(const char *, bool))
+	MODULE_API void SetMatchHandlers(
+		const char *(*list)(),
+		bool (*toggle)(int, bool),
+		bool (*hack)(const char *, bool),
+		const char *(*radar)(),
+		void (*reveal)(int, int, int))
 	{
 		if (!terminal)
 		{
 			return;
 		}
+
+		terminal->SetRadarHandlers(
+			radar == nullptr ? RadarLister() : RadarLister([radar]() { return nlohmann::json::parse(radar(), nullptr, false); }),
+			reveal == nullptr ? RadarReveal() : RadarReveal([reveal](int x, int y, int cell) { reveal(x, y, cell); }));
 
 		if (list == nullptr || toggle == nullptr)
 		{
@@ -369,6 +392,7 @@ extern "C"
 			terminal->CommitEditor();
 			terminal->ClearNetwork();
 			terminal->SetProcessHandlers(nullptr, nullptr);
+			terminal->SetRadarHandlers(nullptr, nullptr);
 			terminal->Save(savePath);
 			terminal->Stop();
 		}
@@ -381,6 +405,7 @@ extern "C"
 			terminal->CommitEditor();
 			terminal->ClearNetwork();
 			terminal->SetProcessHandlers(nullptr, nullptr);
+			terminal->SetRadarHandlers(nullptr, nullptr);
 			terminal->Save(savePath);
 			terminal->Stop();
 			terminal.reset();

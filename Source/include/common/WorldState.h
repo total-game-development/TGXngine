@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <random>
 #include <utility>
 #include "AIDebug.h"
@@ -37,6 +38,17 @@ struct BuildSpan
 {
 	int width = 0;
 	int height = 0;
+};
+
+// Ground a cracked radar has shown this view, and until when. Presentation
+// only, like the fog it lifts: nothing in the simulation reads it, so it is
+// neither the same on every client nor folded into the digest.
+struct RevealedArea
+{
+	int x = 0;
+	int y = 0;
+	int radius = 0;
+	std::chrono::steady_clock::time_point until;
 };
 
 class WorldState
@@ -85,6 +97,11 @@ private:
 	bool headless = false;
 	bool debugOnScreen = false;
 	bool fogOfWarEnabled = true;
+
+	// A view with nothing of its own to see by: a hacker, who borrows a side's
+	// perspective for the renderer but not its sight.
+	bool blindView = false;
+	Vector<RevealedArea> revealedAreas;
 	bool closed = false;
 	int itemThatIsUnderCursor = 0;
 	int cash = 0;
@@ -560,6 +577,31 @@ public:
 		return fogOfWarEnabled;
 	}
 
+	void SetBlindView(bool inBlindView)
+	{
+		blindView = inBlindView;
+	}
+
+	bool IsBlindView() const
+	{
+		return blindView;
+	}
+
+	void Reveal(int inX, int inY, int inRadius, std::chrono::milliseconds inFor)
+	{
+		revealedAreas.push_back({inX, inY, inRadius, std::chrono::steady_clock::now() + inFor});
+	}
+
+	// What is still showing. Anything whose time is up is dropped on the way.
+	const Vector<RevealedArea> &GetRevealedAreas()
+	{
+		const auto now = std::chrono::steady_clock::now();
+
+		std::erase_if(revealedAreas, [now](const RevealedArea &area) { return area.until <= now; });
+
+		return revealedAreas;
+	}
+
 	bool IsClosed() const
 	{
 		return closed;
@@ -950,6 +992,8 @@ public:
 		powerUsage.clear();
 		powerTotal.clear();
 		powerCuts.clear();
+		revealedAreas.clear();
+		blindView = false;
 
 		for (auto &row : currentMapTerrainGrid)
 		{

@@ -39,6 +39,8 @@ const char *TokenName(TokenType type)
 		case TokenType::Write: return "Write";
 		case TokenType::Exec: return "Exec";
 		case TokenType::Spawn: return "Spawn";
+		case TokenType::Hash: return "Hash";
+		case TokenType::Reveal: return "Reveal";
 		case TokenType::If: return "If";
 		case TokenType::Else: return "Else";
 		case TokenType::While: return "While";
@@ -586,6 +588,36 @@ NodeRef Parser::ParseSpawnStatement()
 	return statement;
 }
 
+NodeRef Parser::ParseHashStatement()
+{
+	Expect(TokenType::Hash, "Expected hash keyword.");
+
+	NodeRef statement = MakeNode(NodeKind::HashStatement);
+	statement->args = ParseArgsExpression();
+
+	if (statement->args.empty())
+	{
+		errors.push_back("Parser Error: hash expects at least one value.");
+	}
+
+	return statement;
+}
+
+NodeRef Parser::ParseRevealStatement()
+{
+	Expect(TokenType::Reveal, "Expected reveal keyword.");
+
+	NodeRef statement = MakeNode(NodeKind::RevealStatement);
+	statement->args = ParseArgsExpression();
+
+	if (statement->args.size() != 3)
+	{
+		errors.push_back("Parser Error: reveal expects a salt, an x and a y.");
+	}
+
+	return statement;
+}
+
 NodeRef Parser::ParseIfStatement()
 {
 	Advance();
@@ -726,6 +758,12 @@ NodeRef Parser::ParsePrimaryExpression()
 
 		case TokenType::Read:
 			return ParseReadStatement();
+
+		case TokenType::Hash:
+			return ParseHashStatement();
+
+		case TokenType::Reveal:
+			return ParseRevealStatement();
 
 		case TokenType::EndOfFile:
 			return MakeNode(NodeKind::Empty);

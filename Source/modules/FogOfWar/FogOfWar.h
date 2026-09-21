@@ -134,7 +134,7 @@ public:
 		// update visible state of enemy items
 		for (auto &item : world.items)
 		{
-			if (item->GetTeam() == world.GetTeam())
+			if (item->GetTeam() == world.GetTeam() && !world.IsBlindView())
 			{
 				item->setVisible(true);
 			}
@@ -454,13 +454,18 @@ private:
 		for (size_t i = 0; i < world.items.size(); i++)
 		{
 			const ItemInstance *item = world.items[i].get();
-			if (!item || item->GetTeam() != world.GetTeam() || item->GetHidden()) { continue; }
+			if (!item || item->GetTeam() != world.GetTeam() || item->GetHidden() || world.IsBlindView()) { continue; }
 
 			const int cx = static_cast<int>(std::round(item->GetCenterX()));
 			const int cy = static_cast<int>(std::round(item->GetCenterY()));
 			const int sight = item->GetSight();
 
 			MarkVisible(cx, cy, sight);
+		}
+
+		for (const RevealedArea &area : world.GetRevealedAreas())
+		{
+			MarkVisible(area.x, area.y, area.radius);
 		}
 
 		fogDirty = true;

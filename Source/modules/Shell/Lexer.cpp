@@ -17,6 +17,8 @@ const Map<String, TokenType> &Keywords()
 		{"write", TokenType::Write},
 		{"exec", TokenType::Exec},
 		{"spawn", TokenType::Spawn},
+		{"hash", TokenType::Hash},
+		{"reveal", TokenType::Reveal},
 		{"if", TokenType::If},
 		{"else", TokenType::Else},
 		{"while", TokenType::While},

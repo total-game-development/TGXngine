@@ -28,6 +28,16 @@ using NetworkSender = Function<void(const String &, const nlohmann::json &)>;
 using ProcessLister = Function<nlohmann::json()>;
 using ProcessSwitch = Function<bool(int, bool)>;
 using HackRequest = Function<bool(const String &, bool)>;
+using RadarLister = Function<nlohmann::json()>;
+using RadarReveal = Function<void(int, int, int)>;
+
+struct RadarSettings
+{
+	int saltDigits = 5;
+	int cell = 1;
+	std::chrono::milliseconds publish{5000};
+	std::chrono::milliseconds rotate{120000};
+};
 
 enum class TerminalMode : std::uint8_t
 {
@@ -53,6 +63,20 @@ private:
 	{
 		String machine;
 		String directory;
+	};
+
+	struct Snapshot
+	{
+		String check;
+		int cell = 1;
+		Set<String> hashes;
+	};
+
+	struct Sighting
+	{
+		int x = 0;
+		int y = 0;
+		int cell = 1;
 	};
 
 	static constexpr std::size_t MAX_OUTPUT = 512;
@@ -102,6 +126,15 @@ private:
 	int nextPid = 1;
 	Clock::time_point refreshed;
 
+	RadarLister radarLister;
+	RadarReveal radarReveal;
+	RadarSettings radar;
+	String salt;
+	Clock::time_point published;
+	Clock::time_point rotated;
+	Map<String, Snapshot> snapshots;
+	Vector<Sighting> sightings;
+
 	void Help();
 	void Run(const String &command);
 	void Execute(FileSystem &files, const Vector<String> &args);
@@ -131,7 +164,13 @@ private:
 	void Hack(const Vector<String> &args);
 	void Restore();
 
+	void Get(const Vector<String> &args);
+	void Rekey();
+	void PublishRadar();
+	void Keep(const String &machine, const String &source);
+
 	static Vector<String> Split(const String &text, char delimiter);
+	static String Digits(int count);
 	static String Pin();
 
 public:
@@ -147,6 +186,7 @@ public:
 	void Toggle(const String &name, const String &value, bool active) override;
 	void SetToggleHandler(ToggleHandler handler);
 	void Spawn(const String &command) override;
+	bool Reveal(const String &key, int x, int y) override;
 
 	void SetNetwork(const String &name, const Vector<String> &peers, NetworkSender send);
 	void ClearNetwork();
@@ -154,6 +194,8 @@ public:
 
 	void SetProcessHandlers(ProcessLister lister, ProcessSwitch switcher);
 	void SetHackHandler(HackRequest handler);
+	void SetRadarHandlers(RadarLister lister, RadarReveal reveal);
+	void SetRadar(const RadarSettings &settings);
 
 	void Update();
 

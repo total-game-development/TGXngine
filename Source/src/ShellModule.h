@@ -22,7 +22,9 @@ using FNPTR_SHELL_DELIVER = void (*)(const char *);
 using FNPTR_SHELL_LIST_PROCESSES = const char *(*)();
 using FNPTR_SHELL_SWITCH_PROCESS = bool (*)(int, bool);
 using FNPTR_SHELL_HACK = bool (*)(const char *, bool);
-using FNPTR_SHELL_SET_MATCH_HANDLERS = void (*)(FNPTR_SHELL_LIST_PROCESSES, FNPTR_SHELL_SWITCH_PROCESS, FNPTR_SHELL_HACK);
+using FNPTR_SHELL_RADAR = const char *(*)();
+using FNPTR_SHELL_REVEAL = void (*)(int, int, int);
+using FNPTR_SHELL_SET_MATCH_HANDLERS = void (*)(FNPTR_SHELL_LIST_PROCESSES, FNPTR_SHELL_SWITCH_PROCESS, FNPTR_SHELL_HACK, FNPTR_SHELL_RADAR, FNPTR_SHELL_REVEAL);
 using FNPTR_SHELL_CLEAR = void (*)();
 using FNPTR_SHELL_DELETE = void (*)();
 
@@ -80,7 +82,7 @@ public:
 	void SetNetwork(FNPTR_SHELL_SEND send, const String &identity);
 	void ClearNetwork();
 	void Deliver(const String &message);
-	void SetMatchHandlers(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle, FNPTR_SHELL_HACK hack);
+	void SetMatchHandlers(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle, FNPTR_SHELL_HACK hack, FNPTR_SHELL_RADAR radar, FNPTR_SHELL_REVEAL reveal);
 	void Clear();
 	void Delete();
 };

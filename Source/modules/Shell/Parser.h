@@ -45,6 +45,8 @@ private:
 	NodeRef ParseReturnStatement();
 	NodeRef ParseExecStatement();
 	NodeRef ParseSpawnStatement();
+	NodeRef ParseHashStatement();
+	NodeRef ParseRevealStatement();
 	NodeRef ParseIfStatement();
 	NodeRef ParseWhileStatement();
 	NodeRef ParseForStatement();

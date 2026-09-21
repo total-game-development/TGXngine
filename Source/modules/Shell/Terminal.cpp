@@ -35,20 +35,25 @@ Terminal::Terminal()
 	current = &local;
 }
 
-String Terminal::Pin()
+String Terminal::Digits(int count)
 {
 	static std::mt19937 source{std::random_device{}()};
 
-	std::uniform_int_distribution<int> digits(0, 9999);
+	std::uniform_int_distribution<int> digit(0, 9);
 
-	String pin = std::to_string(digits(source));
+	String digits;
 
-	while (pin.size() < 4)
+	for (int index = 0; index < count; ++index)
 	{
-		pin.insert(pin.begin(), '0');
+		digits += static_cast<char>('0' + digit(source));
 	}
 
-	return pin;
+	return digits;
+}
+
+String Terminal::Pin()
+{
+	return Digits(4);
 }
 
 Terminal::~Terminal()
@@ -369,6 +374,14 @@ void Terminal::Submit(const String &line)
 	{
 		Restore();
 	}
+	else if (head == "get")
+	{
+		Get(args);
+	}
+	else if (head == "rekey")
+	{
+		Rekey();
+	}
 	else if (head == "who")
 	{
 		Who();
@@ -421,6 +434,8 @@ void Terminal::Help()
 	Print(" - who: Shows this computer's pin and who is connected to it");
 	Print(" - hack: power (Cuts the grid of the computer you are connected to)");
 	Print(" - restore: Puts your own grid back after it has been cut");
+	Print(" - get: file (Copies a file from the computer you are connected to into your current directory)");
+	Print(" - rekey: Draws a new salt for this computer's radar, so whatever was cracked from it is stale");
 	Print(" - passwd: pin (Changes this computer's pin, shutting out anybody connected)");
 	Print(" - connect: remote_computer_name pin (Connects to the remote computer)");
 	Print(" - disconnect: Disconnects from remote computer");
@@ -933,6 +948,9 @@ void Terminal::ClearNetwork()
 	machines.clear();
 	sessions.clear();
 	requests.clear();
+	snapshots.clear();
+	sightings.clear();
+	salt.clear();
 	sender = nullptr;
 	self.clear();
 	multiplayer = false;
@@ -991,6 +1009,12 @@ bool Terminal::Remote(const String &head, const Vector<String> &args)
 	if (head == "restore")
 	{
 		Print("The grid on " + current->name + " is not yours to restore");
+		return true;
+	}
+
+	if (head == "rekey")
+	{
+		Print("The radar on " + current->name + " can only be rekeyed from its own console");
 		return true;
 	}
 
@@ -1224,6 +1248,31 @@ void Terminal::Answer(const String &from, const nlohmann::json &body)
 				reply["source"] = source;
 			}
 		}
+		else if (op == "get" && args.size() == 1)
+		{
+			String source;
+
+			if (files.IsDirectory(name))
+			{
+				ok = false;
+				lines.push_back(name + " is a directory");
+			}
+			else if (!files.Read(name, source))
+			{
+				ok = false;
+				lines.push_back("File " + name + " doesn't exist");
+			}
+			else
+			{
+				const FileNodeRef live = files.Resolve("/sys/radar");
+				const auto file = working->children.find(name);
+
+				Print(from + " copied " + name + " from this computer");
+
+				reply["source"] = source;
+				reply["radar"] = live && file != working->children.end() && file->second == live;
+			}
+		}
 		else if (op == "run" && !args.empty())
 		{
 			Print(from + " ran " + args[0] + " on this computer");
@@ -1382,6 +1431,33 @@ void Terminal::Receive(const String &from, const nlohmann::json &body)
 		return;
 	}
 
+	if (request.op == "get" && ok)
+	{
+		const String source = body.value("source", String());
+
+		{
+			std::lock_guard<std::recursive_mutex> lock(mutex);
+
+			if (local.fileSystem.IsDirectory(request.name))
+			{
+				Print(request.name + " is a directory here, so " + from + "'s copy was not saved");
+				return;
+			}
+
+			local.fileSystem.Write(request.name, source);
+
+			if (body.value("radar", false))
+			{
+				Keep(from, source);
+			}
+		}
+
+		Print("Copied " + request.name + " from " + from);
+
+		Persist();
+		return;
+	}
+
 	if (request.op == "read" && ok)
 	{
 		if (mode == TerminalMode::Editing)
@@ -1461,6 +1537,29 @@ void Terminal::Update()
 	{
 		RefreshProcesses();
 	}
+
+	if (radarLister && now - published >= radar.publish)
+	{
+		PublishRadar();
+	}
+
+	Vector<Sighting> seen;
+	RadarReveal reveal;
+
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex);
+
+		seen.swap(sightings);
+		reveal = radarReveal;
+	}
+
+	if (reveal)
+	{
+		for (const Sighting &sighting : seen)
+		{
+			reveal(sighting.x, sighting.y, sighting.cell);
+		}
+	}
 }
 
 void Terminal::SetProcessHandlers(ProcessLister lister, ProcessSwitch switcher)
@@ -1518,6 +1617,201 @@ void Terminal::Restore()
 	}
 
 	Print("Restoring the grid");
+}
+
+void Terminal::SetRadarHandlers(RadarLister lister, RadarReveal reveal)
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	radarLister = std::move(lister);
+	radarReveal = std::move(reveal);
+	salt.clear();
+	sightings.clear();
+}
+
+void Terminal::SetRadar(const RadarSettings &settings)
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	radar = settings;
+	radar.saltDigits = std::clamp(radar.saltDigits, 1, 9);
+	radar.cell = std::max(1, radar.cell);
+	salt.clear();
+}
+
+void Terminal::PublishRadar()
+{
+	published = Clock::now();
+
+	if (!radarLister)
+	{
+		return;
+	}
+
+	const nlohmann::json listing = radarLister();
+
+	if (!listing.is_object())
+	{
+		return;
+	}
+
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	if (salt.empty() || (!listing.value("cut", false) && published - rotated >= radar.rotate))
+	{
+		salt = Digits(radar.saltDigits);
+		rotated = published;
+	}
+
+	Set<String> hashes;
+
+	if (listing.contains("cells") && listing["cells"].is_array())
+	{
+		for (const auto &cell : listing["cells"])
+		{
+			if (cell.is_array() && cell.size() == 2 && cell[0].is_number_integer() && cell[1].is_number_integer())
+			{
+				hashes.insert(Digest({salt, std::to_string(cell[0].get<int>() / radar.cell), std::to_string(cell[1].get<int>() / radar.cell)}));
+			}
+		}
+	}
+
+	String text = "map " + std::to_string(listing.value("width", 0)) + " " + std::to_string(listing.value("height", 0)) + " " + std::to_string(radar.cell) + "\n";
+	text += "check " + Digest({salt}) + "\n";
+
+	for (const String &hash : hashes)
+	{
+		text += hash + "\n";
+	}
+
+	FileSystem &files = local.fileSystem;
+	const String saved = files.GetCurrentDirectory();
+	String message;
+
+	files.SetCurrentDirectory("/");
+
+	if (!files.IsDirectory("sys"))
+	{
+		files.MakeDirectory("sys", message);
+	}
+
+	files.SetCurrentDirectory("/sys");
+	files.Write("radar", text);
+	files.SetCurrentDirectory(saved);
+}
+
+void Terminal::Rekey()
+{
+	if (current->networked)
+	{
+		Print("The radar on " + current->name + " can only be rekeyed from its own console");
+		return;
+	}
+
+	if (!radarLister)
+	{
+		Print("There is no radar on this computer to rekey");
+		return;
+	}
+
+	const nlohmann::json listing = radarLister();
+
+	if (listing.is_object() && listing.value("cut", false))
+	{
+		Print("The grid is cut, so the radar cannot be rekeyed until it is restored");
+		return;
+	}
+
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex);
+		salt.clear();
+	}
+
+	PublishRadar();
+
+	Print("Radar rekeyed. Whatever was cracked from it is stale");
+}
+
+void Terminal::Get(const Vector<String> &args)
+{
+	if (!current->networked)
+	{
+		Print("get copies a file from a computer you are connected to. Connect to somebody first");
+		return;
+	}
+
+	if (args.size() != 2)
+	{
+		Print("Invalid command. Usage: get <fileName>");
+		return;
+	}
+
+	Send(current->name, current->directory, "get", {args[1]});
+}
+
+void Terminal::Keep(const String &machine, const String &source)
+{
+	Snapshot snapshot;
+
+	for (const String &line : Split(source, '\n'))
+	{
+		const Vector<String> words = Split(Trim(line), ' ');
+
+		if (words.size() == 4 && words[0] == "map")
+		{
+			try
+			{
+				snapshot.cell = std::max(1, std::stoi(words[3]));
+			}
+			catch (const std::exception &)
+			{
+				snapshot.cell = 1;
+			}
+		}
+		else if (words.size() == 2 && words[0] == "check")
+		{
+			snapshot.check = words[1];
+		}
+		else if (words.size() == 1)
+		{
+			snapshot.hashes.insert(words[0]);
+		}
+	}
+
+	if (!snapshot.check.empty())
+	{
+		snapshots[machine] = std::move(snapshot);
+	}
+}
+
+bool Terminal::Reveal(const String &key, int x, int y)
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	if (serving != nullptr)
+	{
+		Print("reveal is refused from a remote session");
+		return false;
+	}
+
+	if (!radarReveal)
+	{
+		return false;
+	}
+
+	const String check = Digest({key});
+	const String hash = Digest({key, std::to_string(x), std::to_string(y)});
+
+	for (const auto &[machine, snapshot] : snapshots)
+	{
+		if (snapshot.check == check && snapshot.hashes.find(hash) != snapshot.hashes.end())
+		{
+			sightings.push_back({x, y, snapshot.cell});
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void Terminal::RefreshProcesses()
