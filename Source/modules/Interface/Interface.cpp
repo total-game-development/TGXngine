@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include "Enums.h"
+#include "Minimap.h"
 #include "Sidebar.h"
 #include "StringUtils.hpp"
 #include "Utils.hpp"
@@ -14,6 +15,12 @@ Sidebar &GetSidebar()
 {
 	static Sidebar sidebar;
 	return sidebar;
+}
+
+Minimap &GetMinimap()
+{
+	static Minimap minimap;
+	return minimap;
 }
 
 extern "C"
@@ -34,6 +41,7 @@ extern "C"
 		if (name == "sidebar")
 		{
 			GetSidebar().Load(name);
+			GetMinimap().Load(name);
 		}
 
 		Log::Info("Interface Name: " + name);
@@ -46,6 +54,7 @@ extern "C"
 	MODULE_API void Draw()
 	{
 		GetSidebar().Draw();
+		GetMinimap().Draw();
 
 		Window &window = Window::GetInstance();
 		WorldState &worldState = WorldState::GetInstance();
@@ -65,6 +74,11 @@ extern "C"
 
 	MODULE_API void Click()
 	{
+		if (GetMinimap().Click())
+		{
+			return;
+		}
+
 		WorldState &world = WorldState::GetInstance();
 		if (world.IsPlacement())
 		{
@@ -116,6 +130,8 @@ extern "C"
 
 	MODULE_API void Clear()
 	{
+		GetMinimap().Reset();
+
 		Log::Success("Clear Interface");
 	}
 

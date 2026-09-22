@@ -2,6 +2,7 @@
 #include "test_common/TestCommandStrings.hpp"
 #include "test_common/TestCommon.hpp"
 #include "test_common/TestHeuristic.hpp"
+#include "test_common/TestMinimap.hpp"
 #include "test_common/TestRandom.hpp"
 #include "test_common/TestStringUtils.hpp"
 #include "test_common/TestTree.hpp"

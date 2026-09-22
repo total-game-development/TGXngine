@@ -102,6 +102,22 @@ private:
 	// perspective for the renderer but not its sight.
 	bool blindView = false;
 	Vector<RevealedArea> revealedAreas;
+
+	// Where the minimap has asked the camera to look, in cells, until the game
+	// scene takes it. Only the executable can move the camera.
+	bool cameraRequested = false;
+	float cameraX = 0;
+	float cameraY = 0;
+
+	// A press the interface took for itself, held until the button comes up:
+	// it is not a press on the battlefield, so it neither selects nor drags.
+	bool pointerCaptured = false;
+
+	// The cell under the cursor while it is over a working minimap, so a
+	// right click there can be an order to that ground.
+	bool minimapPointed = false;
+	float minimapX = 0;
+	float minimapY = 0;
 	bool closed = false;
 	int itemThatIsUnderCursor = 0;
 	int cash = 0;
@@ -272,6 +288,16 @@ public:
 
 	// Published by the AI module, read by the debug overlay.
 	Map<String, AIDebugSnapshot> aiDebug;
+
+	// The ground as the minimap draws it: one RGBA pixel per cell, sampled from
+	// the background as it loads. Presentation only.
+	Vector<std::uint8_t> terrainPixels;
+
+	// What this view can see, one byte per cell: 0 never seen, 1 seen before,
+	// 2 in sight now. Published by the fog of war whenever it recalculates, and
+	// empty when there is no fog. The revision moves on with every publish.
+	Vector<std::uint8_t> sightGrid;
+	int sightRevision = 0;
 
 	float GetGameX() const
 	{
@@ -600,6 +626,92 @@ public:
 		std::erase_if(revealedAreas, [now](const RevealedArea &area) { return area.until <= now; });
 
 		return revealedAreas;
+	}
+
+	void RequestCamera(float inX, float inY)
+	{
+		cameraRequested = true;
+		cameraX = inX;
+		cameraY = inY;
+	}
+
+	// Hands the request over once: the scene that moves the camera takes it.
+	bool TakeCameraRequest(float &outX, float &outY)
+	{
+		if (!cameraRequested)
+		{
+			return false;
+		}
+
+		cameraRequested = false;
+		outX = cameraX;
+		outY = cameraY;
+
+		return true;
+	}
+
+	bool IsPointerCaptured() const
+	{
+		return pointerCaptured;
+	}
+
+	void SetPointerCaptured(bool inPointerCaptured)
+	{
+		pointerCaptured = inPointerCaptured;
+	}
+
+	void SetMinimapPoint(bool inPointed, float inX = 0, float inY = 0)
+	{
+		minimapPointed = inPointed;
+		minimapX = inX;
+		minimapY = inY;
+	}
+
+	bool GetMinimapPoint(float &outX, float &outY) const
+	{
+		if (!minimapPointed)
+		{
+			return false;
+		}
+
+		outX = minimapX;
+		outY = minimapY;
+
+		return true;
+	}
+
+	// A building of this kind that is still up for the side, whatever its grid
+	// is doing.
+	bool HasStanding(const String &inTeam, const String &name) const
+	{
+		for (const auto &item : items)
+		{
+			if (item && item->GetTeam() == inTeam && item->GetName() == name && item->GetLife() > 0.0f && !item->GetHidden())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	// One the side can use: standing, switched on, and on a grid that is lit.
+	bool IsOperating(const String &inTeam, const String &name) const
+	{
+		if (!HasPower(inTeam))
+		{
+			return false;
+		}
+
+		for (const auto &item : items)
+		{
+			if (item && item->GetTeam() == inTeam && item->GetName() == name && item->GetLife() > 0.0f && !item->GetHidden() && item->IsRunning())
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	bool IsClosed() const
@@ -994,6 +1106,12 @@ public:
 		powerCuts.clear();
 		revealedAreas.clear();
 		blindView = false;
+		cameraRequested = false;
+		pointerCaptured = false;
+		minimapPointed = false;
+		terrainPixels.clear();
+		sightGrid.clear();
+		sightRevision++;
 
 		for (auto &row : currentMapTerrainGrid)
 		{

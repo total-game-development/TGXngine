@@ -589,6 +589,14 @@ void Game::Update()
 
 	// Panning and the camera are how the match is watched, not part of it, so
 	// they run every frame whether or not the clock has let a tick through.
+	float cameraX = 0;
+	float cameraY = 0;
+
+	if (WorldState::GetInstance().TakeCameraRequest(cameraX, cameraY))
+	{
+		CentreCamera(cameraX, cameraY);
+	}
+
 	HandlePanning();
 	background->SyncPosition();
 
@@ -857,6 +865,12 @@ void Game::Click()
 		gameInterface->Click();
 	}
 
+	if (world.IsPointerCaptured())
+	{
+		world.SetLeftClicked(false);
+		return;
+	}
+
 	if (!world.SkipSelectionRemoval())
 	{
 		for (const auto &gameItem : gameItems)
@@ -884,16 +898,20 @@ void Game::RightClick()
 	Mouse &mouse = Mouse::GetInstance();
 	Orders *ordered = mouse.CurrentOrder();
 
+	float minimapX = 0;
+	float minimapY = 0;
+	const bool onMinimap = world.GetMinimapPoint(minimapX, minimapY);
+
 	json orders;
 	orders["kind"] = "order";
 	orders["order"] = static_cast<int>(ordered->order);
 	orders["toX"] = ordered->toX;
 	orders["toY"] = ordered->toY;
-	orders["targetUid"] = world.GetItemUidThatIsUnderCursor();
-	orders["item"] = world.IsItemUnderCursor();
-	orders["enemy"] = world.IsEnemyItemUnderCursor();
-	orders["resource"] = world.IsResourceUnderCursor();
-	orders["loadable"] = world.IsLoadableItemUnderCursor();
+	orders["targetUid"] = onMinimap ? 0 : world.GetItemUidThatIsUnderCursor();
+	orders["item"] = !onMinimap && world.IsItemUnderCursor();
+	orders["enemy"] = !onMinimap && world.IsEnemyItemUnderCursor();
+	orders["resource"] = !onMinimap && world.IsResourceUnderCursor();
+	orders["loadable"] = !onMinimap && world.IsLoadableItemUnderCursor();
 
 	if (MultiplayerSetup::active)
 	{
@@ -1821,6 +1839,14 @@ void Game::HandlePanning()
 		return;
 	}
 
+	float minimapX = 0;
+	float minimapY = 0;
+
+	if (world.IsPointerCaptured() || world.GetMinimapPoint(minimapX, minimapY))
+	{
+		return;
+	}
+
 	if (mouse.x <= PANNING_THRESHOLD && Globals::mapOffsetX > 0 && camX == 0.f)
 	{
 		float move = std::min(frameDistance, Globals::mapOffsetX);
@@ -1890,6 +1916,31 @@ void Game::HandlePanning()
 			world.UpdateMapYOffset(-move);
 		}
 	}
+}
+
+void Game::CentreCamera(float cellX, float cellY)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	const float viewWidth = static_cast<float>(Globals::canvasWidth) - world.GetBackgroundOffsetWidth() + static_cast<float>(world.GetCanvasOffsetWidth());
+	const float viewHeight = static_cast<float>(Globals::canvasHeight) - world.GetBackgroundOffsetY() + static_cast<float>(world.GetCanvasOffsetHeight());
+
+	const float maxScrollX = std::max(0.0f, static_cast<float>(background->GetWidth()) - viewWidth);
+	const float maxScrollY = std::max(0.0f, static_cast<float>(background->GetHeight()) - viewHeight);
+
+	const float targetX = std::clamp((cellX * Globals::grid_size) - (viewWidth / 2.0f), 0.0f, maxScrollX);
+	const float targetY = std::clamp((cellY * Globals::grid_size) - (viewHeight / 2.0f), 0.0f, maxScrollY);
+
+	const float moveX = targetX - Globals::mapOffsetX;
+	const float moveY = targetY - Globals::mapOffsetY;
+
+	Globals::mapOffsetX = targetX;
+	Globals::mapOffsetY = targetY;
+
+	world.SetPanX(targetX);
+	world.SetPanY(targetY);
+	world.UpdateMapXOffset(-moveX);
+	world.UpdateMapYOffset(-moveY);
 }
 
 void Game::HandleSingleSelection()

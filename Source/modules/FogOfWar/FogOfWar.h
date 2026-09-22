@@ -95,6 +95,9 @@ public:
 
 		fogGrid.assign(static_cast<size_t>(mapWidth) * mapHeight, Shroud);
 
+		WorldState::GetInstance().sightGrid.assign(fogGrid.size(), Shroud);
+		WorldState::GetInstance().sightRevision++;
+
 		// load fog edge tiles
 		const std::array<const char *, EdgeCount> edgeNames = {"top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"};
 		tilesLoaded = true;
@@ -469,6 +472,10 @@ private:
 		}
 
 		fogDirty = true;
+
+		world.sightGrid.resize(fogGrid.size());
+		std::memcpy(world.sightGrid.data(), fogGrid.data(), fogGrid.size());
+		world.sightRevision++;
 	}
 
 	void MarkVisible(int cx, int cy, int sight)

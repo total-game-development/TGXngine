@@ -69,6 +69,18 @@ void Mouse::RightClick()
 
 	WorldState &world = WorldState::GetInstance();
 
+	float minimapX = 0;
+	float minimapY = 0;
+
+	if (world.GetMinimapPoint(minimapX, minimapY))
+	{
+		orders->order = Orders::Order::Move;
+		orders->toX = minimapX;
+		orders->toY = minimapY;
+
+		return;
+	}
+
 	if (world.IsEnemyItemUnderCursor() || world.IsResourceUnderCursor() || world.IsLoadableItemUnderCursor() || world.IsItemUnderCursor())
 	{
 		orders->order = Orders::Order::Action;
@@ -84,6 +96,19 @@ void Mouse::RightClick()
 
 void Mouse::Release()
 {
+	WorldState &world = WorldState::GetInstance();
+
+	if (world.IsPointerCaptured())
+	{
+		world.SetPointerCaptured(false);
+
+		dragPressed = false;
+		dragSelect = false;
+		selectGameItems = false;
+
+		return;
+	}
+
 	if (suppressed)
 	{
 		return;
@@ -105,7 +130,7 @@ void Mouse::Release()
 
 void Mouse::Moved(float inX, float inY)
 {
-	if (!suppressed && dragPressed)
+	if (!suppressed && dragPressed && !WorldState::GetInstance().IsPointerCaptured())
 	{
 		if ((std::abs(dragX - inX) > 4 || std::abs(dragY - inY) > 4))
 		{

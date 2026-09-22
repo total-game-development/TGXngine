@@ -144,6 +144,7 @@ private:
 	// unit deploys itself, and a finished building waits to be placed.
 	void AdvanceProduction();
 	void HandlePanning();
+	void CentreCamera(float cellX, float cellY);
 	void DrawOutcome();
 
 	// What the connection is doing, when it is doing something other than

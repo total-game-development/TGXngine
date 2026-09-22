@@ -2,6 +2,13 @@
 	"sidebar":
 	{
 		"foreground":"maininterface.png",
+		"minimap":
+		{
+			"x":902,
+			"y":17,
+			"width":120,
+			"height":122
+		},
 		"buttons":
 		[
 			{
