@@ -61,6 +61,7 @@ void PublishSpans()
 	PublishSpan<VehicleAssemblyTunnelState>("vehicle_assembly_tunnel");
 	PublishSpan<ShipyardState>("shipyard");
 	PublishSpan<AirportState>("airport");
+	PublishSpan<RadarState>("radar");
 	PublishSpan<OilExtractor>("oil_extractor");
 	PublishSpan<WaterExtractor>("water_extractor");
 
@@ -120,6 +121,10 @@ extern "C"
 		if (name == "airport")
 		{
 			return globalItem = new AirportState();
+		}
+		if (name == "radar")
+		{
+			return globalItem = new RadarState();
 		}
 		if (name == "oil_extractor")
 		{
