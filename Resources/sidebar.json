@@ -91,9 +91,9 @@
 				"frame":0,
 				"frames":4,
 				"extension":".png",
-				"duration":720,
-				"cost":2000,
-				"powerusage":250,
+				"duration":288,
+				"cost":1250,
+				"powerusage":100,
 				"wait":true,
 				"alignment":"horizontal",
 				"x":904,
@@ -107,8 +107,8 @@
 				},
 				"buildableGrid":
 				{
-					"x":5,
-					"y":5
+					"x":18,
+					"y":14
 				}
 			},
 			{

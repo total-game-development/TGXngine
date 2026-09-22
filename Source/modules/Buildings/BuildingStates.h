@@ -699,7 +699,7 @@ class RadarState : public BuildingState
 public:
 	static constexpr float radius = 9.0f;
 	static constexpr int frames = 1;
-	static constexpr int powerUsage = 250;
+	static constexpr int powerUsage = 100;
 
 	RadarState()
 	{
