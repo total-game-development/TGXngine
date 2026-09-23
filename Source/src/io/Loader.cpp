@@ -625,6 +625,7 @@ void Loader::AssignShell()
 		(FNPTR_SHELL_SET_TOGGLE_HANDLER)GET_PROC(dllHandle, "SetToggleHandler"),
 		(FNPTR_SHELL_SET_NETWORK)GET_PROC(dllHandle, "SetNetwork"),
 		(FNPTR_SHELL_DELIVER)GET_PROC(dllHandle, "Deliver"),
+		(FNPTR_SHELL_SET_CYBER)GET_PROC(dllHandle, "SetCyber"),
 		(FNPTR_SHELL_SET_MATCH_HANDLERS)GET_PROC(dllHandle, "SetMatchHandlers"),
 		(FNPTR_SHELL_CLEAR)GET_PROC(dllHandle, "Clear"),
 		(FNPTR_SHELL_DELETE)GET_PROC(dllHandle, "Delete"));

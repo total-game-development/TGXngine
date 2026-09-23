@@ -116,6 +116,7 @@ private:
 
 	bool requestClose = false;
 	bool showFogOfWar = false;
+	bool cyber = true;
 	String savePath;
 	ToggleHandler toggleHandler = nullptr;
 
@@ -154,6 +155,7 @@ private:
 	void Who();
 	void Cheat(const String &command);
 	void Tint(const Vector<String> &args);
+	bool Refuses(const String &head);
 	void SaveEditor();
 	void Persist();
 
@@ -198,6 +200,7 @@ public:
 	bool Reveal(const String &key, int x, int y) override;
 
 	void SetNetwork(const String &name, const Vector<String> &peers, NetworkSender send);
+	void SetPeers(const Vector<String> &peers);
 	void ClearNetwork();
 	void Deliver(const nlohmann::json &message);
 
@@ -205,6 +208,10 @@ public:
 	void SetHackHandler(HackRequest handler);
 	void SetRadarHandlers(RadarLister lister, RadarReveal reveal);
 	void SetRadar(const RadarSettings &settings);
+
+	void SetCyber(bool allowed);
+	bool IsCyber() const;
+	void Tutorial(const String &directory, const nlohmann::json &files);
 
 	void Update();
 

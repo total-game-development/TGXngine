@@ -31,6 +31,10 @@ struct MultiplayerSetup
 	// the name the room handed a hacker.
 	static inline String console;
 
+	// The consoles of everybody watching an arena on a cyber map, this one's
+	// among them. Viewers come and go, so the server says again as they do.
+	static inline Vector<String> consoles;
+
 	// The sides nobody sits on, which the match's host commands. Every other
 	// client treats them as it treats any other player it cannot see.
 	static inline Vector<String> aiSides;
@@ -49,6 +53,7 @@ struct MultiplayerSetup
 		hacker = false;
 		console.clear();
 		aiSides.clear();
+		consoles.clear();
 	}
 };
 } // namespace TGX

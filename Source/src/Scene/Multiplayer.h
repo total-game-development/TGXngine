@@ -52,6 +52,7 @@ private:
 	void DrawHeading();
 	void DrawRooms();
 	void DrawRoom();
+	float DrawLevels(float y);
 	void DrawNotice();
 
 	// One labelled box, returned so the caller can keep laying out beneath it.

@@ -16,6 +16,7 @@ ShellModule::ShellModule(
 	FNPTR_SHELL_SET_TOGGLE_HANDLER inSetToggleHandler,
 	FNPTR_SHELL_SET_NETWORK inSetNetwork,
 	FNPTR_SHELL_DELIVER inDeliver,
+	FNPTR_SHELL_SET_CYBER inSetCyber,
 	FNPTR_SHELL_SET_MATCH_HANDLERS inSetMatchHandlers,
 	FNPTR_SHELL_CLEAR inClear,
 	FNPTR_SHELL_DELETE inDelete)
@@ -32,6 +33,7 @@ ShellModule::ShellModule(
 	  setToggleHandler(inSetToggleHandler),
 	  setNetwork(inSetNetwork),
 	  deliver(inDeliver),
+	  setCyber(inSetCyber),
 	  setMatchHandlers(inSetMatchHandlers),
 	  clear(inClear),
 	  _delete(inDelete)
@@ -141,6 +143,14 @@ void ShellModule::Deliver(const String &message)
 	if (deliver)
 	{
 		deliver(message.c_str());
+	}
+}
+
+void ShellModule::SetCyber(bool allowed, const String &tutorial)
+{
+	if (setCyber)
+	{
+		setCyber(allowed, tutorial.empty() ? nullptr : tutorial.c_str());
 	}
 }
 

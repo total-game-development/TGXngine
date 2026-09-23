@@ -248,6 +248,7 @@ extern "C"
 		}
 
 		terminal->Load(savePath);
+		terminal->SetCyber(true);
 		terminal->Start();
 
 		Log::Success("Shell created: " + name);
@@ -423,6 +424,28 @@ extern "C"
 		terminal->SetNetwork(self, peers, [send](const String &to, const nlohmann::json &body) {
 			send(to.c_str(), body.dump().c_str());
 		});
+	}
+
+	MODULE_API void SetCyber(bool allowed, const char *tutorial)
+	{
+		if (!terminal)
+		{
+			return;
+		}
+
+		terminal->SetCyber(allowed);
+
+		if (!allowed || tutorial == nullptr)
+		{
+			return;
+		}
+
+		const nlohmann::json data = nlohmann::json::parse(tutorial, nullptr, false);
+
+		if (data.is_object())
+		{
+			terminal->Tutorial(data.value("directory", String()), data.value("files", nlohmann::json::object()));
+		}
 	}
 
 	MODULE_API void Deliver(const char *message)

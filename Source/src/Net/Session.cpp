@@ -367,6 +367,7 @@ void Session::EnterMatch(const nlohmann::json &message, bool resuming)
 	MultiplayerSetup::observer = observer;
 	MultiplayerSetup::console = message.value("console", String{});
 	MultiplayerSetup::aiSides = message.value("ai", Vector<String>{});
+	MultiplayerSetup::consoles = message.value("consoles", Vector<String>{});
 
 	replay.clear();
 
@@ -605,7 +606,7 @@ void Session::Handle(const nlohmann::json &message)
 		return;
 	}
 
-	if (type == "shell" || type == "shell_refused")
+	if (type == "shell" || type == "shell_refused" || type == "consoles")
 	{
 		shell.push_back(message);
 		return;

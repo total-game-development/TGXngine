@@ -14,6 +14,7 @@
 #include "test_net/TestLockstep.hpp"
 #include "test_rules/TestRules.hpp"
 #include "test_rules/TestSettle.hpp"
+#include "test_shell/TestCyber.hpp"
 #include "test_shell/TestFileSystem.hpp"
 #include "test_shell/TestHighlight.hpp"
 #include "test_shell/TestInterpreter.hpp"

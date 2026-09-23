@@ -490,6 +490,12 @@ void Game::Init()
 			shellModule->SetMatchHandlers(nullptr, nullptr, nullptr, nullptr, &RevealShellRadar);
 		}
 
+		// Connecting, hacking and the rest are a map's to allow. One that does
+		// may leave a tutorial in the player's home directory as well.
+		const bool cyber = level.value("cyber", false);
+
+		shellModule->SetCyber(cyber, cyber && level.contains("tutorial") ? level["tutorial"].dump() : String{});
+
 		const json radarSettings = level.contains("radar") && level["radar"].is_object() ? level["radar"] : json::object();
 
 		radarRadius = std::max(0, radarSettings.value("revealRadius", 3));
@@ -498,11 +504,22 @@ void Game::Init()
 		// Every other player's console is a computer this one can reach. An
 		// observer has no computer of its own and reaches none; a hacker is
 		// the exception, with a console the room named and nothing to play.
+		// So is an arena's viewer on a cyber map, whose console reaches the
+		// other viewers' and nothing on the board.
 		if (MultiplayerSetup::active)
 		{
 			const bool reaches = !MultiplayerSetup::observer || MultiplayerSetup::hacker;
+			const bool viewing = MultiplayerSetup::observer && !MultiplayerSetup::hacker && !MultiplayerSetup::console.empty();
 
 			json machines = json::array();
+
+			if (viewing)
+			{
+				for (const String &viewer : MultiplayerSetup::consoles)
+				{
+					machines.push_back(viewer);
+				}
+			}
 
 			if (reaches && level.contains("teams"))
 			{
@@ -515,8 +532,8 @@ void Game::Init()
 				}
 			}
 
-			const String self = MultiplayerSetup::hacker ? MultiplayerSetup::console
-														 : (MultiplayerSetup::observer ? String{} : MultiplayerSetup::team);
+			const String self = (MultiplayerSetup::hacker || viewing) ? MultiplayerSetup::console
+																	  : (MultiplayerSetup::observer ? String{} : MultiplayerSetup::team);
 
 			shellModule->SetNetwork(&SendShellMessage, json{{"self", self}, {"machines", machines}, {"radar", radarSettings}}.dump());
 		}

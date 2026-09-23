@@ -267,6 +267,11 @@ void Terminal::Submit(const String &line)
 	const Vector<String> args = Split(command, ' ');
 	const String head = args.empty() ? String() : args[0];
 
+	if (Refuses(head))
+	{
+		return;
+	}
+
 	if (current->networked && Remote(head, args))
 	{
 		return;
@@ -466,6 +471,7 @@ void Terminal::Help()
 	Print(" - passwd: pin (Changes this computer's pin, shutting out anybody connected)");
 	Print(" - connect: remote_computer_name pin (Connects to the remote computer)");
 	Print(" - disconnect: Disconnects from remote computer");
+	Print(" - (connect, hack, get, rekey, passwd and role work only on maps that allow cyber commands)");
 	Print(" - role: cyber red | cyber blue | off (Tints the console for the red or blue team, or clears it)");
 	Print(" - exit: Exit from Desktop emulates the F10 desktop function");
 }
@@ -688,6 +694,87 @@ void Terminal::Cheat(const String &command)
 	}
 
 	Print("Unknown command");
+}
+
+bool Terminal::Refuses(const String &head)
+{
+	static const Set<String> commands = {"connect", "hack", "get", "rekey", "passwd", "role"};
+
+	if (IsCyber() || !commands.contains(head))
+	{
+		return false;
+	}
+
+	Print("Cyber commands are not allowed on this map");
+	return true;
+}
+
+void Terminal::SetCyber(bool allowed)
+{
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex);
+		cyber = allowed;
+	}
+
+	if (!allowed && current->networked)
+	{
+		Disconnect();
+	}
+}
+
+bool Terminal::IsCyber() const
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+	return cyber;
+}
+
+void Terminal::Tutorial(const String &directory, const nlohmann::json &files)
+{
+	if (directory.empty() || directory.find('/') != String::npos || !files.is_object())
+	{
+		return;
+	}
+
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex);
+
+		FileNodeRef home = local.fileSystem.Resolve("/home/user/naomi");
+
+		if (!home || !home->directory)
+		{
+			home = local.fileSystem.GetRoot();
+		}
+
+		FileNodeRef &folder = home->children[directory];
+
+		if (!folder)
+		{
+			folder = std::make_shared<FileNode>();
+			folder->directory = true;
+		}
+
+		if (!folder->directory)
+		{
+			return;
+		}
+
+		for (const auto &entry : files.items())
+		{
+			if (!entry.value().is_string() || folder->children.contains(entry.key()))
+			{
+				continue;
+			}
+
+			auto file = std::make_shared<FileNode>();
+			file->source = entry.value().get<String>();
+			file->executable = true;
+
+			folder->children[entry.key()] = std::move(file);
+		}
+	}
+
+	Print("A tutorial is waiting in ~/" + directory + ". cd " + directory + ", then ls");
+	Persist();
 }
 
 void Terminal::Tint(const Vector<String> &args)
@@ -973,9 +1060,33 @@ void Terminal::SetNetwork(const String &name, const Vector<String> &peers, Netwo
 
 	Print("This computer's pin is " + local.password + ". Change it with passwd <pin>");
 
+	SetPeers(peers);
+}
+
+void Terminal::SetPeers(const Vector<String> &peers)
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	for (auto entry = machines.begin(); entry != machines.end();)
+	{
+		if (std::ranges::find(peers, entry->first) != peers.end())
+		{
+			++entry;
+			continue;
+		}
+
+		if (current == &entry->second)
+		{
+			Print(entry->first + " left the network");
+			current = &local;
+		}
+
+		entry = machines.erase(entry);
+	}
+
 	for (const String &peer : peers)
 	{
-		if (peer.empty() || peer == self)
+		if (peer.empty() || peer == self || machines.contains(peer))
 		{
 			continue;
 		}
@@ -1154,6 +1265,12 @@ void Terminal::Deliver(const nlohmann::json &message)
 	if (type == "shell_refused")
 	{
 		Refused(message);
+		return;
+	}
+
+	if (type == "consoles")
+	{
+		SetPeers(message.value("consoles", Vector<String>{}));
 		return;
 	}
 

@@ -19,6 +19,7 @@ using FNPTR_SHELL_SET_TOGGLE_HANDLER = void (*)(void (*)(const char *, const cha
 using FNPTR_SHELL_SEND = void (*)(const char *, const char *);
 using FNPTR_SHELL_SET_NETWORK = void (*)(FNPTR_SHELL_SEND, const char *);
 using FNPTR_SHELL_DELIVER = void (*)(const char *);
+using FNPTR_SHELL_SET_CYBER = void (*)(bool, const char *);
 using FNPTR_SHELL_LIST_PROCESSES = const char *(*)();
 using FNPTR_SHELL_SWITCH_PROCESS = bool (*)(int, bool);
 using FNPTR_SHELL_HACK = bool (*)(const char *, bool);
@@ -44,6 +45,7 @@ private:
 	FNPTR_SHELL_SET_TOGGLE_HANDLER setToggleHandler;
 	FNPTR_SHELL_SET_NETWORK setNetwork;
 	FNPTR_SHELL_DELIVER deliver;
+	FNPTR_SHELL_SET_CYBER setCyber;
 	FNPTR_SHELL_SET_MATCH_HANDLERS setMatchHandlers;
 	FNPTR_SHELL_CLEAR clear;
 	FNPTR_SHELL_DELETE _delete;
@@ -63,6 +65,7 @@ public:
 		FNPTR_SHELL_SET_TOGGLE_HANDLER,
 		FNPTR_SHELL_SET_NETWORK,
 		FNPTR_SHELL_DELIVER,
+		FNPTR_SHELL_SET_CYBER,
 		FNPTR_SHELL_SET_MATCH_HANDLERS,
 		FNPTR_SHELL_CLEAR,
 		FNPTR_SHELL_DELETE);
@@ -82,6 +85,7 @@ public:
 	void SetNetwork(FNPTR_SHELL_SEND send, const String &identity);
 	void ClearNetwork();
 	void Deliver(const String &message);
+	void SetCyber(bool allowed, const String &tutorial);
 	void SetMatchHandlers(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle, FNPTR_SHELL_HACK hack, FNPTR_SHELL_RADAR radar, FNPTR_SHELL_REVEAL reveal);
 	void Clear();
 	void Delete();
