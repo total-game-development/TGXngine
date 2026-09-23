@@ -1,9 +1,9 @@
 #include "Minimap.h"
+#include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
-#include <nlohmann/json.hpp>
 #include "Globals.h"
 #include "Window.h"
 #include "WorldState.h"

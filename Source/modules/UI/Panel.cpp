@@ -48,10 +48,7 @@ const sf::Color BACK_COLOUR = sf::Color(0xFF, 0xD4, 0x00);
 } // namespace
 
 Panel::Panel(Element inElement, Page inPage, String inWindowPath, String inImagePath)
-	: Widget(std::move(inElement))
-	, page(std::move(inPage))
-	, windowPath(std::move(inWindowPath))
-	, imagePath(std::move(inImagePath))
+	: Widget(std::move(inElement)), page(std::move(inPage)), windowPath(std::move(inWindowPath)), imagePath(std::move(inImagePath))
 {
 	backgroundTexture = Textures::Load(windowPath + page.window + ".png");
 
@@ -104,8 +101,8 @@ void Panel::Arrange(sf::Vector2f view)
 	if (!arranged)
 	{
 		position = element.positioned
-			? Layout::Anchored(Layout::Resolve(element.x, element.y, view), size, element.anchorX, element.anchorY)
-			: sf::Vector2f((view.x - size.x) * 0.5f, (view.y - size.y) * 0.5f);
+					   ? Layout::Anchored(Layout::Resolve(element.x, element.y, view), size, element.anchorX, element.anchorY)
+					   : sf::Vector2f((view.x - size.x) * 0.5f, (view.y - size.y) * 0.5f);
 
 		// Windows opened one after another step down and across instead of
 		// landing on each other, and never step off the view doing it.

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <chrono>
 #include <gtest/gtest.h>
+#include <chrono>
 #include <thread>
 #include "Terminal.h"
 
@@ -45,10 +45,9 @@ struct FakeBase
 	nlohmann::json listing = {
 		{"usage", 30},
 		{"total", 400},
-		{"processes", nlohmann::json::array({
-			Building(5, "construction_facility", 0),
-			Building(9, "powerplant", -400),
-			Building(12, "barracks", 30)})}};
+		{"processes", nlohmann::json::array({Building(5, "construction_facility", 0),
+											 Building(9, "powerplant", -400),
+											 Building(12, "barracks", 30)})}};
 
 	Vector<int> killed;
 	Vector<int> started;

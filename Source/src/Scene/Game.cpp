@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -17,7 +18,6 @@
 #include "ItemOrder.h"
 #include "Mouse.h"
 #include "Navigation.h"
-#include <cstring>
 #include "Physics.h"
 #include "Renderer.h"
 #include "Window.h"
@@ -94,11 +94,10 @@ const char *ListShellProcesses()
 
 	for (const ItemInstance *building : buildings)
 	{
-		listing["processes"].push_back({
-			{"uid", building->GetUid()},
-			{"name", building->GetName()},
-			{"running", building->IsRunning()},
-			{"power", building->GetPowerUsage()}});
+		listing["processes"].push_back({{"uid", building->GetUid()},
+										{"name", building->GetName()},
+										{"running", building->IsRunning()},
+										{"power", building->GetPowerUsage()}});
 	}
 
 	shellProcesses = listing.dump();
@@ -1182,8 +1181,6 @@ std::uint64_t Game::WorldDigest() const
 	return fold.Value();
 }
 
-
-
 void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 {
 	// Folded in the same order the server folds it: the tick, then each uid,
@@ -1730,8 +1727,8 @@ void Game::DrawEconomy()
 			if (!snapshot.building.empty())
 			{
 				const int percent = snapshot.buildTime > 0
-									  ? ((snapshot.buildProgress * 100) / snapshot.buildTime)
-									  : 0;
+										? ((snapshot.buildProgress * 100) / snapshot.buildTime)
+										: 0;
 
 				work = "  building " + snapshot.building + " " + std::to_string(percent) + "%";
 				workColour = sf::Color(220, 200, 120);

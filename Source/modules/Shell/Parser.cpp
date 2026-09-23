@@ -9,44 +9,82 @@ const char *TokenName(TokenType type)
 {
 	switch (type)
 	{
-		case TokenType::Number: return "Number";
-		case TokenType::Identifier: return "Identifier";
-		case TokenType::Equals: return "Equals";
-		case TokenType::Semicolon: return "Semicolon";
-		case TokenType::Colon: return "Colon";
-		case TokenType::Comma: return "Comma";
-		case TokenType::Dot: return "Dot";
-		case TokenType::OpenParen: return "OpenParen";
-		case TokenType::CloseParen: return "CloseParen";
-		case TokenType::OpenBrace: return "OpenBrace";
-		case TokenType::CloseBrace: return "CloseBrace";
-		case TokenType::OpenBracket: return "OpenBracket";
-		case TokenType::CloseBracket: return "CloseBracket";
-		case TokenType::BinaryOperator: return "BinaryOperator";
-		case TokenType::LogicalOperator: return "LogicalOperator";
-		case TokenType::Bang: return "Bang";
-		case TokenType::Length: return "Length";
-		case TokenType::Let: return "Let";
-		case TokenType::Const: return "Const";
-		case TokenType::Break: return "Break";
-		case TokenType::Continue: return "Continue";
-		case TokenType::Function: return "Function";
-		case TokenType::Return: return "Return";
-		case TokenType::Print: return "Print";
-		case TokenType::Toggle: return "Toggle";
-		case TokenType::Split: return "Split";
-		case TokenType::Read: return "Read";
-		case TokenType::Write: return "Write";
-		case TokenType::Exec: return "Exec";
-		case TokenType::Spawn: return "Spawn";
-		case TokenType::Hash: return "Hash";
-		case TokenType::Reveal: return "Reveal";
-		case TokenType::If: return "If";
-		case TokenType::Else: return "Else";
-		case TokenType::While: return "While";
-		case TokenType::For: return "For";
-		case TokenType::String_: return "String";
-		case TokenType::EndOfFile: return "EndOfFile";
+		case TokenType::Number:
+			return "Number";
+		case TokenType::Identifier:
+			return "Identifier";
+		case TokenType::Equals:
+			return "Equals";
+		case TokenType::Semicolon:
+			return "Semicolon";
+		case TokenType::Colon:
+			return "Colon";
+		case TokenType::Comma:
+			return "Comma";
+		case TokenType::Dot:
+			return "Dot";
+		case TokenType::OpenParen:
+			return "OpenParen";
+		case TokenType::CloseParen:
+			return "CloseParen";
+		case TokenType::OpenBrace:
+			return "OpenBrace";
+		case TokenType::CloseBrace:
+			return "CloseBrace";
+		case TokenType::OpenBracket:
+			return "OpenBracket";
+		case TokenType::CloseBracket:
+			return "CloseBracket";
+		case TokenType::BinaryOperator:
+			return "BinaryOperator";
+		case TokenType::LogicalOperator:
+			return "LogicalOperator";
+		case TokenType::Bang:
+			return "Bang";
+		case TokenType::Length:
+			return "Length";
+		case TokenType::Let:
+			return "Let";
+		case TokenType::Const:
+			return "Const";
+		case TokenType::Break:
+			return "Break";
+		case TokenType::Continue:
+			return "Continue";
+		case TokenType::Function:
+			return "Function";
+		case TokenType::Return:
+			return "Return";
+		case TokenType::Print:
+			return "Print";
+		case TokenType::Toggle:
+			return "Toggle";
+		case TokenType::Split:
+			return "Split";
+		case TokenType::Read:
+			return "Read";
+		case TokenType::Write:
+			return "Write";
+		case TokenType::Exec:
+			return "Exec";
+		case TokenType::Spawn:
+			return "Spawn";
+		case TokenType::Hash:
+			return "Hash";
+		case TokenType::Reveal:
+			return "Reveal";
+		case TokenType::If:
+			return "If";
+		case TokenType::Else:
+			return "Else";
+		case TokenType::While:
+			return "While";
+		case TokenType::For:
+			return "For";
+		case TokenType::String_:
+			return "String";
+		case TokenType::EndOfFile:
+			return "EndOfFile";
 	}
 
 	return "Unknown";

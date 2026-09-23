@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdio>
 #include <gtest/gtest.h>
+#include <cstdio>
 #include "Terminal.h"
 
 namespace TGX::Shell
@@ -69,7 +69,6 @@ TEST(ShellPersistence, SeedsAFreshTreeWhenNoSaveExists)
 
 	EXPECT_NE(terminal.GetPrompt().find("/home/user/naomi/"), String::npos);
 }
-
 
 TEST(ShellPersistence, SavesAsSoonAsAFileIsCreated)
 {

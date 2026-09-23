@@ -1,9 +1,9 @@
 #include "Vehicles.h"
 
 #include <algorithm>
+#include "Cells.h"
 #include "Collision/Collision.h"
 #include "DeployBerths.h"
-#include "Cells.h"
 #include "Enums.h"
 #include "ImageLoader.h"
 #include "Logs.h"
@@ -1201,10 +1201,7 @@ void Destroyed(ItemInstance *itemInstance)
 		world.currentTerrainMapPassableGrid,
 		physics.GetGridTracker());
 
-	static_cast<VehicleState *>(itemInstance)->RemoveTacticalGrid(
-		itemInstance->GetUid(),
-		world.currentTerrainMapPassableGrid,
-		physics.GetGridTracker());
+	static_cast<VehicleState *>(itemInstance)->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 }
 
 void Unload(ItemInstance *itemInstance)

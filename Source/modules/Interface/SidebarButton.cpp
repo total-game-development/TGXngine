@@ -214,7 +214,6 @@ void SidebarButton::SetButton(
 	this->attached = std::move(newAttached);
 	this->waitForClick = wait;
 
-
 	this->x = newX;
 	this->y = newY;
 

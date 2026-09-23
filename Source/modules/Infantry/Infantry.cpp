@@ -1,7 +1,7 @@
 #include "Infantry.h"
+#include "Cells.h"
 #include "Collision/Collision.h"
 #include "DeployBerths.h"
-#include "Cells.h"
 #include "Enums.h"
 #include "ImageLoader.h"
 #include "Logs.h"
@@ -396,8 +396,7 @@ void Move(ItemInstance *itemInstance)
 	Physics &physics = Physics::GetInstance();
 
 	itemInstance->RemoveFromGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
-	static_cast<InfantryState *>(itemInstance)->RemoveTacticalGrid(
-		itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
+	static_cast<InfantryState *>(itemInstance)->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
 	itemInstance->SetOrders(Orders::Order::MoveTo);
 }
@@ -816,10 +815,7 @@ void Destroyed(ItemInstance *itemInstance)
 
 	itemInstance->RemoveFromGrid(world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 
-	static_cast<InfantryState *>(itemInstance)->RemoveTacticalGrid(
-		itemInstance->GetUid(),
-		world.currentTerrainMapPassableGrid,
-		physics.GetGridTracker());
+	static_cast<InfantryState *>(itemInstance)->RemoveTacticalGrid(itemInstance->GetUid(), world.currentTerrainMapPassableGrid, physics.GetGridTracker());
 }
 
 void Animate(InfantryState *itemInstance)
