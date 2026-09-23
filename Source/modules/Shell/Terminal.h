@@ -45,6 +45,13 @@ enum class TerminalMode : std::uint8_t
 	Editing
 };
 
+enum class TerminalTint : std::uint8_t
+{
+	None,
+	Red,
+	Blue
+};
+
 class Terminal : public Host
 {
 private:
@@ -100,6 +107,7 @@ private:
 
 	String input;
 	TerminalMode mode = TerminalMode::Command;
+	TerminalTint tint = TerminalTint::None;
 
 	Editor editor;
 	TaskPool pool;
@@ -145,6 +153,7 @@ private:
 	void Passwd(const Vector<String> &args);
 	void Who();
 	void Cheat(const String &command);
+	void Tint(const Vector<String> &args);
 	void SaveEditor();
 	void Persist();
 
@@ -217,6 +226,7 @@ public:
 	String GetPrompt() const;
 	String GetInput() const;
 	TerminalMode GetMode() const;
+	TerminalTint GetTint() const;
 	Editor &GetEditor();
 
 	bool ShouldClose();

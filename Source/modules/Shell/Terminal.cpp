@@ -25,6 +25,29 @@ String Trim(const String &text)
 
 	return text.substr(start, end - start);
 }
+
+const Map<String, TerminalTint> &Tints()
+{
+	static const Map<String, TerminalTint> tints = {
+		{"off", TerminalTint::None},
+		{"cyber red", TerminalTint::Red},
+		{"cyber blue", TerminalTint::Blue}};
+
+	return tints;
+}
+
+String TintName(TerminalTint tint)
+{
+	for (const auto &entry : Tints())
+	{
+		if (entry.second == tint)
+		{
+			return entry.first;
+		}
+	}
+
+	return "off";
+}
 } // namespace
 
 Terminal::Terminal()
@@ -398,6 +421,10 @@ void Terminal::Submit(const String &line)
 	{
 		Signal(args, true);
 	}
+	else if (head == "role")
+	{
+		Tint(args);
+	}
 	else if (head == "cheat")
 	{
 		Cheat(command);
@@ -439,6 +466,7 @@ void Terminal::Help()
 	Print(" - passwd: pin (Changes this computer's pin, shutting out anybody connected)");
 	Print(" - connect: remote_computer_name pin (Connects to the remote computer)");
 	Print(" - disconnect: Disconnects from remote computer");
+	Print(" - role: cyber red | cyber blue | off (Tints the console for the red or blue team, or clears it)");
 	Print(" - exit: Exit from Desktop emulates the F10 desktop function");
 }
 
@@ -662,6 +690,32 @@ void Terminal::Cheat(const String &command)
 	Print("Unknown command");
 }
 
+void Terminal::Tint(const Vector<String> &args)
+{
+	String role;
+
+	for (std::size_t index = 1; index < args.size(); ++index)
+	{
+		role += (index > 1 ? " " : "") + args[index];
+	}
+
+	const auto found = Tints().find(role);
+
+	if (found == Tints().end())
+	{
+		Print("Invalid command. Usage: role cyber <red|blue> | role off");
+		return;
+	}
+
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex);
+		tint = found->second;
+	}
+
+	Print(found->second == TerminalTint::None ? "Role cleared" : "Role: " + found->first);
+	Persist();
+}
+
 void Terminal::Character(char character)
 {
 	if (mode == TerminalMode::Editing)
@@ -813,6 +867,12 @@ String Terminal::GetInput() const
 TerminalMode Terminal::GetMode() const
 {
 	return mode;
+}
+
+TerminalTint Terminal::GetTint() const
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+	return tint;
 }
 
 Editor &Terminal::GetEditor()
@@ -2066,6 +2126,12 @@ void Terminal::Load(const String &path)
 		local.password = data["pin"].get<String>();
 	}
 
+	if (data.contains("role") && data["role"].is_string())
+	{
+		const auto found = Tints().find(data["role"].get<String>());
+		tint = found == Tints().end() ? TerminalTint::None : found->second;
+	}
+
 	if (data.contains("remotes") && data["remotes"].is_object())
 	{
 		for (const auto &entry : data["remotes"].items())
@@ -2105,6 +2171,7 @@ void Terminal::Save(const String &path) const
 	nlohmann::json data;
 	data["local"] = local.fileSystem.Serialise();
 	data["pin"] = local.password;
+	data["role"] = TintName(tint);
 	data["remotes"] = nlohmann::json::object();
 
 	for (const auto &entry : remotes)
