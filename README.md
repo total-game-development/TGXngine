@@ -297,5 +297,7 @@ pathfinding drops from 25ms to 3ms and the shell interpreter from 11ms to 2ms.
 We adhere strictly to formatting checks using clang-format. You can configure your local workstation parameters by executing:
 
 ```bash
-python -m pip install clang-format
+python -m pip install clang-format==21.1.8
 ```
+
+The version is pinned to match CI, since clang-format's output changes between releases.
