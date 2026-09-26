@@ -92,7 +92,7 @@ private:
 		}
 
 		const std::size_t at = std::min(samples.size() - 1,
-			static_cast<std::size_t>(std::floor(fraction * static_cast<float>(samples.size()))));
+										static_cast<std::size_t>(std::floor(fraction * static_cast<float>(samples.size()))));
 
 		std::ranges::nth_element(samples, samples.begin() + static_cast<std::ptrdiff_t>(at));
 

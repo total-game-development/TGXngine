@@ -99,7 +99,7 @@ Vector<Violation> Check()
 		if (carried == live.end())
 		{
 			found.push_back({"body",
-				"uid " + std::to_string(uid) + " holds " + Key(std::get<0>(box), std::get<1>(box)) + " to " + Key(std::get<2>(box), std::get<3>(box)) + ", but nothing alive carries that uid"});
+							 "uid " + std::to_string(uid) + " holds " + Key(std::get<0>(box), std::get<1>(box)) + " to " + Key(std::get<2>(box), std::get<3>(box)) + ", but nothing alive carries that uid"});
 
 			continue;
 		}
@@ -130,7 +130,7 @@ Vector<Violation> Check()
 		if (!live.contains(uid))
 		{
 			found.push_back({"booking",
-				"uid " + std::to_string(uid) + " has booked " + Key(reservation.x1, reservation.y1) + " to " + Key(reservation.x2, reservation.y2) + ", but nothing alive carries that uid"});
+							 "uid " + std::to_string(uid) + " has booked " + Key(reservation.x1, reservation.y1) + " to " + Key(reservation.x2, reservation.y2) + ", but nothing alive carries that uid"});
 
 			continue;
 		}
@@ -185,7 +185,7 @@ Vector<Violation> Check()
 				reported.insert(pair);
 
 				found.push_back({"overlap",
-					"cell " + key + " has " + Named(bodies[first]) + " and " + Named(bodies[second]) + " stopped on it"});
+								 "cell " + key + " has " + Named(bodies[first]) + " and " + Named(bodies[second]) + " stopped on it"});
 			}
 		}
 	}
@@ -198,7 +198,7 @@ Vector<Violation> Check()
 		if (actual != value)
 		{
 			found.push_back({"stack",
-				"cell " + key + " holds " + std::to_string(actual) + " but its bodies and bookings come to " + std::to_string(value)});
+							 "cell " + key + " holds " + std::to_string(actual) + " but its bodies and bookings come to " + std::to_string(value)});
 		}
 	}
 
@@ -217,7 +217,7 @@ Vector<Violation> Check()
 		if (value < 0)
 		{
 			found.push_back({"stack",
-				"cell " + key + " holds " + std::to_string(value) + ", which no body can have put there"});
+							 "cell " + key + " holds " + std::to_string(value) + ", which no body can have put there"});
 
 			continue;
 		}
@@ -225,7 +225,7 @@ Vector<Violation> Check()
 		if (value != 0 && !expected.contains(key) && mark < Flags::CELL_COLLISION_MODE_HARD)
 		{
 			found.push_back({"stack",
-				"cell " + key + " holds " + std::to_string(value) + " with nothing standing on it or booked over it"});
+							 "cell " + key + " holds " + std::to_string(value) + " with nothing standing on it or booked over it"});
 
 			continue;
 		}
@@ -249,7 +249,7 @@ Vector<Violation> Check()
 		if (mark != wanted)
 		{
 			found.push_back({"grid",
-				"cell " + key + " holds " + std::to_string(value) + " but is marked " + std::to_string(mark) + " rather than " + std::to_string(wanted)});
+							 "cell " + key + " holds " + std::to_string(value) + " but is marked " + std::to_string(mark) + " rather than " + std::to_string(wanted)});
 		}
 	}
 

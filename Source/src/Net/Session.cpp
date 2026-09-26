@@ -76,11 +76,10 @@ void Session::Join(int roomId, bool asObserver)
 
 	MultiplayerSetup::observer = asObserver;
 
-	client.Send({
-		{"type", "join_game"},
-		{"id", roomId},
-		{"slot", -1},
-		{"platform", asObserver ? "observer" : "desktop_player"}});
+	client.Send({{"type", "join_game"},
+				 {"id", roomId},
+				 {"slot", -1},
+				 {"platform", asObserver ? "observer" : "desktop_player"}});
 
 	phase = Phase::Waiting;
 	notice = "Joining room " + std::to_string(roomId + 1) + "...";
@@ -93,12 +92,11 @@ void Session::JoinAsHost(int roomId, const String &hostToken)
 
 	MultiplayerSetup::observer = true;
 
-	client.Send({
-		{"type", "join_game"},
-		{"id", roomId},
-		{"slot", -1},
-		{"platform", "host"},
-		{"token", hostToken}});
+	client.Send({{"type", "join_game"},
+				 {"id", roomId},
+				 {"slot", -1},
+				 {"platform", "host"},
+				 {"token", hostToken}});
 
 	phase = Phase::Waiting;
 	notice = "Hosting room " + std::to_string(roomId + 1) + "...";
@@ -111,11 +109,10 @@ void Session::JoinArena(int roomId)
 
 	MultiplayerSetup::observer = true;
 
-	client.Send({
-		{"type", "join_arena"},
-		{"id", roomId},
-		{"slot", -1},
-		{"platform", "observer"}});
+	client.Send({{"type", "join_arena"},
+				 {"id", roomId},
+				 {"slot", -1},
+				 {"platform", "observer"}});
 
 	phase = Phase::Waiting;
 	notice = "Opening an arena in room " + std::to_string(roomId + 1) + "...";
@@ -136,12 +133,11 @@ void Session::ReportOutcome(const String &outcome)
 // match as it stands instead of refusing a room that is playing.
 void Session::Rejoin()
 {
-	client.Send({
-		{"type", "join_game"},
-		{"id", room},
-		{"slot", slot},
-		{"resume", token},
-		{"platform", observer ? "observer" : "desktop_player"}});
+	client.Send({{"type", "join_game"},
+				 {"id", room},
+				 {"slot", slot},
+				 {"resume", token},
+				 {"platform", observer ? "observer" : "desktop_player"}});
 }
 
 void Session::Leave()
@@ -198,11 +194,10 @@ void Session::SendCommand(const Vector<int> &uids, const nlohmann::json &orders)
 
 	// Asked for far enough ahead that it reaches every peer before its tick
 	// comes up. The server re-stamps anything it cannot honour.
-	client.Send({
-		{"type", "command"},
-		{"uids", uids},
-		{"tick", lockstep.ServerTick() + 2},
-		{"orders", orders}});
+	client.Send({{"type", "command"},
+				 {"uids", uids},
+				 {"tick", lockstep.ServerTick() + 2},
+				 {"orders", orders}});
 }
 
 void Session::ReportDigest(std::uint64_t world, std::uint64_t commands)
@@ -212,11 +207,10 @@ void Session::ReportDigest(std::uint64_t world, std::uint64_t commands)
 		return;
 	}
 
-	client.Send({
-		{"type", "sanity_check"},
-		{"tick", lockstep.LocalTick()},
-		{"value", world},
-		{"commands", commands}});
+	client.Send({{"type", "sanity_check"},
+				 {"tick", lockstep.LocalTick()},
+				 {"value", world},
+				 {"commands", commands}});
 }
 
 void Session::SendShell(const String &to, const nlohmann::json &body)

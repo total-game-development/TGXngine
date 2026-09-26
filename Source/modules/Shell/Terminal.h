@@ -1,9 +1,9 @@
 #pragma once
 
+#include <nlohmann/json.hpp>
 #include <chrono>
 #include <map>
 #include <mutex>
-#include <nlohmann/json.hpp>
 #include "Core.h"
 #include "Editor.h"
 #include "FileSystem.h"

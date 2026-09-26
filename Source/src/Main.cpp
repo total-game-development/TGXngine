@@ -4,11 +4,11 @@
 #include <iostream>
 #include "Controller.h"
 #include "Debug.h"
+#include "Host.h"
 #include "ImageLoader.h"
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Physics.h"
-#include "Host.h"
 #include "Renderer.h"
 #include "Replay.h"
 #include "Settings.h"

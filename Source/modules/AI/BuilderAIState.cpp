@@ -327,7 +327,6 @@ bool BuilderAIState::FindPlot(const String &kind, int &outX, int &outY) const
 	return false;
 }
 
-
 // Only the units still waiting at the barracks make up a wave. Counting the
 // ones already marching would keep the muster permanently full, and every
 // fresh recruit would be sent out on its own the moment it deployed.

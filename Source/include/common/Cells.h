@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <cmath>
 #include "CollisionStructures.h"
-#include "GridTracker.h"
 #include "Core.h"
 #include "Flags.h"
 #include "Globals.h"
+#include "GridTracker.h"
 
 namespace TGX
 {
