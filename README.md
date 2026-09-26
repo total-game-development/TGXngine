@@ -104,7 +104,7 @@ Version 0.2 also lands the Aircrafts, Ships, FogOfWar and Turrets modules, exten
 
 ## Engine Architecture and Codebase Structure
 
-The engine codebase is divided into three distinct structural layers: the Core Application, the Static Library Core, and external Dynamic Modules designed for modding.
+The engine codebase is divided into four distinct structural layers: the Core Application, the Shared Common Layer, the Static Library Core, and external Dynamic Modules designed for modding.
 
 ### 1. The Core Application (The Executable Platform)
 
@@ -116,17 +116,25 @@ Source implementation directories:
 * src/Background/
 * src/Grid/
 * src/io/
+* src/Net/
 * src/Scene/
 * src/UI/
 * src/WayPoints/
 
-### 2. The Static Library Core (Low-Level Systems Engine)
+### 2. The Shared Common Layer (Common.dll)
 
-Compiled directly into the application space, this layer provides stateless algorithms and mathematical structures used across the engine.
+Built as a shared library that the executable and every module load, so all of them see a single copy of the world. It holds the shared world state, the instance types, orders and navigation, platform services such as the window and image loading, and the module ABI (`module_interface.h`) that modules export their entry points through.
 
 Implementation components:
 
 * include/common/
+
+### 3. The Static Library Core (Low-Level Systems Engine)
+
+Compiled directly into the executable and into each module, this layer provides stateless algorithms and mathematical structures used across the engine.
+
+Implementation components:
+
 * include/library/Collision/
 * include/library/DataStructures/
 * include/library/GameStructures/
@@ -136,7 +144,7 @@ Implementation components:
 * include/library/Physics/
 * include/library/Traversal/
 
-### 3. The Dynamic Library Layer (Custom Modules and Modding)
+### 4. The Dynamic Library Layer (Custom Modules and Modding)
 
 This layer encapsulates gameplay logic inside isolated dynamic libraries. This decoupling allows developers and community modders to write entirely new unit behaviors, faction mechanics, or game triggers as self-contained mods.
 
@@ -158,11 +166,12 @@ Isolated dynamic modules available in version 0.3:
 * modules/UI/
 * modules/Vehicles/
 
-### 4. Verification Frameworks
+### 5. Verification Frameworks
 
 * tests/test_common/
 * tests/test_library/
 * tests/test_net/
+* tests/test_rules/
 * tests/test_shell/
 
 ## Core Dependency Frameworks
