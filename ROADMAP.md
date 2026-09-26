@@ -78,6 +78,27 @@ Planned functionality:
 * Turrets become processes once their behaviour depends on power.
 * The server accepts a hack against a side only from that side's own connection, and only while an authorised session into its computer is open. A tampered client could still ignore hacks against itself; closing that means having 0.5's headless host decide them instead.
 
+### Radar Cracking
+
+Chambers et al., *Mitigating Information Exposure to Cheaters in Real-Time Strategy Games* (NOSSDAV 2005), hash the positions of units hidden in the fog of war so that an opponent cannot learn them. Version 0.6 turns that mechanism into an objective: every player's computer publishes its positions hashed, and breaking the hash is something the other side sets out to do.
+
+This is a game mechanic, not anti-cheat. Every lockstep client simulates every unit, so the positions are already in memory on every machine; the lock is drawn for somebody playing through the console to pick, and holds against nobody editing their own client. Hiding positions from a client for real needs a server-authoritative world, which is listed under Future Scope.
+
+Planned functionality:
+
+* A radar on every player's computer. `/sys/radar` names the map and the cell size, carries a check hash of the computer's salt, and lists one salted hash for every cell its own units and buildings stand on. It is republished every few seconds, and the salt is drawn from a generator local to the console, never from the simulation's stream.
+* `hash(...)` and `reveal(salt, x, y)` in the shell language. `hash` is FNV-1a over its arguments joined by colons, the same function the radar uses, so a player can write the cracker themselves: find the salt from the check, then hash every cell and match.
+* `get <file>` copies a file from a computer you are connected to. A copy of the live radar is kept aside as it arrived, so `reveal` is checked against what the owner actually published rather than against a file the caller can edit.
+* A proved cell lifts the fog around it on the caller's own view for a few seconds. It is presentation, like the fog, and never reaches the simulation.
+* A hacker sees the board through fog it cannot see through: it borrows a side's perspective to draw with, but not its sight, so everything it sees it cracked.
+* `rekey` on the owner's console draws a new salt, and the salt rotates on its own on a timer. A side whose grid is cut can do neither, which is what joins the two hacks: cut a grid, and the radar behind it stays cracked.
+* A level's `radar` block sets the salt length, the cell size, how often the radar is republished and rotated, and how far and for how long a reveal shows. A coarse cell reveals an area rather than a unit's cell.
+
+Supported by the design, and left for red-versus-blue rounds to decide:
+
+* Handing what was cracked to a side. A cracked cell is shown only on the console that proved it; a `leak <side>` would send the proof on, and the check against the owner's published radar is what it would reuse.
+* Keeping reveals as simulation state, stamped and folded, so that something other than the view could act on them.
+
 ---
 
 ## Carried Forward
@@ -128,6 +149,12 @@ Naval combat and the carrier are implemented. Troop transport and the broader su
 
 ## Future Scope (Not Planned Yet)
 
+### Server-Authoritative Visibility
+
+Hide what a player cannot see from the player's own machine, rather than from the view drawn on it. Lockstep clients simulate every unit and so hold every position; a client that holds only what its side can see needs the host's world to be the authority and each client to be sent its share, which is a different networking model from 0.4's. Version 0.6's radar cracking would then guard real information, and the Chambers et al. scheme would be anti-cheat rather than an objective.
+
+---
+
 ### Concurrency Systems
 
 Investigate concurrency architectures to improve simulation scalability and performance on modern multi-core processors.
@@ -160,5 +187,6 @@ Version 0.6 aims to establish:
 * Access control on every player's computer.
 * Programs run on another player's computer, with their output returned.
 * Hacks that reach the match through the command path, starting with a side's power, and power that matters when it is gone.
+* A radar on every computer that can be cracked for the positions behind it, and rekeyed to make the crack stale.
 
 Together these extend TGXngine from a single-machine engine to a networked one while preserving its modular and data-driven design philosophy.

@@ -47,6 +47,14 @@ public:
 	{
 		spawned.push_back(command);
 	}
+
+	bool Reveal(const String &salt, int x, int y) override
+	{
+		revealed.push_back(salt + "@" + std::to_string(x) + "," + std::to_string(y));
+		return salt == "42";
+	}
+
+	Vector<String> revealed;
 };
 
 inline Vector<String> RunSource(RecordingHost &host, const String &source, const Vector<String> &args = {})
@@ -308,5 +316,43 @@ TEST(ShellInterpreter, ReportsUnresolvedIdentifier)
 
 	ASSERT_FALSE(output.empty());
 	EXPECT_NE(output[0].find("Cannot resolve"), String::npos);
+}
+TEST(ShellInterpreter, HashesAValue)
+{
+	RecordingHost host;
+	const Vector<String> output = RunSource(host, "print(hash(\"a\"))");
+
+	ASSERT_EQ(output.size(), 1u);
+	EXPECT_EQ(output[0], "e40c292c");
+}
+
+TEST(ShellInterpreter, HashesSeveralValuesJoinedByColons)
+{
+	RecordingHost host;
+	const Vector<String> output = RunSource(host, "print(hash(\"07\", 3, 4) == hash(\"07:3:4\"))");
+
+	ASSERT_EQ(output.size(), 1u);
+	EXPECT_EQ(output[0], "true");
+	EXPECT_EQ(Digest({"07", "3", "4"}), Digest({"07:3:4"}));
+}
+
+TEST(ShellInterpreter, RevealAsksTheHost)
+{
+	RecordingHost host;
+	const Vector<String> output = RunSource(host, "print(reveal(\"42\", 3, 4)) print(reveal(\"41\", 3, 4))");
+
+	ASSERT_EQ(output.size(), 2u);
+	EXPECT_EQ(output[0], "true");
+	EXPECT_EQ(output[1], "false");
+	ASSERT_EQ(host.revealed.size(), 2u);
+	EXPECT_EQ(host.revealed[0], "42@3,4");
+}
+
+TEST(ShellInterpreter, RevealWantsNumbersForItsCell)
+{
+	RecordingHost host;
+	RunSource(host, "reveal(\"42\", \"x\", 4)");
+
+	EXPECT_TRUE(host.revealed.empty());
 }
 } // namespace TGX::Shell

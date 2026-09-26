@@ -9,14 +9,14 @@
 #include "Interface.h"
 #include "Item.h"
 #include "Lookup.h"
-#include "Navigation.h"
-#include "Projectile.h"
-#include "Scene.h"
-#include "SkirmishSetup.h"
 #include "MultiplayerSetup.h"
+#include "Navigation.h"
 #include "Net/Digest.h"
 #include "Net/Session.h"
+#include "Projectile.h"
+#include "Scene.h"
 #include "ShellModule.h"
+#include "SkirmishSetup.h"
 #include "UIModule.h"
 #include "WayPoints/WayPoints.h"
 #include "io/Loader.h"
@@ -144,6 +144,7 @@ private:
 	// unit deploys itself, and a finished building waits to be placed.
 	void AdvanceProduction();
 	void HandlePanning();
+	void CentreCamera(float cellX, float cellY);
 	void DrawOutcome();
 
 	// What the connection is doing, when it is doing something other than

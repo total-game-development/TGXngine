@@ -110,6 +110,28 @@
 						"text": "Console",
 						"fontSize": 13,
 						"textFill": "#5A6472"
+					},
+					{
+						"type": "icon-button",
+						"x": "centre+300",
+						"y": "height-20",
+						"scale": 0.3,
+						"anchorX": 0.5,
+						"anchorY": 1.0,
+						"name": "notes-icon.png",
+						"action": {
+							"condition": "openWindow",
+							"value": "cyber"
+						}
+					},
+					{
+						"type": "text",
+						"x": "centre+300",
+						"y": "height-90",
+						"anchorX": 0.5,
+						"text": "Cyber Tutorial",
+						"fontSize": 13,
+						"textFill": "#FF6B6B"
 					}
 				]
 			},
@@ -334,6 +356,11 @@
 				"title": "",
 				"window": "hShell",
 				"body": ""
+			},
+			"cyber": {
+				"title": "Cyber Tutorial",
+				"body": "This map allows cyber commands.\n\nOpen the Console and type:\n\n    cd cyber-tutorial\n    run start\n\nFive short lessons follow, each a program: your computer's pin, connecting to another computer, processes and cutting power, cracking the radar, and picking a side with role cyber red or role cyber blue.\n\nQuick reference:\nwho, passwd <pin> - your pin\nhosts, connect <computer> <pin>, disconnect\nget <file>, run <program>\nps, kill <pid>, start <pid>\nhack power, restore, rekey\nrole cyber red | role cyber blue | role off\n\nIn an arena every viewer has a computer of their own, named viewer1, viewer2 and so on.",
+				"window": "vNotes"
 			}
 		},
 		"backdrop": {

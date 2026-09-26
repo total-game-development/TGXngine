@@ -160,6 +160,10 @@ ValueRef Interpreter::Interpret(const NodeRef &node, Environment *environment)
 			return InterpretExec(node, environment);
 		case NodeKind::SpawnStatement:
 			return InterpretSpawn(node, environment);
+		case NodeKind::HashStatement:
+			return InterpretHash(node, environment);
+		case NodeKind::RevealStatement:
+			return InterpretReveal(node, environment);
 		case NodeKind::IfStatement:
 			return InterpretIf(node, environment);
 		case NodeKind::WhileStatement:
@@ -368,6 +372,39 @@ ValueRef Interpreter::InterpretWrite(const NodeRef &node, Environment *environme
 	}
 
 	return MakeNull();
+}
+
+ValueRef Interpreter::InterpretHash(const NodeRef &node, Environment *environment)
+{
+	Vector<String> parts;
+
+	for (const NodeRef &arg : node->args)
+	{
+		parts.push_back(Stringify(Interpret(arg, environment)));
+	}
+
+	return MakeString(Digest(parts));
+}
+
+ValueRef Interpreter::InterpretReveal(const NodeRef &node, Environment *environment)
+{
+	if (node->args.size() != 3)
+	{
+		Fail("reveal expects a salt, an x and a y.");
+		return MakeBoolean(false);
+	}
+
+	const String salt = Stringify(Interpret(node->args[0], environment));
+	const ValueRef x = Interpret(node->args[1], environment);
+	const ValueRef y = Interpret(node->args[2], environment);
+
+	if (!x || !y || x->type != ValueType::Number || y->type != ValueType::Number)
+	{
+		Fail("reveal expects its x and y as numbers.");
+		return MakeBoolean(false);
+	}
+
+	return MakeBoolean(host != nullptr && host->Reveal(salt, static_cast<int>(x->number), static_cast<int>(y->number)));
 }
 
 ValueRef Interpreter::InterpretReturn(const NodeRef &node, Environment *environment)

@@ -1,8 +1,8 @@
 #include "SkirmishLaunch.h"
 
+#include <nlohmann/json.hpp>
 #include <filesystem>
 #include <fstream>
-#include <nlohmann/json.hpp>
 #include "Logs.h"
 #include "SkirmishSetup.h"
 

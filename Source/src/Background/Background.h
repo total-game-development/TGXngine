@@ -15,6 +15,7 @@ public:
 	~Background();
 	void AssignTileNames(const String &mapImages);
 	void LoadBackgroundTiles();
+	void SampleTerrain(const sf::Image &image, int tileIndex, int gridWidth, int gridHeight);
 	void SyncPosition();
 	void Draw();
 	int GetWidth() const;

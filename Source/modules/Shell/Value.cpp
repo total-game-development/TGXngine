@@ -1,5 +1,7 @@
 #include "Value.h"
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <sstream>
 
 namespace TGX::Shell
@@ -160,5 +162,30 @@ String Stringify(const ValueRef &value)
 	}
 
 	return "null";
+}
+
+String Digest(const Vector<String> &parts)
+{
+	std::uint32_t hash = 2166136261u;
+
+	for (std::size_t index = 0; index < parts.size(); ++index)
+	{
+		if (index > 0)
+		{
+			hash ^= static_cast<unsigned char>(':');
+			hash *= 16777619u;
+		}
+
+		for (const char character : parts[index])
+		{
+			hash ^= static_cast<unsigned char>(character);
+			hash *= 16777619u;
+		}
+	}
+
+	char text[9];
+	std::snprintf(text, sizeof(text), "%08x", hash);
+
+	return text;
 }
 } // namespace TGX::Shell

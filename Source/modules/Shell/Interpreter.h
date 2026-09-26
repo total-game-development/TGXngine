@@ -40,6 +40,8 @@ private:
 	ValueRef InterpretReturn(const NodeRef &node, Environment *environment);
 	ValueRef InterpretExec(const NodeRef &node, Environment *environment);
 	ValueRef InterpretSpawn(const NodeRef &node, Environment *environment);
+	ValueRef InterpretHash(const NodeRef &node, Environment *environment);
+	ValueRef InterpretReveal(const NodeRef &node, Environment *environment);
 	ValueRef InterpretIf(const NodeRef &node, Environment *environment);
 	ValueRef InterpretWhile(const NodeRef &node, Environment *environment);
 	ValueRef InterpretFor(const NodeRef &node, Environment *environment);

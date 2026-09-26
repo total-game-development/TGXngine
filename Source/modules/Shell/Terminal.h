@@ -1,9 +1,9 @@
 #pragma once
 
+#include <nlohmann/json.hpp>
 #include <chrono>
 #include <map>
 #include <mutex>
-#include <nlohmann/json.hpp>
 #include "Core.h"
 #include "Editor.h"
 #include "FileSystem.h"
@@ -27,11 +27,29 @@ using ToggleHandler = void (*)(const char *, const char *, bool);
 using NetworkSender = Function<void(const String &, const nlohmann::json &)>;
 using ProcessLister = Function<nlohmann::json()>;
 using ProcessSwitch = Function<bool(int, bool)>;
+using HackRequest = Function<bool(const String &, bool)>;
+using RadarLister = Function<nlohmann::json()>;
+using RadarReveal = Function<void(int, int, int)>;
+
+struct RadarSettings
+{
+	int saltDigits = 5;
+	int cell = 1;
+	std::chrono::milliseconds publish{5000};
+	std::chrono::milliseconds rotate{120000};
+};
 
 enum class TerminalMode : std::uint8_t
 {
 	Command,
 	Editing
+};
+
+enum class TerminalTint : std::uint8_t
+{
+	None,
+	Red,
+	Blue
 };
 
 class Terminal : public Host
@@ -54,6 +72,20 @@ private:
 		String directory;
 	};
 
+	struct Snapshot
+	{
+		String check;
+		int cell = 1;
+		Set<String> hashes;
+	};
+
+	struct Sighting
+	{
+		int x = 0;
+		int y = 0;
+		int cell = 1;
+	};
+
 	static constexpr std::size_t MAX_OUTPUT = 512;
 	static constexpr std::size_t MAX_HISTORY = 64;
 	static constexpr unsigned long long RUN_STEP_LIMIT = 5000000ULL;
@@ -66,12 +98,16 @@ private:
 	Map<String, Session> machines;
 	Session *current = nullptr;
 
+	Set<String> sessions;
+	Vector<String> *serving = nullptr;
+
 	Vector<String> output;
 	Vector<String> history;
 	std::size_t historyCursor = 0;
 
 	String input;
 	TerminalMode mode = TerminalMode::Command;
+	TerminalTint tint = TerminalTint::None;
 
 	Editor editor;
 	TaskPool pool;
@@ -80,6 +116,7 @@ private:
 
 	bool requestClose = false;
 	bool showFogOfWar = false;
+	bool cyber = true;
 	String savePath;
 	ToggleHandler toggleHandler = nullptr;
 
@@ -92,18 +129,33 @@ private:
 
 	ProcessLister processLister;
 	ProcessSwitch processSwitch;
+	HackRequest hackRequest;
 	nlohmann::json processes = nlohmann::json::object();
 	std::map<int, int> buildingPids;
 	int nextPid = 1;
 	Clock::time_point refreshed;
 
+	RadarLister radarLister;
+	RadarReveal radarReveal;
+	RadarSettings radar;
+	String salt;
+	Clock::time_point published;
+	Clock::time_point rotated;
+	Map<String, Snapshot> snapshots;
+	Vector<Sighting> sightings;
+
 	void Help();
 	void Run(const String &command);
+	void Execute(FileSystem &files, const Vector<String> &args);
 	void Edit(const String &command);
 	void Connect(const String &command);
 	void Disconnect();
 	void Hosts();
+	void Passwd(const Vector<String> &args);
+	void Who();
 	void Cheat(const String &command);
+	void Tint(const Vector<String> &args);
+	bool Refuses(const String &head);
 	void SaveEditor();
 	void Persist();
 
@@ -112,6 +164,7 @@ private:
 	bool Remote(const String &head, const Vector<String> &args);
 	void Send(const String &machine, const String &directory, const String &op, const Vector<String> &args, const String &source = String());
 	void Answer(const String &from, const nlohmann::json &body);
+	bool Admit(const String &from, const String &op, const String &pin, nlohmann::json &reply);
 	void Receive(const String &from, const nlohmann::json &body);
 	void Refused(const nlohmann::json &message);
 	void Abandon(const Request &request, const String &reason);
@@ -119,8 +172,17 @@ private:
 	void RefreshProcesses();
 	void ListProcesses();
 	void Signal(const Vector<String> &args, bool start);
+	void Hack(const Vector<String> &args);
+	void Restore();
+
+	void Get(const Vector<String> &args);
+	void Rekey();
+	void PublishRadar();
+	void Keep(const String &machine, const String &source);
 
 	static Vector<String> Split(const String &text, char delimiter);
+	static String Digits(int count);
+	static String Pin();
 
 public:
 	Terminal();
@@ -135,12 +197,21 @@ public:
 	void Toggle(const String &name, const String &value, bool active) override;
 	void SetToggleHandler(ToggleHandler handler);
 	void Spawn(const String &command) override;
+	bool Reveal(const String &key, int x, int y) override;
 
 	void SetNetwork(const String &name, const Vector<String> &peers, NetworkSender send);
+	void SetPeers(const Vector<String> &peers);
 	void ClearNetwork();
 	void Deliver(const nlohmann::json &message);
 
 	void SetProcessHandlers(ProcessLister lister, ProcessSwitch switcher);
+	void SetHackHandler(HackRequest handler);
+	void SetRadarHandlers(RadarLister lister, RadarReveal reveal);
+	void SetRadar(const RadarSettings &settings);
+
+	void SetCyber(bool allowed);
+	bool IsCyber() const;
+	void Tutorial(const String &directory, const nlohmann::json &files);
 
 	void Update();
 
@@ -162,6 +233,7 @@ public:
 	String GetPrompt() const;
 	String GetInput() const;
 	TerminalMode GetMode() const;
+	TerminalTint GetTint() const;
 	Editor &GetEditor();
 
 	bool ShouldClose();

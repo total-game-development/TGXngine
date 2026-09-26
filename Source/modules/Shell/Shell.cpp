@@ -1,3 +1,4 @@
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <algorithm>
 #include <mutex>
 #include "Logs.h"
@@ -44,28 +45,109 @@ std::size_t VisibleRows()
 	return static_cast<std::size_t>(rows);
 }
 
-sf::Color StyleColour(TokenStyle style)
+struct Palette
+{
+	sf::Color backdrop;
+	sf::Color output;
+	sf::Color input;
+	sf::Color title;
+	sf::Color gutter;
+	sf::Color keyword;
+	sf::Color text;
+	sf::Color comment;
+	sf::Color number;
+	sf::Color boolean;
+};
+
+const Palette &CurrentPalette()
+{
+	static const Palette plain{
+		sf::Color::Transparent,
+		sf::Color(190, 230, 190),
+		sf::Color::White,
+		sf::Color(230, 230, 150),
+		sf::Color(110, 110, 110),
+		sf::Color(0x00, 0xA7, 0xFF),
+		sf::Color(0x00, 0xF0, 0x3E),
+		sf::Color(0xFF, 0xD4, 0x00),
+		sf::Color(0xD5, 0x7C, 0xFF),
+		sf::Color(0xFF, 0x70, 0xE9)};
+
+	static const Palette red{
+		sf::Color(70, 0, 0, 190),
+		sf::Color(255, 170, 160),
+		sf::Color(255, 228, 222),
+		sf::Color(255, 120, 100),
+		sf::Color(150, 75, 75),
+		sf::Color(255, 80, 80),
+		sf::Color(255, 165, 135),
+		sf::Color(255, 125, 60),
+		sf::Color(255, 135, 175),
+		sf::Color(230, 70, 120)};
+
+	static const Palette blue{
+		sf::Color(0, 20, 70, 190),
+		sf::Color(165, 200, 255),
+		sf::Color(222, 236, 255),
+		sf::Color(120, 180, 255),
+		sf::Color(75, 95, 150),
+		sf::Color(80, 170, 255),
+		sf::Color(140, 225, 255),
+		sf::Color(125, 135, 255),
+		sf::Color(185, 195, 255),
+		sf::Color(60, 210, 230)};
+
+	switch (terminal->GetTint())
+	{
+		case TerminalTint::Red:
+			return red;
+		case TerminalTint::Blue:
+			return blue;
+		case TerminalTint::None:
+			return plain;
+	}
+
+	return plain;
+}
+
+sf::Color StyleColour(const Palette &palette, TokenStyle style)
 {
 	switch (style)
 	{
 		case TokenStyle::Keyword:
-			return sf::Color(0x00, 0xA7, 0xFF);
+			return palette.keyword;
 		case TokenStyle::Text:
-			return sf::Color(0x00, 0xF0, 0x3E);
+			return palette.text;
 		case TokenStyle::Comment:
-			return sf::Color(0xFF, 0xD4, 0x00);
+			return palette.comment;
 		case TokenStyle::Number:
-			return sf::Color(0xD5, 0x7C, 0xFF);
+			return palette.number;
 		case TokenStyle::Boolean:
-			return sf::Color(0xFF, 0x70, 0xE9);
+			return palette.boolean;
 		case TokenStyle::Default:
-			return sf::Color::White;
+			return palette.input;
 	}
 
-	return sf::Color::White;
+	return palette.input;
 }
 
-void DrawTerminal()
+void DrawBackdrop(const Palette &palette)
+{
+	if (palette.backdrop.a == 0)
+	{
+		return;
+	}
+
+	const sf::FloatRect area = Bounds();
+
+	sf::RectangleShape backdrop(sf::Vector2f(area.width, area.height));
+	backdrop.setPosition(area.left, area.top);
+	backdrop.setFillColor(palette.backdrop);
+
+	Window::GetInstance().Draw(backdrop);
+}
+
+void DrawTerminal(const Palette &palette)
 {
 	Window &window = Window::GetInstance();
 
@@ -83,7 +165,7 @@ void DrawTerminal()
 
 	for (std::size_t index = start; index < lines.size(); ++index)
 	{
-		window.DrawText(lines[index], sf::Vector2f(x, y), FONT_SIZE, sf::Color(190, 230, 190));
+		window.DrawText(lines[index], sf::Vector2f(x, y), FONT_SIZE, palette.output);
 		y += LINE_HEIGHT;
 	}
 
@@ -91,10 +173,10 @@ void DrawTerminal()
 		terminal->GetPrompt() + terminal->GetInput() + "_",
 		sf::Vector2f(x, y),
 		FONT_SIZE,
-		sf::Color::White);
+		palette.input);
 }
 
-void DrawEditor()
+void DrawEditor(const Palette &palette)
 {
 	Window &window = Window::GetInstance();
 	Editor &editor = terminal->GetEditor();
@@ -109,7 +191,7 @@ void DrawEditor()
 		"edit " + editor.Name() + (editor.IsDirty() ? " *" : "") + "   [ESC saves and closes]",
 		sf::Vector2f(area.left + MARGIN_X, area.top + MARGIN_Y),
 		FONT_SIZE,
-		sf::Color(230, 230, 150));
+		palette.title);
 
 	const Vector<String> &lines = editor.Lines();
 
@@ -124,7 +206,7 @@ void DrawEditor()
 	{
 		const String gutter = std::to_string(index + 1) + "  ";
 
-		window.DrawText(gutter, sf::Vector2f(area.left + MARGIN_X, y), FONT_SIZE, sf::Color(110, 110, 110));
+		window.DrawText(gutter, sf::Vector2f(area.left + MARGIN_X, y), FONT_SIZE, palette.gutter);
 
 		float x = area.left + MARGIN_X + window.MeasureText(gutter, FONT_SIZE);
 
@@ -132,7 +214,7 @@ void DrawEditor()
 		{
 			for (const Span &span : spans[index])
 			{
-				window.DrawText(span.text, sf::Vector2f(x, y), FONT_SIZE, StyleColour(span.style));
+				window.DrawText(span.text, sf::Vector2f(x, y), FONT_SIZE, StyleColour(palette, span.style));
 				x += window.MeasureText(span.text, FONT_SIZE);
 			}
 		}
@@ -143,7 +225,7 @@ void DrawEditor()
 			const std::size_t column = std::min(editor.Column(), line.size());
 			const float caret = area.left + MARGIN_X + window.MeasureText(gutter + line.substr(0, column), FONT_SIZE);
 
-			window.DrawText("|", sf::Vector2f(caret - 1.0f, y), FONT_SIZE, sf::Color::White);
+			window.DrawText("|", sf::Vector2f(caret - 1.0f, y), FONT_SIZE, palette.input);
 		}
 
 		y += LINE_HEIGHT;
@@ -166,6 +248,7 @@ extern "C"
 		}
 
 		terminal->Load(savePath);
+		terminal->SetCyber(true);
 		terminal->Start();
 
 		Log::Success("Shell created: " + name);
@@ -194,13 +277,17 @@ extern "C"
 			return;
 		}
 
+		const Palette &palette = CurrentPalette();
+
+		DrawBackdrop(palette);
+
 		if (terminal->GetMode() == TerminalMode::Editing)
 		{
-			DrawEditor();
+			DrawEditor(palette);
 			return;
 		}
 
-		DrawTerminal();
+		DrawTerminal(palette);
 	}
 
 	MODULE_API void Click()
@@ -320,9 +407,45 @@ extern "C"
 
 		const String self = data.is_object() ? data.value("self", String()) : String();
 
+		RadarSettings radar;
+
+		if (data.is_object() && data.contains("radar") && data["radar"].is_object())
+		{
+			const nlohmann::json &settings = data["radar"];
+
+			radar.saltDigits = settings.value("saltDigits", radar.saltDigits);
+			radar.cell = settings.value("cell", radar.cell);
+			radar.publish = std::chrono::milliseconds(static_cast<long long>(settings.value("publishSeconds", 5.0) * 1000.0));
+			radar.rotate = std::chrono::milliseconds(static_cast<long long>(settings.value("rotateSeconds", 120.0) * 1000.0));
+		}
+
+		terminal->SetRadar(radar);
+
 		terminal->SetNetwork(self, peers, [send](const String &to, const nlohmann::json &body) {
 			send(to.c_str(), body.dump().c_str());
 		});
+	}
+
+	MODULE_API void SetCyber(bool allowed, const char *tutorial)
+	{
+		if (!terminal)
+		{
+			return;
+		}
+
+		terminal->SetCyber(allowed);
+
+		if (!allowed || tutorial == nullptr)
+		{
+			return;
+		}
+
+		const nlohmann::json data = nlohmann::json::parse(tutorial, nullptr, false);
+
+		if (data.is_object())
+		{
+			terminal->Tutorial(data.value("directory", String()), data.value("files", nlohmann::json::object()));
+		}
 	}
 
 	MODULE_API void Deliver(const char *message)
@@ -335,22 +458,40 @@ extern "C"
 		terminal->Deliver(nlohmann::json::parse(message, nullptr, false));
 	}
 
-	MODULE_API void SetProcessHandler(const char *(*list)(), bool (*toggle)(int, bool))
+	MODULE_API void SetMatchHandlers(
+		const char *(*list)(),
+		bool (*toggle)(int, bool),
+		bool (*hack)(const char *, bool),
+		const char *(*radar)(),
+		void (*reveal)(int, int, int))
 	{
 		if (!terminal)
 		{
 			return;
 		}
 
+		terminal->SetRadarHandlers(
+			radar == nullptr ? RadarLister() : RadarLister([radar]() { return nlohmann::json::parse(radar(), nullptr, false); }),
+			reveal == nullptr ? RadarReveal() : RadarReveal([reveal](int x, int y, int cell) { reveal(x, y, cell); }));
+
 		if (list == nullptr || toggle == nullptr)
 		{
 			terminal->SetProcessHandlers(nullptr, nullptr);
+		}
+		else
+		{
+			terminal->SetProcessHandlers(
+				[list]() { return nlohmann::json::parse(list(), nullptr, false); },
+				[toggle](int uid, bool running) { return toggle(uid, running); });
+		}
+
+		if (hack == nullptr)
+		{
+			terminal->SetHackHandler(nullptr);
 			return;
 		}
 
-		terminal->SetProcessHandlers(
-			[list]() { return nlohmann::json::parse(list(), nullptr, false); },
-			[toggle](int uid, bool running) { return toggle(uid, running); });
+		terminal->SetHackHandler([hack](const String &effect, bool cut) { return hack(effect.c_str(), cut); });
 	}
 
 	MODULE_API void Clear()
@@ -360,6 +501,7 @@ extern "C"
 			terminal->CommitEditor();
 			terminal->ClearNetwork();
 			terminal->SetProcessHandlers(nullptr, nullptr);
+			terminal->SetRadarHandlers(nullptr, nullptr);
 			terminal->Save(savePath);
 			terminal->Stop();
 		}
@@ -372,6 +514,7 @@ extern "C"
 			terminal->CommitEditor();
 			terminal->ClearNetwork();
 			terminal->SetProcessHandlers(nullptr, nullptr);
+			terminal->SetRadarHandlers(nullptr, nullptr);
 			terminal->Save(savePath);
 			terminal->Stop();
 			terminal.reset();

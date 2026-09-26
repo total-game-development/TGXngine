@@ -340,6 +340,68 @@
 					"name": "skirmish-water-obstruction.json"
 				}
 			]
+		},
+		{
+			"required_libraries": [
+				{
+					"type": "buildings",
+					"name": "modules/Buildings"
+				},
+				{
+					"type": "infantry",
+					"name": "modules/Infantry"
+				},
+				{
+					"type": "vehicles",
+					"name": "modules/Vehicles"
+				},
+				{
+					"type": "projectiles",
+					"name": "modules/Projectiles"
+				},
+				{
+					"type": "interface",
+					"name": "modules/Interface"
+				},
+				{
+					"type": "ui",
+					"name": "modules/UI"
+				},
+				{
+					"type": "shell",
+					"name": "modules/Shell"
+				},
+				{
+					"type": "triggers",
+					"name": "modules/Triggers"
+				},
+				{
+					"type": "economy",
+					"name": "modules/Economy"
+				},
+				{
+					"type": "ai",
+					"name": "modules/AI"
+				},
+				{
+					"type": "resources",
+					"name": "modules/Resources"
+				},
+				{
+					"type": "fogofwar",
+					"name": "modules/FogOfWar"
+				},
+				{
+					"type": "turrets",
+					"name": "modules/Turrets"
+				}
+			],
+			"required_jsons": [
+				{
+					"type": "obstruction",
+					"name": "skirmish-plains-obstruction.json"
+				}
+			]
 		}
 	]
 }

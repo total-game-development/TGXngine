@@ -3,6 +3,9 @@
 #include <SFML/Window/Mouse.hpp>
 #include <Debug.h>
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -15,7 +18,6 @@
 #include "ItemOrder.h"
 #include "Mouse.h"
 #include "Navigation.h"
-#include <cstring>
 #include "Physics.h"
 #include "Renderer.h"
 #include "Window.h"
@@ -45,11 +47,16 @@ String shellProcesses;
 // game scene, which decides whether each is applied now or stamped first.
 Vector<Pair<int, bool>> shellSwitches;
 
+// What a console has asked the match for, drained once a frame and sent as a
+// command. A hack against this side, or this side putting its own grid back.
+Vector<bool> shellHacks;
+
 const ItemInstance *FindProcess(WorldState &world, int uid)
 {
 	for (const auto &entry : world.items)
 	{
-		if (entry && entry->GetUid() == uid && entry->GetLife() > 0.0f && entry->GetType() == "buildings" && entry->GetTeam() == world.GetTeam())
+		if (entry && entry->GetUid() == uid && entry->GetLife() > 0.0f && (entry->GetType() == "buildings" || entry->GetType() == "turrets") &&
+			entry->GetTeam() == world.GetTeam())
 		{
 			return entry.get();
 		}
@@ -69,7 +76,7 @@ const char *ListShellProcesses()
 
 	for (const auto &entry : world.items)
 	{
-		if (entry && entry->GetLife() > 0.0f && entry->GetType() == "buildings" && entry->GetTeam() == team)
+		if (entry && entry->GetLife() > 0.0f && (entry->GetType() == "buildings" || entry->GetType() == "turrets") && entry->GetTeam() == team)
 		{
 			buildings.push_back(entry.get());
 		}
@@ -82,15 +89,15 @@ const char *ListShellProcesses()
 	json listing = {
 		{"usage", world.GetPowerUsage(team)},
 		{"total", world.GetPowerTotal(team)},
+		{"cut", world.IsPowerCut(team)},
 		{"processes", json::array()}};
 
 	for (const ItemInstance *building : buildings)
 	{
-		listing["processes"].push_back({
-			{"uid", building->GetUid()},
-			{"name", building->GetName()},
-			{"running", building->IsRunning()},
-			{"power", building->GetPowerUsage()}});
+		listing["processes"].push_back({{"uid", building->GetUid()},
+										{"name", building->GetName()},
+										{"running", building->IsRunning()},
+										{"power", building->GetPowerUsage()}});
 	}
 
 	shellProcesses = listing.dump();
@@ -110,6 +117,73 @@ bool SwitchShellProcess(int uid, bool running)
 	shellSwitches.emplace_back(uid, running);
 
 	return true;
+}
+
+// A console asking the match to cut or restore this side's grid. It is never
+// applied here: it goes out as a command, is stamped like an order, and lands
+// on every client on the same tick. A side can only ask about its own grid,
+// which is the whole of why a hack cannot be used to reach across the board:
+// the program that wanted it ran on this computer, not on the hacker's.
+bool RequestShellHack(const char *effect, bool cut)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	if (effect == nullptr || String(effect) != "power" || world.GetTeam().empty())
+	{
+		return false;
+	}
+
+	if (world.IsPowerCut(world.GetTeam()) == cut)
+	{
+		return false;
+	}
+
+	shellHacks.push_back(cut);
+
+	return true;
+}
+
+// Where this side's own things stand, for the radar its console publishes
+// hashed. Every client knows every position already -- this is a lock drawn
+// for a hacker to pick, not a secret kept from anybody.
+String shellRadar;
+
+const char *ListShellRadar()
+{
+	WorldState &world = WorldState::GetInstance();
+	const String team = world.GetTeam();
+
+	json listing = {
+		{"width", world.GetMapGridWidth()},
+		{"height", world.GetMapGridHeight()},
+		{"cut", world.IsPowerCut(team)},
+		{"cells", json::array()}};
+
+	for (const auto &entry : world.items)
+	{
+		if (entry && entry->GetLife() > 0.0f && entry->GetTeam() == team)
+		{
+			listing["cells"].push_back({static_cast<int>(std::floor(entry->GetCenterX())), static_cast<int>(std::floor(entry->GetCenterY()))});
+		}
+	}
+
+	shellRadar = listing.dump();
+
+	return shellRadar.c_str();
+}
+
+// How far round a cracked cell the fog lifts, and for how long. Set per match
+// by the level's "radar" block, beside what the console is told about salts.
+int radarRadius = 3;
+int radarMilliseconds = 5000;
+
+// A cell a program on this console has proved it cracked. The console checked
+// the hash; all that is left is to show the ground it names.
+void RevealShellRadar(int x, int y, int cell)
+{
+	const int half = cell / 2;
+
+	WorldState::GetInstance().Reveal(x * cell + half, y * cell + half, radarRadius + half, std::chrono::milliseconds(radarMilliseconds));
 }
 
 void SendShellMessage(const char *to, const char *body)
@@ -322,6 +396,15 @@ void Game::Init()
 		world.SetTeam(level["teams"][0].value("name", String{}));
 	}
 
+	// A hacker borrows that perspective to draw with, but not its sight: it
+	// sees the board only where a radar it cracked says something stands.
+	world.SetBlindView(MultiplayerSetup::active && MultiplayerSetup::hacker);
+
+	if (world.IsBlindView())
+	{
+		world.SetFogOfWarEnabled(true);
+	}
+
 	world.SetBackgroundOffsetX(level["backgroundOffsetX"]);
 	world.SetBackgroundOffsetY(level["backgroundOffsetY"]);
 	world.SetBackgroundOffsetWidth(level["backgroundOffsetWidth"]);
@@ -389,18 +472,56 @@ void Game::Init()
 		const bool watching = (MultiplayerSetup::active && MultiplayerSetup::observer) ||
 							  (SkirmishSetup::active && SkirmishSetup::spectator);
 
+		// A radar is only worth publishing where somebody else could crack it,
+		// and only a console with a view of its own can be shown what it cracked.
+		const bool radar = MultiplayerSetup::active && (!MultiplayerSetup::observer || MultiplayerSetup::hacker);
+
 		if (!watching)
 		{
-			shellModule->SetProcessHandler(&ListShellProcesses, &SwitchShellProcess);
+			shellModule->SetMatchHandlers(
+				&ListShellProcesses,
+				&SwitchShellProcess,
+				&RequestShellHack,
+				radar ? &ListShellRadar : nullptr,
+				radar ? &RevealShellRadar : nullptr);
+		}
+		else if (radar)
+		{
+			shellModule->SetMatchHandlers(nullptr, nullptr, nullptr, nullptr, &RevealShellRadar);
 		}
 
+		// Connecting, hacking and the rest are a map's to allow. One that does
+		// may leave a tutorial in the player's home directory as well.
+		const bool cyber = level.value("cyber", false);
+
+		shellModule->SetCyber(cyber, cyber && level.contains("tutorial") ? level["tutorial"].dump() : String{});
+
+		const json radarSettings = level.contains("radar") && level["radar"].is_object() ? level["radar"] : json::object();
+
+		radarRadius = std::max(0, radarSettings.value("revealRadius", 3));
+		radarMilliseconds = static_cast<int>(std::max(0.0, radarSettings.value("revealSeconds", 5.0)) * 1000.0);
+
 		// Every other player's console is a computer this one can reach. An
-		// observer has no computer of its own and reaches none.
+		// observer has no computer of its own and reaches none; a hacker is
+		// the exception, with a console the room named and nothing to play.
+		// So is an arena's viewer on a cyber map, whose console reaches the
+		// other viewers' and nothing on the board.
 		if (MultiplayerSetup::active)
 		{
+			const bool reaches = !MultiplayerSetup::observer || MultiplayerSetup::hacker;
+			const bool viewing = MultiplayerSetup::observer && !MultiplayerSetup::hacker && !MultiplayerSetup::console.empty();
+
 			json machines = json::array();
 
-			if (!MultiplayerSetup::observer && level.contains("teams"))
+			if (viewing)
+			{
+				for (const String &viewer : MultiplayerSetup::consoles)
+				{
+					machines.push_back(viewer);
+				}
+			}
+
+			if (reaches && level.contains("teams"))
 			{
 				for (const auto &teamEntry : level["teams"])
 				{
@@ -411,9 +532,10 @@ void Game::Init()
 				}
 			}
 
-			const String self = MultiplayerSetup::observer ? String{} : MultiplayerSetup::team;
+			const String self = (MultiplayerSetup::hacker || viewing) ? MultiplayerSetup::console
+																	  : (MultiplayerSetup::observer ? String{} : MultiplayerSetup::team);
 
-			shellModule->SetNetwork(&SendShellMessage, json{{"self", self}, {"machines", machines}}.dump());
+			shellModule->SetNetwork(&SendShellMessage, json{{"self", self}, {"machines", machines}, {"radar", radarSettings}}.dump());
 		}
 	}
 	gameTriggers = std::move(loader->GetGameTriggers());
@@ -483,6 +605,14 @@ void Game::Update()
 
 	// Panning and the camera are how the match is watched, not part of it, so
 	// they run every frame whether or not the clock has let a tick through.
+	float cameraX = 0;
+	float cameraY = 0;
+
+	if (WorldState::GetInstance().TakeCameraRequest(cameraX, cameraY))
+	{
+		CentreCamera(cameraX, cameraY);
+	}
+
 	HandlePanning();
 	background->SyncPosition();
 
@@ -652,7 +782,7 @@ void Game::Draw()
 	for (const auto &gameItem : gameItems)
 	{
 		ItemInstance *instance = gameItem->GetItemInstance();
-		if (instance && instance->GetTeam() != WorldState::GetInstance().GetTeam() && !instance->isVisible())
+		if (instance && (instance->GetTeam() != WorldState::GetInstance().GetTeam() || WorldState::GetInstance().IsBlindView()) && !instance->isVisible())
 		{
 			continue;
 		}
@@ -751,6 +881,12 @@ void Game::Click()
 		gameInterface->Click();
 	}
 
+	if (world.IsPointerCaptured())
+	{
+		world.SetLeftClicked(false);
+		return;
+	}
+
 	if (!world.SkipSelectionRemoval())
 	{
 		for (const auto &gameItem : gameItems)
@@ -778,16 +914,20 @@ void Game::RightClick()
 	Mouse &mouse = Mouse::GetInstance();
 	Orders *ordered = mouse.CurrentOrder();
 
+	float minimapX = 0;
+	float minimapY = 0;
+	const bool onMinimap = world.GetMinimapPoint(minimapX, minimapY);
+
 	json orders;
 	orders["kind"] = "order";
 	orders["order"] = static_cast<int>(ordered->order);
 	orders["toX"] = ordered->toX;
 	orders["toY"] = ordered->toY;
-	orders["targetUid"] = world.GetItemUidThatIsUnderCursor();
-	orders["item"] = world.IsItemUnderCursor();
-	orders["enemy"] = world.IsEnemyItemUnderCursor();
-	orders["resource"] = world.IsResourceUnderCursor();
-	orders["loadable"] = world.IsLoadableItemUnderCursor();
+	orders["targetUid"] = onMinimap ? 0 : world.GetItemUidThatIsUnderCursor();
+	orders["item"] = !onMinimap && world.IsItemUnderCursor();
+	orders["enemy"] = !onMinimap && world.IsEnemyItemUnderCursor();
+	orders["resource"] = !onMinimap && world.IsResourceUnderCursor();
+	orders["loadable"] = !onMinimap && world.IsLoadableItemUnderCursor();
 
 	if (MultiplayerSetup::active)
 	{
@@ -816,6 +956,21 @@ void Game::AdvanceProduction()
 		{
 			++order;
 			continue;
+		}
+
+		// A side whose grid is short, or whose grid a hack has cut, still
+		// builds. It builds at half the rate, which is felt rather than
+		// watched: the order does not stop, it falls behind the one across
+		// the map that has its power.
+		if (!world.HasPower(order->team))
+		{
+			order->stall++;
+
+			if ((order->stall % 2) != 0)
+			{
+				++order;
+				continue;
+			}
 		}
 
 		order->progress++;
@@ -886,6 +1041,7 @@ void Game::PumpShell()
 	if (!shellModule)
 	{
 		shellSwitches.clear();
+		shellHacks.clear();
 		return;
 	}
 
@@ -898,6 +1054,23 @@ void Game::PumpShell()
 	}
 
 	shellModule->Update();
+
+	Vector<bool> hacks;
+	hacks.swap(shellHacks);
+
+	for (const bool cut : hacks)
+	{
+		const json orders = {{"kind", cut ? "hack" : "restore"}, {"effect", "power"}, {"team", WorldState::GetInstance().GetTeam()}};
+
+		if (MultiplayerSetup::active)
+		{
+			Net::Session::GetInstance().SendCommand({}, orders);
+		}
+		else
+		{
+			ApplyCommand({}, orders);
+		}
+	}
 
 	Vector<Pair<int, bool>> switches;
 	switches.swap(shellSwitches);
@@ -1010,13 +1183,20 @@ std::uint64_t Game::WorldDigest() const
 		fold.MixText(order.team);
 		fold.MixText(order.key);
 		fold.Mix(static_cast<std::uint64_t>(order.progress));
+		fold.Mix(static_cast<std::uint64_t>(order.stall));
 		fold.Mix(order.ready ? 1u : 0u);
+	}
+
+	// Whose grid is cut. A hack is simulation state like anything else: every
+	// client applies it on the same tick and folds the same answer, so a
+	// client that ignored one is a client that has left the match.
+	for (const String &team : world.powerCuts)
+	{
+		fold.MixText(team);
 	}
 
 	return fold.Value();
 }
-
-
 
 void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 {
@@ -1073,10 +1253,32 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 		return;
 	}
 
+	const String kind = orders.value("kind", String{"order"});
+
+	// A hack that reached the match. It carries the side it is against and
+	// what it does, and it is applied here like any other command: on the tick
+	// the server stamped it for, by every client, into state the digest folds.
+	// Nothing about it is applied where the program that asked for it ran.
+	if (kind == "hack" || kind == "restore")
+	{
+		const String team = orders.value("team", String{});
+		const String effect = orders.value("effect", String{"power"});
+
+		if (team.empty() || effect != "power")
+		{
+			return;
+		}
+
+		WorldState::GetInstance().SetPowerCut(team, kind == "hack");
+
+		Log::Info(String(kind == "hack" ? "Power cut on " : "Power restored on ") + team + " at tick " + std::to_string(digestTick));
+
+		return;
+	}
+
 	// A building its owner stopped or started from the console. Its power
 	// leaves or rejoins the grid here, on the stamped tick, so every client's
 	// grid changes at once.
-	const String kind = orders.value("kind", String{"order"});
 
 	if (kind == "kill" || kind == "start")
 	{
@@ -1086,7 +1288,8 @@ void Game::ApplyCommand(const Vector<int> &uids, const json &orders)
 
 		for (const auto &entry : world.items)
 		{
-			if (!entry || entry->GetLife() <= 0.0f || entry->IsRunning() == start || entry->GetType() != "buildings" ||
+			if (!entry || entry->GetLife() <= 0.0f || entry->IsRunning() == start ||
+				(entry->GetType() != "buildings" && entry->GetType() != "turrets") ||
 				std::ranges::find(uids, entry->GetUid()) == uids.end())
 			{
 				continue;
@@ -1541,8 +1744,8 @@ void Game::DrawEconomy()
 			if (!snapshot.building.empty())
 			{
 				const int percent = snapshot.buildTime > 0
-									  ? ((snapshot.buildProgress * 100) / snapshot.buildTime)
-									  : 0;
+										? ((snapshot.buildProgress * 100) / snapshot.buildTime)
+										: 0;
 
 				work = "  building " + snapshot.building + " " + std::to_string(percent) + "%";
 				workColour = sf::Color(220, 200, 120);
@@ -1650,6 +1853,14 @@ void Game::HandlePanning()
 		return;
 	}
 
+	float minimapX = 0;
+	float minimapY = 0;
+
+	if (world.IsPointerCaptured() || world.GetMinimapPoint(minimapX, minimapY))
+	{
+		return;
+	}
+
 	if (mouse.x <= PANNING_THRESHOLD && Globals::mapOffsetX > 0 && camX == 0.f)
 	{
 		float move = std::min(frameDistance, Globals::mapOffsetX);
@@ -1719,6 +1930,31 @@ void Game::HandlePanning()
 			world.UpdateMapYOffset(-move);
 		}
 	}
+}
+
+void Game::CentreCamera(float cellX, float cellY)
+{
+	WorldState &world = WorldState::GetInstance();
+
+	const float viewWidth = static_cast<float>(Globals::canvasWidth) - world.GetBackgroundOffsetWidth() + static_cast<float>(world.GetCanvasOffsetWidth());
+	const float viewHeight = static_cast<float>(Globals::canvasHeight) - world.GetBackgroundOffsetY() + static_cast<float>(world.GetCanvasOffsetHeight());
+
+	const float maxScrollX = std::max(0.0f, static_cast<float>(background->GetWidth()) - viewWidth);
+	const float maxScrollY = std::max(0.0f, static_cast<float>(background->GetHeight()) - viewHeight);
+
+	const float targetX = std::clamp((cellX * Globals::grid_size) - (viewWidth / 2.0f), 0.0f, maxScrollX);
+	const float targetY = std::clamp((cellY * Globals::grid_size) - (viewHeight / 2.0f), 0.0f, maxScrollY);
+
+	const float moveX = targetX - Globals::mapOffsetX;
+	const float moveY = targetY - Globals::mapOffsetY;
+
+	Globals::mapOffsetX = targetX;
+	Globals::mapOffsetY = targetY;
+
+	world.SetPanX(targetX);
+	world.SetPanY(targetY);
+	world.UpdateMapXOffset(-moveX);
+	world.UpdateMapYOffset(-moveY);
 }
 
 void Game::HandleSingleSelection()

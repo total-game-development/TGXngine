@@ -29,6 +29,8 @@ enum class NodeKind : std::uint8_t
 	WriteStatement,
 	ExecStatement,
 	SpawnStatement,
+	HashStatement,
+	RevealStatement,
 	ReturnStatement,
 	IfStatement,
 	WhileStatement,

@@ -508,6 +508,11 @@ extern "C"
 			((itemInstance->GetX() * Globals::grid_size) + static_cast<float>(world.GetMapXOffset())),
 			((itemInstance->GetY() * Globals::grid_size) + static_cast<float>(world.GetMapYOffset())));
 
+		if (!itemInstance->IsRunning() || !world.HasPower(itemInstance->GetTeam()))
+		{
+			return;
+		}
+
 		auto it = turrets.find(itemInstance->GetUid());
 
 		if (it != turrets.end())

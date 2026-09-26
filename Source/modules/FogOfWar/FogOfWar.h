@@ -95,6 +95,9 @@ public:
 
 		fogGrid.assign(static_cast<size_t>(mapWidth) * mapHeight, Shroud);
 
+		WorldState::GetInstance().sightGrid.assign(fogGrid.size(), Shroud);
+		WorldState::GetInstance().sightRevision++;
+
 		// load fog edge tiles
 		const std::array<const char *, EdgeCount> edgeNames = {"top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"};
 		tilesLoaded = true;
@@ -134,7 +137,7 @@ public:
 		// update visible state of enemy items
 		for (auto &item : world.items)
 		{
-			if (item->GetTeam() == world.GetTeam())
+			if (item->GetTeam() == world.GetTeam() && !world.IsBlindView())
 			{
 				item->setVisible(true);
 			}
@@ -454,7 +457,7 @@ private:
 		for (size_t i = 0; i < world.items.size(); i++)
 		{
 			const ItemInstance *item = world.items[i].get();
-			if (!item || item->GetTeam() != world.GetTeam() || item->GetHidden()) { continue; }
+			if (!item || item->GetTeam() != world.GetTeam() || item->GetHidden() || world.IsBlindView()) { continue; }
 
 			const int cx = static_cast<int>(std::round(item->GetCenterX()));
 			const int cy = static_cast<int>(std::round(item->GetCenterY()));
@@ -463,7 +466,16 @@ private:
 			MarkVisible(cx, cy, sight);
 		}
 
+		for (const RevealedArea &area : world.GetRevealedAreas())
+		{
+			MarkVisible(area.x, area.y, area.radius);
+		}
+
 		fogDirty = true;
+
+		world.sightGrid.resize(fogGrid.size());
+		std::memcpy(world.sightGrid.data(), fogGrid.data(), fogGrid.size());
+		world.sightRevision++;
 	}
 
 	void MarkVisible(int cx, int cy, int sight)

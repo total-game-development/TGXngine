@@ -16,7 +16,8 @@ ShellModule::ShellModule(
 	FNPTR_SHELL_SET_TOGGLE_HANDLER inSetToggleHandler,
 	FNPTR_SHELL_SET_NETWORK inSetNetwork,
 	FNPTR_SHELL_DELIVER inDeliver,
-	FNPTR_SHELL_SET_PROCESS_HANDLER inSetProcessHandler,
+	FNPTR_SHELL_SET_CYBER inSetCyber,
+	FNPTR_SHELL_SET_MATCH_HANDLERS inSetMatchHandlers,
 	FNPTR_SHELL_CLEAR inClear,
 	FNPTR_SHELL_DELETE inDelete)
 	: awake(inAwake),
@@ -32,7 +33,8 @@ ShellModule::ShellModule(
 	  setToggleHandler(inSetToggleHandler),
 	  setNetwork(inSetNetwork),
 	  deliver(inDeliver),
-	  setProcessHandler(inSetProcessHandler),
+	  setCyber(inSetCyber),
+	  setMatchHandlers(inSetMatchHandlers),
 	  clear(inClear),
 	  _delete(inDelete)
 {
@@ -144,11 +146,19 @@ void ShellModule::Deliver(const String &message)
 	}
 }
 
-void ShellModule::SetProcessHandler(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle)
+void ShellModule::SetCyber(bool allowed, const String &tutorial)
 {
-	if (setProcessHandler)
+	if (setCyber)
 	{
-		setProcessHandler(list, toggle);
+		setCyber(allowed, tutorial.empty() ? nullptr : tutorial.c_str());
+	}
+}
+
+void ShellModule::SetMatchHandlers(FNPTR_SHELL_LIST_PROCESSES list, FNPTR_SHELL_SWITCH_PROCESS toggle, FNPTR_SHELL_HACK hack, FNPTR_SHELL_RADAR radar, FNPTR_SHELL_REVEAL reveal)
+{
+	if (setMatchHandlers)
+	{
+		setMatchHandlers(list, toggle, hack, radar, reveal);
 	}
 }
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <ixwebsocket/IXWebSocket.h>
-#include <mutex>
 #include <nlohmann/json.hpp>
+#include <mutex>
 #include "Core.h"
 
 namespace TGX::Net

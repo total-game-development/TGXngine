@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdio>
 #include <gtest/gtest.h>
+#include <cstdio>
 #include "Terminal.h"
 
 namespace TGX::Shell
@@ -59,6 +59,55 @@ TEST(ShellPersistence, RestoresTheWorkingDirectory)
 	std::remove(path.c_str());
 }
 
+TEST(ShellPersistence, RestoresTheCyberRole)
+{
+	const String path = "shell_persistence_role.json";
+	std::remove(path.c_str());
+
+	{
+		Terminal terminal;
+		terminal.Load(path);
+		EXPECT_EQ(terminal.GetTint(), TerminalTint::None);
+		terminal.Submit("role cyber red");
+		EXPECT_EQ(terminal.GetTint(), TerminalTint::Red);
+	}
+
+	{
+		Terminal terminal;
+		terminal.Load(path);
+		EXPECT_EQ(terminal.GetTint(), TerminalTint::Red);
+		terminal.Submit("role cyber blue");
+	}
+
+	{
+		Terminal terminal;
+		terminal.Load(path);
+		EXPECT_EQ(terminal.GetTint(), TerminalTint::Blue);
+		terminal.Submit("role off");
+		EXPECT_EQ(terminal.GetTint(), TerminalTint::None);
+	}
+
+	std::remove(path.c_str());
+}
+
+TEST(ShellPersistence, RefusesAnUnknownRole)
+{
+	const String path = "shell_persistence_bad_role.json";
+	std::remove(path.c_str());
+
+	Terminal terminal;
+	terminal.Load(path);
+	terminal.Submit("role cyber blue");
+	terminal.Submit("role cyber green");
+	terminal.Submit("role red");
+	terminal.Submit("role");
+
+	EXPECT_EQ(terminal.GetTint(), TerminalTint::Blue);
+	EXPECT_EQ(terminal.GetOutput().back(), "Invalid command. Usage: role cyber <red|blue> | role off");
+
+	std::remove(path.c_str());
+}
+
 TEST(ShellPersistence, SeedsAFreshTreeWhenNoSaveExists)
 {
 	const String path = "shell_persistence_missing.json";
@@ -69,7 +118,6 @@ TEST(ShellPersistence, SeedsAFreshTreeWhenNoSaveExists)
 
 	EXPECT_NE(terminal.GetPrompt().find("/home/user/naomi/"), String::npos);
 }
-
 
 TEST(ShellPersistence, SavesAsSoonAsAFileIsCreated)
 {

@@ -66,19 +66,17 @@ int RunReplay(const String &path)
 
 	for (const auto &entry : record.value("commands", nlohmann::json::array()))
 	{
-		commands[entry.value("tick", Net::Tick{0})].push_back({
-			entry.value("uids", Vector<int>{}),
-			entry.value("orders", nlohmann::json::object())});
+		commands[entry.value("tick", Net::Tick{0})].push_back({entry.value("uids", Vector<int>{}),
+															   entry.value("orders", nlohmann::json::object())});
 	}
 
 	std::map<Net::Tick, Vector<Expected>> checksums;
 
 	for (const auto &entry : record.value("checksums", nlohmann::json::array()))
 	{
-		checksums[entry.value("tick", Net::Tick{0})].push_back({
-			entry.value("clientId", String{}),
-			entry.value("world", std::uint64_t{0}),
-			entry.value("commands", std::uint64_t{0})});
+		checksums[entry.value("tick", Net::Tick{0})].push_back({entry.value("clientId", String{}),
+																entry.value("world", std::uint64_t{0}),
+																entry.value("commands", std::uint64_t{0})});
 	}
 
 	const Net::Tick endTick = record.value("endTick", Net::Tick{0});

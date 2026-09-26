@@ -115,12 +115,12 @@ void Multiplayer::DrawHeading()
 
 	String hint = InRoom()
 					  ? "Click a seat to move, a side to change it, a map to pick it.  ESC leaves the room."
-					  : "Click a room to join, right-click to watch.  TGX_SERVER overrides the address.  ESC returns.";
+					  : "Click a room to join, right-click to watch, H to break into one.  TGX_SERVER overrides the address.  ESC returns.";
 
 	if (arena)
 	{
 		hint = InRoom()
-				   ? "Waiting for the match.  An arena starts once two people are watching.  ESC leaves."
+				   ? "Waiting for the match.  Click a map to pick it.  An arena starts once two people are watching.  ESC leaves."
 				   : "Click a room to watch the AI play itself there.  A match starts once two people are watching.  ESC returns.";
 	}
 
@@ -270,38 +270,7 @@ void Multiplayer::DrawRoom()
 		y += ROW_HEIGHT;
 	}
 
-	y += 18.0f;
-
-	sf::Text maps("MAP", font, 14);
-	maps.setPosition(MARGIN, y);
-	maps.setFillColor(MUTED);
-	window.Draw(maps);
-
-	y += 26.0f;
-
-	const float mapWidth = 220.0f;
-	const float available = window.GetViewSize().x - (MARGIN * 2.0f);
-	const auto perRow = static_cast<std::size_t>(std::max(1.0f, available / (mapWidth + 10.0f)));
-
-	for (std::size_t index = 0; index < state.levels.size(); index++)
-	{
-		const float column = static_cast<float>(index % perRow);
-		const float row = static_cast<float>(index / perRow);
-
-		const sf::FloatRect bounds(
-			MARGIN + (column * (mapWidth + 10.0f)),
-			y + (row * ROW_HEIGHT),
-			mapWidth,
-			ROW_HEIGHT - 4.0f);
-
-		const int hit = static_cast<int>(hits.size());
-
-		Add(bounds, Target::Level, static_cast<int>(index));
-
-		DrawButton(bounds, state.levels[index], index == state.level, true, hit);
-	}
-
-	y += ROW_HEIGHT * static_cast<float>((state.levels.size() + perRow - 1) / perRow);
+	y = DrawLevels(y + 18.0f);
 	y += 24.0f;
 
 	const int mine = state.Mine();
@@ -333,6 +302,46 @@ void Multiplayer::DrawRoom()
 		watching.setFillColor(MUTED);
 		window.Draw(watching);
 	}
+}
+
+float Multiplayer::DrawLevels(float y)
+{
+	Window &window = Window::GetInstance();
+
+	const Net::RoomState &state = Net::Session::GetInstance().Room();
+
+	sf::Text maps("MAP", font, 14);
+	maps.setPosition(MARGIN, y);
+	maps.setFillColor(MUTED);
+	window.Draw(maps);
+
+	y += 26.0f;
+
+	const float mapWidth = 220.0f;
+	const float available = window.GetViewSize().x - (MARGIN * 2.0f);
+	const auto perRow = static_cast<std::size_t>(std::max(1.0f, available / (mapWidth + 10.0f)));
+
+	for (std::size_t index = 0; index < state.levels.size(); index++)
+	{
+		const float column = static_cast<float>(index % perRow);
+		const float row = static_cast<float>(index / perRow);
+
+		const sf::FloatRect bounds(
+			MARGIN + (column * (mapWidth + 10.0f)),
+			y + (row * ROW_HEIGHT),
+			mapWidth,
+			ROW_HEIGHT - 4.0f);
+
+		const int hit = static_cast<int>(hits.size());
+
+		Add(bounds, Target::Level, static_cast<int>(index));
+
+		DrawButton(bounds, state.levels[index], index == state.level, true, hit);
+	}
+
+	y += ROW_HEIGHT * static_cast<float>((state.levels.size() + perRow - 1) / perRow);
+
+	return y;
 }
 
 void Multiplayer::DrawNotice()
@@ -387,6 +396,7 @@ void Multiplayer::Draw()
 	// waiting for the next.
 	if (InRoom() && arena)
 	{
+		DrawLevels(LIST_TOP);
 		DrawNotice();
 	}
 	else if (InRoom())
@@ -433,32 +443,32 @@ void Multiplayer::Click()
 			break;
 
 		case Target::Team:
-		{
-			const Net::RoomState &state = session.Room();
-
-			if (state.teams.empty())
 			{
-				break;
-			}
+				const Net::RoomState &state = session.Room();
 
-			// Cycles through the sides rather than opening a list: the server
-			// refuses one already taken, so a second click moves on again.
-			const String current = state.slots[static_cast<std::size_t>(hit.value)].team;
-
-			std::size_t next = 0;
-
-			for (std::size_t index = 0; index < state.teams.size(); index++)
-			{
-				if (state.teams[index] == current)
+				if (state.teams.empty())
 				{
-					next = (index + 1) % state.teams.size();
 					break;
 				}
-			}
 
-			session.ChooseTeam(state.teams[next]);
-			break;
-		}
+				// Cycles through the sides rather than opening a list: the server
+				// refuses one already taken, so a second click moves on again.
+				const String current = state.slots[static_cast<std::size_t>(hit.value)].team;
+
+				std::size_t next = 0;
+
+				for (std::size_t index = 0; index < state.teams.size(); index++)
+				{
+					if (state.teams[index] == current)
+					{
+						next = (index + 1) % state.teams.size();
+						break;
+					}
+				}
+
+				session.ChooseTeam(state.teams[next]);
+				break;
+			}
 
 		case Target::Level:
 			session.ChooseLevel(static_cast<std::size_t>(hit.value));
@@ -504,12 +514,25 @@ void Multiplayer::Release()
 
 bool Multiplayer::Key(int code)
 {
+	Net::Session &session = Net::Session::GetInstance();
+
+	// H over a room on the list joins it to break in rather than to play: no
+	// seat, no side, and every player's computer on the list of hosts.
+	if (code == static_cast<int>(sf::Keyboard::H) && !arena && !InRoom() && hovered >= 0 && hovered < static_cast<int>(hits.size()))
+	{
+		const Hit hit = hits[static_cast<std::size_t>(hovered)];
+
+		if (hit.target == Target::Room || hit.target == Target::Observe)
+		{
+			session.JoinAsHacker(hit.value);
+			return true;
+		}
+	}
+
 	if (code != static_cast<int>(sf::Keyboard::Escape))
 	{
 		return false;
 	}
-
-	Net::Session &session = Net::Session::GetInstance();
 
 	// Inside a room, escape gives the seat up and goes back to the list. On the
 	// list it closes the session and leaves the lobby.

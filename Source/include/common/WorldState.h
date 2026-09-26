@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <random>
 #include <utility>
 #include "AIDebug.h"
@@ -27,6 +28,7 @@ struct ProductionOrder
 	String type;
 	int ticks = 0;
 	int progress = 0;
+	int stall = 0;
 	bool ready = false;
 };
 
@@ -36,6 +38,17 @@ struct BuildSpan
 {
 	int width = 0;
 	int height = 0;
+};
+
+// Ground a cracked radar has shown this view, and until when. Presentation
+// only, like the fog it lifts: nothing in the simulation reads it, so it is
+// neither the same on every client nor folded into the digest.
+struct RevealedArea
+{
+	int x = 0;
+	int y = 0;
+	int radius = 0;
+	std::chrono::steady_clock::time_point until;
 };
 
 class WorldState
@@ -84,6 +97,27 @@ private:
 	bool headless = false;
 	bool debugOnScreen = false;
 	bool fogOfWarEnabled = true;
+
+	// A view with nothing of its own to see by: a hacker, who borrows a side's
+	// perspective for the renderer but not its sight.
+	bool blindView = false;
+	Vector<RevealedArea> revealedAreas;
+
+	// Where the minimap has asked the camera to look, in cells, until the game
+	// scene takes it. Only the executable can move the camera.
+	bool cameraRequested = false;
+	float cameraX = 0;
+	float cameraY = 0;
+
+	// A press the interface took for itself, held until the button comes up:
+	// it is not a press on the battlefield, so it neither selects nor drags.
+	bool pointerCaptured = false;
+
+	// The cell under the cursor while it is over a working minimap, so a
+	// right click there can be an order to that ground.
+	bool minimapPointed = false;
+	float minimapX = 0;
+	float minimapY = 0;
 	bool closed = false;
 	int itemThatIsUnderCursor = 0;
 	int cash = 0;
@@ -245,10 +279,25 @@ public:
 	// powerplant lights the buildings of whoever raised it and nobody else's.
 	Map<String, int> powerUsage;
 	Map<String, int> powerTotal;
+
+	// Sides whose grid a hack has cut. Simulation state like the treasuries: a
+	// command puts a side in here on a stamped tick, and it stays until the
+	// owner restores it or a supplier comes back onto the grid.
+	Set<String> powerCuts;
 	Map<int, int> lookupMap;
 
 	// Published by the AI module, read by the debug overlay.
 	Map<String, AIDebugSnapshot> aiDebug;
+
+	// The ground as the minimap draws it: one RGBA pixel per cell, sampled from
+	// the background as it loads. Presentation only.
+	Vector<std::uint8_t> terrainPixels;
+
+	// What this view can see, one byte per cell: 0 never seen, 1 seen before,
+	// 2 in sight now. Published by the fog of war whenever it recalculates, and
+	// empty when there is no fog. The revision moves on with every publish.
+	Vector<std::uint8_t> sightGrid;
+	int sightRevision = 0;
 
 	float GetGameX() const
 	{
@@ -554,6 +603,117 @@ public:
 		return fogOfWarEnabled;
 	}
 
+	void SetBlindView(bool inBlindView)
+	{
+		blindView = inBlindView;
+	}
+
+	bool IsBlindView() const
+	{
+		return blindView;
+	}
+
+	void Reveal(int inX, int inY, int inRadius, std::chrono::milliseconds inFor)
+	{
+		revealedAreas.push_back({inX, inY, inRadius, std::chrono::steady_clock::now() + inFor});
+	}
+
+	// What is still showing. Anything whose time is up is dropped on the way.
+	const Vector<RevealedArea> &GetRevealedAreas()
+	{
+		const auto now = std::chrono::steady_clock::now();
+
+		std::erase_if(revealedAreas, [now](const RevealedArea &area) { return area.until <= now; });
+
+		return revealedAreas;
+	}
+
+	void RequestCamera(float inX, float inY)
+	{
+		cameraRequested = true;
+		cameraX = inX;
+		cameraY = inY;
+	}
+
+	// Hands the request over once: the scene that moves the camera takes it.
+	bool TakeCameraRequest(float &outX, float &outY)
+	{
+		if (!cameraRequested)
+		{
+			return false;
+		}
+
+		cameraRequested = false;
+		outX = cameraX;
+		outY = cameraY;
+
+		return true;
+	}
+
+	bool IsPointerCaptured() const
+	{
+		return pointerCaptured;
+	}
+
+	void SetPointerCaptured(bool inPointerCaptured)
+	{
+		pointerCaptured = inPointerCaptured;
+	}
+
+	void SetMinimapPoint(bool inPointed, float inX = 0, float inY = 0)
+	{
+		minimapPointed = inPointed;
+		minimapX = inX;
+		minimapY = inY;
+	}
+
+	bool GetMinimapPoint(float &outX, float &outY) const
+	{
+		if (!minimapPointed)
+		{
+			return false;
+		}
+
+		outX = minimapX;
+		outY = minimapY;
+
+		return true;
+	}
+
+	// A building of this kind that is still up for the side, whatever its grid
+	// is doing.
+	bool HasStanding(const String &inTeam, const String &name) const
+	{
+		for (const auto &item : items)
+		{
+			if (item && item->GetTeam() == inTeam && item->GetName() == name && item->GetLife() > 0.0f && !item->GetHidden())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	// One the side can use: standing, switched on, and on a grid that is lit.
+	bool IsOperating(const String &inTeam, const String &name) const
+	{
+		if (!HasPower(inTeam))
+		{
+			return false;
+		}
+
+		for (const auto &item : items)
+		{
+			if (item && item->GetTeam() == inTeam && item->GetName() == name && item->GetLife() > 0.0f && !item->GetHidden() && item->IsRunning())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	bool IsClosed() const
 	{
 		return closed;
@@ -760,10 +920,38 @@ public:
 		powerTotal[inTeam] = std::max(0, inPowerTotal);
 	}
 
+	bool IsPowerCut(const String &inTeam) const
+	{
+		return powerCuts.find(inTeam) != powerCuts.end();
+	}
+
+	void SetPowerCut(const String &inTeam, bool inCut)
+	{
+		if (inCut)
+		{
+			powerCuts.insert(inTeam);
+		}
+		else
+		{
+			powerCuts.erase(inTeam);
+		}
+	}
+
+	// What everything that needs power asks. A side is lit when its grid can
+	// carry what is on it and nobody has cut it.
+	bool HasPower(const String &inTeam) const
+	{
+		return !IsPowerCut(inTeam) && GetPowerTotal(inTeam) >= GetPowerUsage(inTeam);
+	}
+
 	void ConnectPower(const String &inTeam, int inPowerUsage)
 	{
 		if (inPowerUsage < 0)
 		{
+			// A supplier coming onto the grid is a grid being rebuilt, which is
+			// the other way back from a cut.
+			SetPowerCut(inTeam, false);
+
 			SetPowerTotal(inTeam, GetPowerTotal(inTeam) - inPowerUsage);
 		}
 		else
@@ -915,6 +1103,15 @@ public:
 		aiDebug.clear();
 		powerUsage.clear();
 		powerTotal.clear();
+		powerCuts.clear();
+		revealedAreas.clear();
+		blindView = false;
+		cameraRequested = false;
+		pointerCaptured = false;
+		minimapPointed = false;
+		terrainPixels.clear();
+		sightGrid.clear();
+		sightRevision++;
 
 		for (auto &row : currentMapTerrainGrid)
 		{

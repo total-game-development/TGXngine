@@ -1225,6 +1225,508 @@
 				{"type":"resources", "name":"oil", "x":261, "y":44, "uid":-1002},
 				{"type":"resources", "name":"water", "x":278, "y":48, "uid":-1003}
 			]
+		},
+		{
+			"name": "cyber-tutorial",
+			"type": "skirmish",
+			"cyber": true,
+			"briefing": "A training ground for the network. The land is skirmish-plains, but every console here may connect, hack, steal the radar and take a side. Open the portal's Console, cd cyber-tutorial and run start.",
+			"mapImage": "Resources/images/maps/singleplayer/skirmish-plains/",
+			"mapPreview": "Resources/images/preview/skirmish/skirmish-plains/preview.png",
+			"numberOfHorizontalTiles": 10,
+			"numberOfVerticalTiles": 6,
+			"backgroundOffsetX": 0,
+			"backgroundOffsetY": 80,
+			"backgroundOffsetWidth": 160,
+			"backgroundOffsetHeight": 0,
+			"positions": [
+				{
+					"x": 50,
+					"y": 30
+				}
+			],
+			"mapGridWidth": 240,
+			"mapGridHeight": 240,
+			"teams": [
+				{
+					"name": "technology",
+					"type": "player"
+				},
+				{
+					"name": "social-earth",
+					"type": "ai"
+				}
+			],
+			"cash": {
+				"technology": 25000,
+				"social-earth": 25000
+			},
+			"water": {
+				"technology": 0,
+				"social-earth": 0
+			},
+			"oil": {
+				"technology": 0,
+				"social-earth": 0
+			},
+			"additional_requirements": [
+				{
+					"type": "buildings",
+					"name": "powerplant",
+					"team": "technology"
+				},
+				{
+					"type": "buildings",
+					"name": "barracks",
+					"team": "technology"
+				},
+				{
+					"type": "buildings",
+					"name": "vehicle_assembly_tunnel",
+					"team": "technology"
+				},
+				{
+					"type": "buildings",
+					"name": "water_extractor",
+					"team": "technology"
+				},
+				{
+					"type": "buildings",
+					"name": "oil_extractor",
+					"team": "technology"
+				},
+				{
+					"type": "infantry",
+					"name": "soldier",
+					"team": "technology"
+				},
+				{
+					"type": "infantry",
+					"name": "grenadier",
+					"team": "technology"
+				},
+				{
+					"type": "infantry",
+					"name": "rocketeer",
+					"team": "technology"
+				},
+				{
+					"type": "vehicles",
+					"name": "prospector",
+					"team": "technology"
+				},
+				{
+					"type": "vehicles",
+					"name": "truck",
+					"team": "technology"
+				},
+				{
+					"type": "vehicles",
+					"name": "tank",
+					"team": "technology"
+				},
+				{
+					"type": "turrets",
+					"name": "laser-tower",
+					"team": "technology"
+				},
+				{
+					"type": "turrets",
+					"name": "missile-turret",
+					"team": "technology"
+				},
+				{
+					"type": "buildings",
+					"name": "powerplant",
+					"team": "social-earth"
+				},
+				{
+					"type": "buildings",
+					"name": "barracks",
+					"team": "social-earth"
+				},
+				{
+					"type": "buildings",
+					"name": "vehicle_assembly_tunnel",
+					"team": "social-earth"
+				},
+				{
+					"type": "buildings",
+					"name": "water_extractor",
+					"team": "social-earth"
+				},
+				{
+					"type": "buildings",
+					"name": "oil_extractor",
+					"team": "social-earth"
+				},
+				{
+					"type": "infantry",
+					"name": "soldier",
+					"team": "social-earth"
+				},
+				{
+					"type": "infantry",
+					"name": "grenadier",
+					"team": "social-earth"
+				},
+				{
+					"type": "infantry",
+					"name": "rocketeer",
+					"team": "social-earth"
+				},
+				{
+					"type": "vehicles",
+					"name": "prospector",
+					"team": "social-earth"
+				},
+				{
+					"type": "vehicles",
+					"name": "truck",
+					"team": "social-earth"
+				},
+				{
+					"type": "vehicles",
+					"name": "tank",
+					"team": "social-earth"
+				},
+				{
+					"type": "turrets",
+					"name": "laser-tower",
+					"team": "social-earth"
+				},
+				{
+					"type": "turrets",
+					"name": "missile-turret",
+					"team": "social-earth"
+				}
+			],
+			"projectiles": [
+				{
+					"type": "projectiles",
+					"name": "bullet"
+				},
+				{
+					"type": "projectiles",
+					"name": "grenade"
+				},
+				{
+					"type": "projectiles",
+					"name": "rocket"
+				},
+				{
+					"type": "projectiles",
+					"name": "shell"
+				},
+				{
+					"type": "projectiles",
+					"name": "missile"
+				},
+				{
+					"type": "projectiles",
+					"name": "laser"
+				}
+			],
+			"interface": [
+				{
+					"type": "interface",
+					"name": "sidebar"
+				}
+			],
+			"ui": [
+				{
+					"type": "ui",
+					"name": "cyber-portal"
+				}
+			],
+			"triggers": [
+				{
+					"type": "triggers",
+					"name": "log"
+				}
+			],
+			"economy": {
+				"technology": {
+					"cash": 25000
+				},
+				"social-earth": {
+					"cash": 25000
+				}
+			},
+			"fog_of_war": [
+				{
+					"type": "fog_of_war"
+				},
+				{
+					"layer": [
+						{
+							"FOG_X": 0,
+							"color": "none"
+						},
+						{
+							"FOG_O": 1,
+							"color": "0xFFFFFFFF"
+						},
+						[
+							2,
+							3,
+							4,
+							5,
+							6,
+							7,
+							8,
+							9
+						]
+					]
+				},
+				{
+					"layer": [
+						{
+							"FOG_X": 0,
+							"color": "none"
+						},
+						{
+							"FOG_O": 1,
+							"color": "0xFFFFFF33"
+						},
+						[
+							10,
+							11,
+							12,
+							13,
+							14,
+							15,
+							16,
+							17
+						]
+					]
+				}
+			],
+			"ai": [
+				{
+					"name": "builder",
+					"buildLimit": 6,
+					"techTree": {
+						"nodes": [
+							{
+								"name": "construction_facility",
+								"type": "buildings",
+								"role": "building_generator",
+								"buildTime": 1080,
+								"cost": 5000,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": true,
+								"children": [
+									"powerplant"
+								]
+							},
+							{
+								"name": "powerplant",
+								"type": "buildings",
+								"role": "power_generator",
+								"buildTime": 144,
+								"cost": 250,
+								"powerUsage": 0,
+								"powerOutput": 400,
+								"isRoot": false,
+								"children": [
+									"barracks",
+									"vehicle_assembly_tunnel"
+								]
+							},
+							{
+								"name": "barracks",
+								"type": "buildings",
+								"role": "light_land_generator",
+								"buildTime": 216,
+								"cost": 300,
+								"powerUsage": 50,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"soldier",
+									"grenadier",
+									"rocketeer"
+								]
+							},
+							{
+								"name": "soldier",
+								"type": "infantry",
+								"role": "light_land_offensive",
+								"buildTime": 12,
+								"cost": 100,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": false
+							},
+							{
+								"name": "grenadier",
+								"type": "infantry",
+								"role": "light_land_offensive",
+								"buildTime": 180,
+								"cost": 150,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": false
+							},
+							{
+								"name": "rocketeer",
+								"type": "infantry",
+								"role": "light_land_offensive",
+								"buildTime": 240,
+								"cost": 300,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": false
+							},
+							{
+								"name": "vehicle_assembly_tunnel",
+								"type": "buildings",
+								"role": "heavy_land_generator",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 250,
+								"powerOutput": 0,
+								"isRoot": false,
+								"children": [
+									"prospector",
+									"truck",
+									"tank"
+								]
+							},
+							{
+								"name": "prospector",
+								"type": "vehicles",
+								"role": "light_land_gatherer",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": false
+							},
+							{
+								"name": "truck",
+								"type": "vehicles",
+								"role": "light_land_offensive",
+								"buildTime": 480,
+								"cost": 500,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": false
+							},
+							{
+								"name": "tank",
+								"type": "vehicles",
+								"role": "heavy_land_offensive",
+								"buildTime": 720,
+								"cost": 2000,
+								"powerUsage": 0,
+								"powerOutput": 0,
+								"isRoot": false
+							}
+						]
+					}
+				}
+			],
+			"items": [
+				{
+					"type": "buildings",
+					"name": "construction_facility",
+					"x": 50,
+					"y": 30,
+					"direction": 0,
+					"team": "technology",
+					"uid": -100
+				},
+				{
+					"type": "buildings",
+					"name": "construction_facility",
+					"x": 170,
+					"y": 170,
+					"direction": 0,
+					"team": "social-earth",
+					"uid": -500
+				}
+			],
+			"resources": [
+				{
+					"type": "resources",
+					"name": "oil",
+					"x": 226,
+					"y": 134,
+					"uid": -1000
+				},
+				{
+					"type": "resources",
+					"name": "water",
+					"x": 116,
+					"y": 102,
+					"uid": -1001
+				},
+				{
+					"type": "resources",
+					"name": "oil",
+					"x": 110,
+					"y": 218,
+					"uid": -1002
+				},
+				{
+					"type": "resources",
+					"name": "water",
+					"x": 228,
+					"y": 4,
+					"uid": -1003
+				},
+				{
+					"type": "resources",
+					"name": "oil",
+					"x": 112,
+					"y": 78,
+					"uid": -1004
+				},
+				{
+					"type": "resources",
+					"name": "water",
+					"x": 195,
+					"y": 80,
+					"uid": -1005
+				},
+				{
+					"type": "resources",
+					"name": "oil",
+					"x": 34,
+					"y": 148,
+					"uid": -1006
+				},
+				{
+					"type": "resources",
+					"name": "water",
+					"x": 182,
+					"y": 96,
+					"uid": -1007
+				}
+			],
+			"radar": {
+				"saltDigits": 3,
+				"cell": 8,
+				"publishSeconds": 5,
+				"rotateSeconds": 300,
+				"revealRadius": 4,
+				"revealSeconds": 8
+			},
+			"tutorial": {
+				"directory": "cyber-tutorial",
+				"files": {
+					"start": "print(\"CYBER TUTORIAL\")\nprint(\"\")\nprint(\"This map allows cyber commands: connect, hack, get, rekey, passwd and role.\")\nprint(\"Every player's console is a computer on the network, and so is yours.\")\nprint(\"Each lesson is a program. Run them in order:\")\nprint(\"\")\nprint(\"  run lesson1   your own computer and its pin\")\nprint(\"  run lesson2   reaching somebody else's computer\")\nprint(\"  run lesson3   processes, power and the hack\")\nprint(\"  run lesson4   cracking the radar\")\nprint(\"  run lesson5   picking a side: red or blue\")\nprint(\"\")\nprint(\"ls lists this folder. edit <file> opens one; ESC saves and closes it.\")\n",
+					"lesson1": "print(\"LESSON 1 - YOUR COMPUTER\")\nprint(\"\")\nprint(\"who           shows this computer's pin and who is connected to it\")\nprint(\"passwd 1234   changes the pin. Anybody connected is shut out at once\")\nprint(\"\")\nprint(\"Anyone who learns your pin can read your files and run your programs.\")\nprint(\"Try it now: run who, then change your pin with passwd.\")\n",
+					"lesson2": "print(\"LESSON 2 - REACHING ANOTHER COMPUTER\")\nprint(\"\")\nprint(\"hosts                   lists the computers you can reach\")\nprint(\"connect <name> <pin>    opens a session on one of them\")\nprint(\"ls, cd, edit, run       then work on that computer, not yours\")\nprint(\"get <file>              copies one of its files into your own folder\")\nprint(\"disconnect              comes home\")\nprint(\"\")\nprint(\"In a match the computers are named for the sides.\")\nprint(\"In an arena every viewer has one: viewer1, viewer2 and so on.\")\nprint(\"Pair up: one of you reads out a pin with who, the other connects.\")\n",
+					"lesson3": "print(\"LESSON 3 - PROCESSES AND POWER\")\nprint(\"\")\nprint(\"ps              lists your buildings and programs, with their power\")\nprint(\"kill <pid>      stops one; start <pid> brings a building back\")\nprint(\"hack power      from inside somebody's computer, cuts their grid\")\nprint(\"restore         puts your own grid back after it was cut\")\nprint(\"\")\nprint(\"ps, kill and start also work on a computer you are connected to.\")\nprint(\"In an arena nobody owns buildings, so there is no grid to cut.\")\n",
+					"lesson4": "print(\"LESSON 4 - CRACKING THE RADAR\")\nprint(\"\")\nprint(\"Every player's computer publishes /sys/radar: where their things stand,\")\nprint(\"hashed with a secret salt. Crack the salt and the fog lifts there.\")\nprint(\"\")\nprint(\"1. connect to an opponent, then cd /sys\")\nprint(\"2. get radar            copies it into your folder\")\nprint(\"3. disconnect, cd back to cyber-tutorial, and run crack 3\")\nprint(\"   (this map uses a three-digit salt)\")\nprint(\"\")\nprint(\"rekey draws a new salt for your own radar, so a stolen copy goes stale.\")\nprint(\"edit crack to see how the cracker works.\")\n",
+					"lesson5": "print(\"LESSON 5 - PICK A SIDE\")\nprint(\"\")\nprint(\"role cyber red     attack: your console turns red\")\nprint(\"role cyber blue    defence: your console turns blue\")\nprint(\"role off           back to normal\")\nprint(\"\")\nprint(\"The role is kept with your computer's files, so it survives a restart.\")\nprint(\"That is the tutorial. help lists every command.\")\n",
+					"crack": "let text = read(\"radar\")\nlet lines = []\nsplit(text, \"\\n\", lines)\nlet head = []\nsplit(lines[0], \" \", head)\nlet check = []\nsplit(lines[1], \" \", check)\nlet w = head[1] * 1\nlet h = head[2] * 1\nlet cell = head[3] * 1\nlet digits = args[0] * 1\nlet limit = 1\nlet i = 0\nwhile (i < digits) { limit = limit * 10 i = i + 1 }\nlet salt = \"\"\nlet n = 0\nlet s = \"\"\nwhile (n < limit) {\n  s = \"\" + n\n  while (length(s) < digits) { s = \"0\" + s }\n  if (hash(s) == check[1]) { salt = s break }\n  n = n + 1\n}\nif (salt == \"\") { print(\"no salt found - try more digits, or get a fresh radar\") }\nprint(\"salt is \" + salt)\nlet hits = 0\nlet x = 0\nlet y = 0\nlet k = 0\nlet c = \"\"\nwhile (y < h / cell) {\n  x = 0\n  while (x < w / cell) {\n    c = hash(salt, x, y)\n    k = 2\n    while (k < length(lines)) {\n      if (lines[k] == c) { reveal(salt, x, y) hits = hits + 1 }\n      k = k + 1\n    }\n    x = x + 1\n  }\n  y = y + 1\n}\nprint(\"revealed \" + hits)\n"
+				}
+			}
 		}
 	]	
 }

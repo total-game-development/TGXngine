@@ -52,4 +52,5 @@ ValueRef MakeReturn(ValueRef value);
 
 bool IsTruthy(const ValueRef &value);
 String Stringify(const ValueRef &value);
+String Digest(const Vector<String> &parts);
 } // namespace TGX::Shell

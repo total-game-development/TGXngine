@@ -149,6 +149,11 @@ public:
 	// with. It is handed the match as an observer is, and sits in no seat.
 	void JoinAsHost(int roomId, const String &hostToken);
 
+	// Joins a room to break into it rather than to play. A hacker takes no
+	// seat and commands nothing; the room gives its console a name, and the
+	// players' computers are reachable from it like any other.
+	void JoinAsHacker(int roomId);
+
 	// Watches the room as an arena: the host's AI plays every side. An empty
 	// room starts one; a room already running one is joined part-way through.
 	void JoinArena(int roomId);

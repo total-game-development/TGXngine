@@ -14,5 +14,6 @@ public:
 	virtual void WriteFile(const String &name, const String &source) = 0;
 	virtual void Toggle(const String &name, const String &value, bool active) = 0;
 	virtual void Spawn(const String &command) = 0;
+	virtual bool Reveal(const String &salt, int x, int y) = 0;
 };
 } // namespace TGX::Shell

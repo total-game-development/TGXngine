@@ -1,5 +1,7 @@
 #include "Background.h"
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include "Globals.h"
 #include "Window.h"
 #include "WorldState.h"
@@ -34,15 +36,32 @@ void Background::LoadBackgroundTiles()
 	backgroundTextures.reserve(tileNames.size());
 	backgroundSprites.reserve(tileNames.size());
 
-	for (const auto &tileName : tileNames)
+	const int gridWidth = backgroundWidth / Globals::grid_size;
+	const int gridHeight = backgroundHeight / Globals::grid_size;
+
+	Vector<std::uint8_t> &terrain = WorldState::GetInstance().terrainPixels;
+	terrain.assign(static_cast<size_t>(gridWidth) * gridHeight * 4, 0);
+
+	for (size_t alpha = 3; alpha < terrain.size(); alpha += 4)
 	{
-		auto texture = std::make_unique<sf::Texture>();
-		if (!texture->loadFromFile(tileName))
+		terrain[alpha] = 255;
+	}
+
+	for (size_t tileIndex = 0; tileIndex < tileNames.size(); tileIndex++)
+	{
+		const String &tileName = tileNames[tileIndex];
+
+		sf::Image image;
+		if (!image.loadFromFile(tileName))
 		{
 			Log::Warning("Cannot load image: " + tileName);
 			continue;
 		}
 
+		SampleTerrain(image, static_cast<int>(tileIndex), gridWidth, gridHeight);
+
+		auto texture = std::make_unique<sf::Texture>();
+		texture->loadFromImage(image);
 		texture->setSmooth(false);
 		backgroundTextures.push_back(std::move(texture));
 
@@ -71,6 +90,57 @@ void Background::LoadBackgroundTiles()
 	}
 
 	SyncPosition();
+}
+
+void Background::SampleTerrain(const sf::Image &image, int tileIndex, int gridWidth, int gridHeight)
+{
+	const int columns = std::max(1, WorldState::GetInstance().GetNumberOfVerticalTiles());
+	const int originX = (tileIndex % columns) * rotationXLimit;
+	const int originY = (tileIndex / columns) * rotationYLimit;
+
+	const int imageWidth = static_cast<int>(image.getSize().x);
+	const int imageHeight = static_cast<int>(image.getSize().y);
+
+	if (imageWidth <= 0 || imageHeight <= 0)
+	{
+		return;
+	}
+
+	Vector<std::uint8_t> &terrain = WorldState::GetInstance().terrainPixels;
+
+	const int size = Globals::grid_size;
+	const int firstX = originX / size;
+	const int firstY = originY / size;
+	const int lastX = std::min(gridWidth, (originX + std::min(imageWidth, rotationXLimit)) / size);
+	const int lastY = std::min(gridHeight, (originY + std::min(imageHeight, rotationYLimit)) / size);
+
+	for (int cellY = firstY; cellY < lastY; cellY++)
+	{
+		for (int cellX = firstX; cellX < lastX; cellX++)
+		{
+			int red = 0;
+			int green = 0;
+			int blue = 0;
+
+			for (int sample = 0; sample < 4; sample++)
+			{
+				const int localX = std::clamp((cellX * size) - originX + ((sample % 2) == 0 ? size / 4 : (3 * size) / 4), 0, imageWidth - 1);
+				const int localY = std::clamp((cellY * size) - originY + ((sample / 2) == 0 ? size / 4 : (3 * size) / 4), 0, imageHeight - 1);
+
+				const sf::Color colour = image.getPixel(static_cast<unsigned int>(localX), static_cast<unsigned int>(localY));
+
+				red += colour.r;
+				green += colour.g;
+				blue += colour.b;
+			}
+
+			const size_t at = ((static_cast<size_t>(cellY) * gridWidth) + cellX) * 4;
+
+			terrain[at] = static_cast<std::uint8_t>(red / 4);
+			terrain[at + 1] = static_cast<std::uint8_t>(green / 4);
+			terrain[at + 2] = static_cast<std::uint8_t>(blue / 4);
+		}
+	}
 }
 
 void Background::SyncPosition()
