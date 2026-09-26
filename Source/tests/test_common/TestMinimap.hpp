@@ -69,7 +69,6 @@ protected:
 		return raised;
 	}
 };
-} // namespace
 
 TEST_F(MinimapFixture, WorksWithAPoweredRadar)
 {
@@ -136,3 +135,4 @@ TEST_F(MinimapFixture, ComesBackWhenAnyRadarStillWorks)
 
 	EXPECT_TRUE(TGX::WorldState::GetInstance().IsOperating("technology", "radar"));
 }
+} // namespace
