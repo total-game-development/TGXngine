@@ -11,7 +11,7 @@ TEST_F(RemoteFixture, RefusesCyberCommandsOnAMapThatDoesNotAllowThem)
 {
 	ruby.SetCyber(false);
 
-	for (const String &command : {"connect sapphire 2222", "hack power", "get radar", "rekey", "passwd 9999", "role cyber red"})
+	for (const char *command : {"connect sapphire 2222", "hack power", "get radar", "rekey", "passwd 9999", "role cyber red"})
 	{
 
 		Run(ruby, command);

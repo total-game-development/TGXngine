@@ -41,7 +41,7 @@ protected:
 
 		world.items.clear();
 
-		for (const TGX::String &team : {"technology", "social-earth"})
+		for (const char *team : {"technology", "social-earth"})
 		{
 			world.SetPowerCut(team, false);
 			world.SetPowerTotal(team, 400);
