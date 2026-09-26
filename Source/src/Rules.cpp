@@ -184,8 +184,14 @@ Vector<Violation> Check()
 
 				reported.insert(pair);
 
+				// The bodies arrive in the tracker's hash order, which differs
+				// between standard libraries, so the lower uid is named first.
+				const bool inOrder = bodies[first].uid < bodies[second].uid;
+				const Body &lower = inOrder ? bodies[first] : bodies[second];
+				const Body &higher = inOrder ? bodies[second] : bodies[first];
+
 				found.push_back({"overlap",
-								 "cell " + key + " has " + Named(bodies[first]) + " and " + Named(bodies[second]) + " stopped on it"});
+								 "cell " + key + " has " + Named(lower) + " and " + Named(higher) + " stopped on it"});
 			}
 		}
 	}
