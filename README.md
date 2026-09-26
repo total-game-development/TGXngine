@@ -106,6 +106,8 @@ Version 0.2 also lands the Aircrafts, Ships, FogOfWar and Turrets modules, exten
 
 The engine codebase is divided into four distinct structural layers: the Core Application, the Shared Common Layer, the Static Library Core, and external Dynamic Modules designed for modding.
 
+![TGXngine engine structure: the core executable loads the dynamic modules, both link Common and Library, and everything builds on the vendored dependencies](tgx_structure.png)
+
 ### 1. The Core Application (The Executable Platform)
 
 The executable handles OS-level window creation, rendering pipelines, user input routing, and multiplayer socket synchronization. It serves as the base application layer that reads data definitions and initializes game scenes.
