@@ -122,7 +122,7 @@ void Editor::Backspace()
 		lines[row].erase(column - 1, 1);
 		--column;
 		dirty = true;
-	Invalidate();
+		Invalidate();
 
 		ScrollIntoView();
 		return;

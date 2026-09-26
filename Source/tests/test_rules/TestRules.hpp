@@ -104,9 +104,8 @@ protected:
 	{
 		Physics::GetInstance().GetGridTracker().cells_grid[std::to_string(x) + " " + std::to_string(y)] = stack;
 
-		Mark(x, y, stack >= Flags::CELL_COLLISION_MODE_MEDIUM	? Flags::CELL_COLLISION_MODE_MEDIUM
-					: stack > Flags::CELL_COLLISION_MODE_OFF	? Flags::CELL_COLLISION_MODE_SOFT
-															 : Flags::CELL_COLLISION_MODE_OFF);
+		Mark(x, y, stack >= Flags::CELL_COLLISION_MODE_MEDIUM ? Flags::CELL_COLLISION_MODE_MEDIUM : stack > Flags::CELL_COLLISION_MODE_OFF ? Flags::CELL_COLLISION_MODE_SOFT
+																																		   : Flags::CELL_COLLISION_MODE_OFF);
 	}
 
 	void Mark(int x, int y, int mark)

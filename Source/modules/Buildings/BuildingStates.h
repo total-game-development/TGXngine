@@ -31,7 +31,6 @@ public:
 		return cellCollisionMode;
 	}
 
-
 	// The footprint is the body: half of the longer side is how far it reaches.
 	float GetOuterSight() const override
 	{

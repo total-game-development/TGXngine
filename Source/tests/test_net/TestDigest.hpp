@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstring>
 #include <gtest/gtest.h>
+#include <cstring>
 #include "Net/Digest.h"
 
 namespace

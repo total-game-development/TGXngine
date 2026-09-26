@@ -433,32 +433,32 @@ void Multiplayer::Click()
 			break;
 
 		case Target::Team:
-		{
-			const Net::RoomState &state = session.Room();
-
-			if (state.teams.empty())
 			{
-				break;
-			}
+				const Net::RoomState &state = session.Room();
 
-			// Cycles through the sides rather than opening a list: the server
-			// refuses one already taken, so a second click moves on again.
-			const String current = state.slots[static_cast<std::size_t>(hit.value)].team;
-
-			std::size_t next = 0;
-
-			for (std::size_t index = 0; index < state.teams.size(); index++)
-			{
-				if (state.teams[index] == current)
+				if (state.teams.empty())
 				{
-					next = (index + 1) % state.teams.size();
 					break;
 				}
-			}
 
-			session.ChooseTeam(state.teams[next]);
-			break;
-		}
+				// Cycles through the sides rather than opening a list: the server
+				// refuses one already taken, so a second click moves on again.
+				const String current = state.slots[static_cast<std::size_t>(hit.value)].team;
+
+				std::size_t next = 0;
+
+				for (std::size_t index = 0; index < state.teams.size(); index++)
+				{
+					if (state.teams[index] == current)
+					{
+						next = (index + 1) % state.teams.size();
+						break;
+					}
+				}
+
+				session.ChooseTeam(state.teams[next]);
+				break;
+			}
 
 		case Target::Level:
 			session.ChooseLevel(static_cast<std::size_t>(hit.value));

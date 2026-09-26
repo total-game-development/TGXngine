@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
 #include <nlohmann/json.hpp>
+#include <map>
 #include "Core.h"
 
 namespace TGX::Net
