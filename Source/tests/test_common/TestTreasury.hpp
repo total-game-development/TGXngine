@@ -11,7 +11,7 @@ TGX::WorldState &TreasuryFixture()
 
 	world.economies.clear();
 
-	for (const TGX::String &name : {"technology", "social-earth"})
+	for (const char *name : {"technology", "social-earth"})
 	{
 		auto economy = std::make_unique<TGX::EconomyInstance>();
 
