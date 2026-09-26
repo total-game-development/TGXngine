@@ -100,9 +100,9 @@
 <text x="60" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#15803d" font-weight="bold" text-anchor="start">AI:</text>
 <text x="87.6" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start">BuilderAIState + PlexAIState</text>
 <text x="296.8" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#15803d" font-weight="bold" text-anchor="start">Interface:</text>
-<text x="379.0" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start">Sidebar · Minimap · SidebarButton</text>
-<text x="620.2" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#15803d" font-weight="bold" text-anchor="start">UI:</text>
-<text x="647.8000000000001" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start">Portal · Page · Panel · Layout · Widget</text>
+<text x="379.0" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start">Sidebar · SidebarButton</text>
+<text x="556.2" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#15803d" font-weight="bold" text-anchor="start">UI:</text>
+<text x="583.8000000000001" y="716" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start">Portal · Page · Panel · Layout · Widget</text>
 <text x="60" y="736" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#15803d" font-weight="bold" text-anchor="start">Shell:</text>
 <text x="111.0" y="736" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start">Lexer → Parser → Interpreter · FileSystem · Editor · Highlight</text>
 <text x="537.8" y="736" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#15803d" font-weight="bold" text-anchor="start">Units:</text>
@@ -195,18 +195,16 @@
 <text x="1546" y="242" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">passability</text>
 <text x="1286" y="264" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">portal.json</text>
 <text x="1546" y="264" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">UI screens</text>
-<text x="1286" y="286" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">cyber-portal.json</text>
-<text x="1546" y="286" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">cyber UI</text>
-<text x="1286" y="308" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">sidebar.json</text>
-<text x="1546" y="308" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">build sidebar</text>
-<text x="1286" y="330" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">intro/game.json</text>
-<text x="1546" y="330" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">scenes</text>
-<text x="1286" y="352" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">settings.json</text>
-<text x="1546" y="352" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">user settings</text>
-<text x="1286" y="374" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">shell.json</text>
-<text x="1546" y="374" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">shell filesystem</text>
-<text x="1286" y="396" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">audio/ images/</text>
-<text x="1546" y="396" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">assets</text>
+<text x="1286" y="286" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">sidebar.json</text>
+<text x="1546" y="286" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">build sidebar</text>
+<text x="1286" y="308" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">intro/game.json</text>
+<text x="1546" y="308" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">scenes</text>
+<text x="1286" y="330" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">settings.json</text>
+<text x="1546" y="330" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">user settings</text>
+<text x="1286" y="352" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">shell.json</text>
+<text x="1546" y="352" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">shell filesystem</text>
+<text x="1286" y="374" font-family="Consolas, 'Cascadia Mono', monospace" font-size="12.5" fill="#115e59" font-weight="normal" text-anchor="start">audio/ images/</text>
+<text x="1546" y="374" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">assets</text>
 <line x1="1268" y1="262" x2="1243" y2="262" stroke="#334155" stroke-width="2.2" marker-end="url(#ah)"/>
 <rect x="1270" y="480" width="290" height="320" rx="14" fill="#fdeef5" stroke="#db2777" stroke-width="2"/>
 <text x="1286" y="510" font-family="'Segoe UI', Arial, sans-serif" font-size="19" fill="#db2777" font-weight="bold" text-anchor="start">Tests · UnitTests.exe</text>
@@ -225,7 +223,7 @@
 <text x="1546" y="642" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">rules, settle</text>
 <text x="1286" y="668" font-family="Consolas, 'Cascadia Mono', monospace" font-size="13" fill="#9d174d" font-weight="bold" text-anchor="start">test_shell/</text>
 <text x="1286" y="668" font-family="'Segoe UI', Arial, sans-serif" font-size="1" fill="#1e293b" font-weight="normal" text-anchor="start"></text>
-<text x="1546" y="668" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">interpreter, FS, cyber…</text>
+<text x="1546" y="668" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569" font-weight="normal" text-anchor="end">interpreter, FS, remote…</text>
 <text x="1286" y="710" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start" font-style="italic">Compiles Shell, Net &amp; Rules sources</text>
 <text x="1286" y="728" font-family="'Segoe UI', Arial, sans-serif" font-size="12.5" fill="#334155" font-weight="normal" text-anchor="start" font-style="italic">directly; links Common + Library.</text>
 <rect x="1270" y="850" width="290" height="225" rx="14" fill="#f3f5f8" stroke="#64748b" stroke-width="2"/>
